@@ -113,7 +113,29 @@ export default function Invoices() {
       });
     });
     
-    // Add rental items for the selected customer
+    // Add separator if we have both products and rentals
+    if (products.length > 0 && newInvoice.customerId) {
+      const customer = customers.find(c => c.id === newInvoice.customerId);
+      if (customer) {
+        const hasRentals = sales.some(sale => 
+          sale.customer === customer.name && 
+          sale.items.some(item => item.isRental)
+        );
+        if (hasRentals) {
+          availableItems.push({
+            id: 'separator',
+            name: '--- Rental Agreements ---',
+            price: 0,
+            type: 'separator',
+            description: '',
+            displayPrice: 0,
+            paymentPeriod: null
+          });
+        }
+      }
+    }
+    
+    // Add rental items for the selected customer with proper payment due calculation
     if (newInvoice.customerId) {
       const customer = customers.find(c => c.id === newInvoice.customerId);
       if (customer) {
@@ -123,18 +145,20 @@ export default function Invoices() {
             sale.items
               .filter(item => item.isRental)
               .map(item => {
-                // Use the actual payment amount from the rental agreement
-                const periodDisplay = item.paymentPeriod ? `/${item.paymentPeriod.toLowerCase().replace('ly', '')}` : '';
+                // Calculate payment due: monthly price * months in payment period
+                const monthsInPeriod = getMonthsInPaymentPeriod(item.paymentPeriod || 'monthly');
+                const paymentDue = item.price * monthsInPeriod;
+                const periodDisplay = item.paymentPeriod ? `/${getPeriodShortLabel(item.paymentPeriod)}` : '';
                 
                 return {
                   id: `rental-${sale.id}-${item.product}`,
                   name: `${item.product} (Rental)`,
-                  price: item.price, // This is already the payment amount per period
+                  price: paymentDue, // Use the calculated payment due amount
                   type: 'rental',
                   description: `Rental service for ${item.product}`,
                   contractLength: item.contractLength,
                   paymentPeriod: item.paymentPeriod,
-                  displayPrice: item.price, // Use actual payment amount
+                  displayPrice: paymentDue,
                   originalPrice: item.price
                 };
               })
@@ -145,6 +169,28 @@ export default function Invoices() {
     }
     
     return availableItems;
+  };
+
+  // Helper functions for payment period calculations
+  const getMonthsInPaymentPeriod = (period: string) => {
+    switch (period?.toLowerCase()) {
+      case 'monthly': return 1;
+      case 'quarterly': return 3;
+      case 'biannually':
+      case 'bi-annually': return 6;
+      case 'annually':
+      case 'yearly': return 12;
+      default: return 1;
+    }
+  };
+
+  const getPeriodShortLabel = (period: string) => {
+    const p = period?.toLowerCase();
+    if (p === 'monthly') return 'month';
+    if (p === 'quarterly') return 'quarter';
+    if (p === 'biannually' || p === 'bi-annually') return 'biannual';
+    if (p === 'annually' || p === 'yearly') return 'year';
+    return p || 'period';
   };
 
   // Generate next invoice number
@@ -523,22 +569,32 @@ export default function Invoices() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="custom">Custom Item</SelectItem>
-                            {getAvailableItemsForCustomer().map(availableItem => (
-                              <SelectItem key={availableItem.id} value={availableItem.id}>
-                                <div className="flex items-center gap-2">
-                                  <span>{availableItem.name}</span>
-                                  {availableItem.type === 'rental' && (
-                                    <Badge variant="outline" className="text-xs">Rental</Badge>
-                                  )}
-                                  <span className="text-muted-foreground text-sm">
-                                    ${availableItem.displayPrice.toFixed(2)}
-                                    {availableItem.paymentPeriod && (
-                                      <span>/{availableItem.paymentPeriod.toLowerCase().replace('ly', '')}</span>
+                            {getAvailableItemsForCustomer().map(availableItem => {
+                              if (availableItem.type === 'separator') {
+                                return (
+                                  <div key={availableItem.id} className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted/50">
+                                    {availableItem.name}
+                                  </div>
+                                );
+                              }
+                              
+                              return (
+                                <SelectItem key={availableItem.id} value={availableItem.id}>
+                                  <div className="flex items-center gap-2">
+                                    <span>{availableItem.name}</span>
+                                    {availableItem.type === 'rental' && (
+                                      <Badge variant="outline" className="text-xs">Rental</Badge>
                                     )}
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))}
+                                    <span className="text-muted-foreground text-sm">
+                                      ${availableItem.displayPrice.toFixed(2)}
+                                      {availableItem.paymentPeriod && (
+                                        <span>/{getPeriodShortLabel(availableItem.paymentPeriod)}</span>
+                                      )}
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                         {(!item.productId || item.productId === 'custom') && (
