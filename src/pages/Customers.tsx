@@ -12,40 +12,33 @@ import { Link } from "react-router-dom";
 
 // Your customer database - ready for real data
 const mockCustomers: Array<{
-  id: string,
-  name: string,
-  email: string,
-  phone: string,
-  company: string,
-  address: string,
-  city: string,
-  totalSales: number,
-  lastPurchase: string,
-  status: string
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  address: string;
+  city: string;
+  totalSales: number;
+  lastPurchase: string;
+  status: string;
 }> = [];
-
 export default function Customers() {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-
-  const filteredCustomers = mockCustomers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
+  const filteredCustomers = mockCustomers.filter(customer => customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || customer.company.toLowerCase().includes(searchTerm.toLowerCase()) || customer.email.toLowerCase().includes(searchTerm.toLowerCase()));
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     toast({
       title: "Customer Added Successfully!",
-      description: "New customer has been added to your database.",
+      description: "New customer has been added to your database."
     });
     setShowForm(false);
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -61,8 +54,7 @@ export default function Customers() {
       </div>
 
       {/* Add Customer Form */}
-      {showForm && (
-        <Card className="dashboard-card">
+      {showForm && <Card className="dashboard-card">
           <CardHeader>
             <CardTitle className="text-card-foreground">Add New Customer</CardTitle>
             <CardDescription>
@@ -99,23 +91,13 @@ export default function Customers() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input id="city" placeholder="New York" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="state">State/Province</Label>
-                  <Input id="state" placeholder="NY" />
-                </div>
+                
+                
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes (Optional)</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Any additional notes about this customer..."
-                  className="min-h-[100px]"
-                />
+                <Textarea id="notes" placeholder="Any additional notes about this customer..." className="min-h-[100px]" />
               </div>
 
               <Button type="submit" className="w-full">
@@ -124,8 +106,7 @@ export default function Customers() {
               </Button>
             </form>
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
       {/* Customer List */}
       <Card className="dashboard-card">
@@ -139,18 +120,12 @@ export default function Customers() {
             </div>
             <div className="flex items-center gap-2">
               <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search customers..."
-                className="w-64"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+              <Input placeholder="Search customers..." className="w-64" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {filteredCustomers.length > 0 ? (
-            <Table>
+          {filteredCustomers.length > 0 ? <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Customer</TableHead>
@@ -162,8 +137,7 @@ export default function Customers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.map((customer) => (
-                  <TableRow key={customer.id}>
+                {filteredCustomers.map(customer => <TableRow key={customer.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
@@ -204,12 +178,9 @@ export default function Customers() {
                         {customer.status}
                       </Badge>
                     </TableCell>
-                  </TableRow>
-                ))}
+                  </TableRow>)}
               </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-12">
+            </Table> : <div className="text-center py-12">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
                 <Users className="h-8 w-8 text-muted-foreground" />
               </div>
@@ -223,10 +194,8 @@ export default function Customers() {
                   Add Your First Customer
                 </Link>
               </Button>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 }
