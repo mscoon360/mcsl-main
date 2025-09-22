@@ -168,23 +168,28 @@ export default function Sales() {
     };
 
     // Update product stock for all items (sales and rentals)
-    const updatedProducts = products.map(product => {
-      const totalQtySold = salesItems
-        .filter(item => item.product === product.id)
-        .reduce((sum, i) => sum + i.quantity, 0);
-      if (totalQtySold > 0) {
-        return {
-          ...product,
-          stock: product.stock - totalQtySold,
-          lastSold: saleDate
-        };
-      }
-      return product;
+    setProducts((prevProducts) => {
+      const updated = prevProducts.map((product) => {
+        const totalQtySold = salesItems
+          .filter((item) => item.product === product.id)
+          .reduce((sum, i) => sum + i.quantity, 0);
+        if (totalQtySold > 0) {
+          const newStock = Math.max(0, product.stock - totalQtySold);
+          const status = newStock > 10 ? 'active' : newStock > 0 ? 'low_stock' : 'out_of_stock';
+          return {
+            ...product,
+            stock: newStock,
+            status,
+            lastSold: saleDate,
+          };
+        }
+        return product;
+      });
+      return updated;
     });
 
     // Save updated products and sales
-    setProducts(updatedProducts);
-    setSales(prev => [...prev, newSale]);
+    setSales((prev) => [...prev, newSale]);
     
     toast({
       title: "Sale Logged Successfully!",
