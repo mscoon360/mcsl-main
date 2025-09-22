@@ -25,7 +25,7 @@ export default function Expenditure() {
   const { toast } = useToast();
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [showExpenseForm, setShowExpenseForm] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'working-capital' | 'fixed-capital'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'working-capital' | 'fixed-capital' | 'payroll' | 'tax'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'category'>('date');
   const [newExpense, setNewExpense] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
@@ -61,7 +61,26 @@ export default function Expenditure() {
     return expenditures.filter(expense => {
       const expenseDate = parseISO(expense.date);
       const matchesMonth = isWithinInterval(expenseDate, { start: monthStart, end: monthEnd });
-      const matchesCategory = categoryFilter === 'all' || expense.category === categoryFilter;
+      
+      let matchesCategory = true;
+      switch (categoryFilter) {
+        case 'all':
+          matchesCategory = true;
+          break;
+        case 'working-capital':
+          matchesCategory = expense.category === 'working-capital';
+          break;
+        case 'fixed-capital':
+          matchesCategory = expense.category === 'fixed-capital';
+          break;
+        case 'payroll':
+          matchesCategory = expense.type === 'payroll';
+          break;
+        case 'tax':
+          matchesCategory = expense.type === 'tax';
+          break;
+      }
+      
       return matchesMonth && matchesCategory;
     });
   };
@@ -89,6 +108,22 @@ export default function Expenditure() {
     .reduce((sum, expense) => sum + expense.amount, 0);
   const fixedCapitalTotal = monthExpenses
     .filter(e => e.category === 'fixed-capital')
+    .reduce((sum, expense) => sum + expense.amount, 0);
+  const payrollTotal = expenditures
+    .filter(expense => {
+      const expenseDate = parseISO(expense.date);
+      const monthStart = startOfMonth(parseISO(`${selectedMonth}-01`));
+      const monthEnd = endOfMonth(parseISO(`${selectedMonth}-01`));
+      return isWithinInterval(expenseDate, { start: monthStart, end: monthEnd }) && expense.type === 'payroll';
+    })
+    .reduce((sum, expense) => sum + expense.amount, 0);
+  const taxTotal = expenditures
+    .filter(expense => {
+      const expenseDate = parseISO(expense.date);
+      const monthStart = startOfMonth(parseISO(`${selectedMonth}-01`));
+      const monthEnd = endOfMonth(parseISO(`${selectedMonth}-01`));
+      return isWithinInterval(expenseDate, { start: monthStart, end: monthEnd }) && expense.type === 'tax';
+    })
     .reduce((sum, expense) => sum + expense.amount, 0);
 
   const handleAddExpense = (e: React.FormEvent) => {
@@ -239,6 +274,8 @@ export default function Expenditure() {
                           <SelectItem value="maintenance">Maintenance</SelectItem>
                           <SelectItem value="supplies">Office Supplies</SelectItem>
                           <SelectItem value="fuel">Fuel & Transportation</SelectItem>
+                          <SelectItem value="payroll">Payroll & Benefits</SelectItem>
+                          <SelectItem value="tax">Tax & Compliance</SelectItem>
                           <SelectItem value="other-working">Other Working Capital</SelectItem>
                         </>
                       ) : (
@@ -275,7 +312,7 @@ export default function Expenditure() {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-card-foreground">Total Expenses</CardTitle>
@@ -317,11 +354,37 @@ export default function Expenditure() {
 
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Avg. Expense</CardTitle>
-            <DollarSign className="h-4 w-4 text-purple-500" />
+            <CardTitle className="text-sm font-medium text-card-foreground">Payroll</CardTitle>
+            <DollarSign className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-blue-600">${payrollTotal.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              Employee costs
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="dashboard-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-card-foreground">Tax</CardTitle>
+            <Calendar className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">${taxTotal.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              Compliance costs
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="dashboard-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-card-foreground">Avg. Expense</CardTitle>
+            <DollarSign className="h-4 w-4 text-gray-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-600">
               ${monthExpenses.length > 0 ? (totalExpenses / monthExpenses.length).toFixed(2) : '0.00'}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -340,7 +403,7 @@ export default function Expenditure() {
                 <Filter className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Filter by category:</span>
               </div>
-              <Select value={categoryFilter} onValueChange={(value: 'all' | 'working-capital' | 'fixed-capital') => setCategoryFilter(value)}>
+              <Select value={categoryFilter} onValueChange={(value: 'all' | 'working-capital' | 'fixed-capital' | 'payroll' | 'tax') => setCategoryFilter(value)}>
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>
@@ -348,6 +411,8 @@ export default function Expenditure() {
                   <SelectItem value="all">All Categories</SelectItem>
                   <SelectItem value="working-capital">Working Capital</SelectItem>
                   <SelectItem value="fixed-capital">Fixed Capital</SelectItem>
+                  <SelectItem value="payroll">Payroll Only</SelectItem>
+                  <SelectItem value="tax">Tax Only</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -375,7 +440,10 @@ export default function Expenditure() {
           <CardTitle className="text-card-foreground">Expense Records</CardTitle>
           <CardDescription>
             {sortedExpenses.length} expense{sortedExpenses.length !== 1 ? 's' : ''} recorded for {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
-            {categoryFilter !== 'all' && ` - ${categoryFilter === 'working-capital' ? 'Working Capital' : 'Fixed Capital'} only`}
+            {categoryFilter === 'working-capital' && ' - Working Capital only'}
+            {categoryFilter === 'fixed-capital' && ' - Fixed Capital only'}
+            {categoryFilter === 'payroll' && ' - Payroll expenses only'}
+            {categoryFilter === 'tax' && ' - Tax expenses only'}
           </CardDescription>
         </CardHeader>
         <CardContent>
