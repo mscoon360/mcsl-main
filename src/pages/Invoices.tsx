@@ -96,46 +96,6 @@ export default function Invoices() {
     paymentTerms: 'Net 30'
   });
 
-  // Helper function to calculate payment amount based on contract terms
-  const calculatePaymentAmount = (totalContractValue: number, contractLength: string, paymentPeriod: string) => {
-    if (!contractLength || !paymentPeriod) return totalContractValue;
-
-    // Parse contract length (e.g., "12 months", "2 years", "52 weeks")
-    const contractMatch = contractLength.toLowerCase().match(/(\d+)\s*(month|year|week|day)/);
-    if (!contractMatch) return totalContractValue;
-
-    const contractValue = parseInt(contractMatch[1]);
-    const contractUnit = contractMatch[2];
-
-    // Parse payment period (e.g., "monthly", "weekly", "yearly", "daily")
-    const paymentUnit = paymentPeriod.toLowerCase().replace('ly', '');
-
-    // Calculate how many payment periods are in the contract length
-    let numberOfPayments = 1;
-    
-    if (contractUnit === 'month' && paymentUnit === 'month') {
-      numberOfPayments = contractValue; // 12 months / monthly = 12 payments
-    } else if (contractUnit === 'year' && paymentUnit === 'month') {
-      numberOfPayments = contractValue * 12; // 2 years / monthly = 24 payments
-    } else if (contractUnit === 'year' && paymentUnit === 'week') {
-      numberOfPayments = contractValue * 52; // 1 year / weekly = 52 payments
-    } else if (contractUnit === 'month' && paymentUnit === 'week') {
-      numberOfPayments = Math.round(contractValue * 4.33); // 3 months / weekly = ~13 payments
-    } else if (contractUnit === 'week' && paymentUnit === 'week') {
-      numberOfPayments = contractValue; // 12 weeks / weekly = 12 payments
-    } else if (contractUnit === 'day' && paymentUnit === 'day') {
-      numberOfPayments = contractValue; // 30 days / daily = 30 payments
-    } else if (contractUnit === 'year' && paymentUnit === 'year') {
-      numberOfPayments = contractValue; // 2 years / yearly = 2 payments
-    } else {
-      // Default: assume same unit
-      numberOfPayments = contractValue;
-    }
-
-    // Return total contract value divided by number of payments
-    return totalContractValue / numberOfPayments;
-  };
-
   // Get available items for the selected customer (products + rental items)
   const getAvailableItemsForCustomer = () => {
     const availableItems = [];
@@ -163,18 +123,18 @@ export default function Invoices() {
             sale.items
               .filter(item => item.isRental)
               .map(item => {
-                const paymentAmount = calculatePaymentAmount(item.price, item.contractLength || '', item.paymentPeriod || '');
+                // Use the actual payment amount from the rental agreement
                 const periodDisplay = item.paymentPeriod ? `/${item.paymentPeriod.toLowerCase().replace('ly', '')}` : '';
                 
                 return {
                   id: `rental-${sale.id}-${item.product}`,
                   name: `${item.product} (Rental)`,
-                  price: paymentAmount,
+                  price: item.price, // This is already the payment amount per period
                   type: 'rental',
-                  description: `Rental service for ${item.product}${periodDisplay ? ` - ${periodDisplay} payment` : ''}`,
+                  description: `Rental service for ${item.product}`,
                   contractLength: item.contractLength,
                   paymentPeriod: item.paymentPeriod,
-                  displayPrice: paymentAmount,
+                  displayPrice: item.price, // Use actual payment amount
                   originalPrice: item.price
                 };
               })
