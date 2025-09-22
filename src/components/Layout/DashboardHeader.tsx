@@ -1,4 +1,4 @@
-import { Bell, Search, User, Menu } from "lucide-react";
+import { Bell, Search, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -16,7 +16,7 @@ export function DashboardHeader() {
     <header className="border-b border-border bg-header-bg px-3 md:px-6 py-3 md:py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 md:gap-4">
-          <SidebarTrigger className="md:hidden" />
+          <SidebarTrigger />
           <div className="relative max-w-md hidden sm:block">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input

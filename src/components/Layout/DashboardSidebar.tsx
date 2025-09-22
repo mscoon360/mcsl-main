@@ -95,7 +95,7 @@ export function DashboardSidebar() {
 
   return (
     <Sidebar 
-      className={`${isCollapsed ? "w-16" : "w-64"} md:relative`} 
+      className={`${isCollapsed ? "w-16" : "w-64"}`} 
       collapsible="icon"
       side="left"
     >
@@ -158,7 +158,7 @@ export function DashboardSidebar() {
                                     <NavLink
                                       to={subItem.href}
                                       className={({ isActive: navIsActive }) =>
-                                        `flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors text-sm ${
+                                        `flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-lg transition-colors text-sm ${
                                           isActive(subItem.href)
                                             ? "bg-primary text-primary-foreground"
                                             : "text-sidebar-foreground hover:bg-sidebar-accent"
@@ -192,7 +192,7 @@ export function DashboardSidebar() {
                         <NavLink
                           to={item.href}
                           className={({ isActive: navIsActive }) =>
-                            `flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors text-sm ${
+                            `flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-lg transition-colors text-sm ${
                               isActive(item.href)
                                 ? "bg-primary text-primary-foreground"
                                 : item.disabled
