@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Package, DollarSign, Hash } from "lucide-react";
+import { Plus, Search, Package, DollarSign, Hash, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Link } from "react-router-dom";
@@ -30,6 +30,7 @@ export default function Products() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isRentalProduct, setIsRentalProduct] = useState(false);
   const [products, setProducts] = useLocalStorage<Array<{id:string; name:string; description:string; price:number; sku:string; category:string; stock:number; status:string; lastSold:string;}>>('dashboard-products', []);
+  const [editingProduct, setEditingProduct] = useState<string | null>(null);
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -100,6 +101,57 @@ export default function Products() {
     setShowForm(false);
     setIsRentalProduct(false);
     form.reset();
+  };
+
+  const handleEdit = (product: typeof mockProducts[0]) => {
+    setEditingProduct(product.id);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+
+    const name = String(data.get('name') || '');
+    const sku = String(data.get('sku') || '');
+    const description = String(data.get('description') || '');
+    const category = String(data.get('category') || '');
+    const stock = parseInt(String(data.get('stock') || '0')) || 0;
+    const price = parseFloat(String(data.get('price') || '0')) || 0;
+    const status = stock > 10 ? 'active' : stock > 0 ? 'low_stock' : 'out_of_stock';
+
+    const updatedProduct = {
+      id: editingProduct!,
+      name,
+      description,
+      price,
+      sku,
+      category,
+      stock,
+      status,
+      lastSold: new Date().toISOString(),
+    };
+
+    setProducts(prev => prev.map(product => 
+      product.id === editingProduct ? { ...product, ...updatedProduct } : product
+    ));
+
+    toast({
+      title: "Product Updated Successfully!",
+      description: "Product information has been updated."
+    });
+
+    setEditingProduct(null);
+  };
+
+  const handleDelete = (productId: string) => {
+    if (window.confirm("Are you sure you want to delete this product?")) {
+      setProducts(prev => prev.filter(product => product.id !== productId));
+      toast({
+        title: "Product Deleted",
+        description: "Product has been removed from your catalog."
+      });
+    }
   };
 
   return (
@@ -306,53 +358,148 @@ export default function Products() {
                   <TableHead>Stock</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Last Sold</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredProducts.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                          <Package className="h-5 w-5" />
+                  editingProduct === product.id ? (
+                    <TableRow key={product.id}>
+                      <TableCell colSpan={8} className="p-4">
+                        <form onSubmit={handleEditSubmit} className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor={`edit-name-${product.id}`}>Product Name</Label>
+                              <Input
+                                id={`edit-name-${product.id}`}
+                                name="name"
+                                defaultValue={product.name}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit-sku-${product.id}`}>SKU</Label>
+                              <Input
+                                id={`edit-sku-${product.id}`}
+                                name="sku"
+                                defaultValue={product.sku}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit-category-${product.id}`}>Category</Label>
+                              <Input
+                                id={`edit-category-${product.id}`}
+                                name="category"
+                                defaultValue={product.category}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit-price-${product.id}`}>Price</Label>
+                              <Input
+                                id={`edit-price-${product.id}`}
+                                name="price"
+                                type="number"
+                                step="0.01"
+                                defaultValue={product.price}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit-stock-${product.id}`}>Stock</Label>
+                              <Input
+                                id={`edit-stock-${product.id}`}
+                                name="stock"
+                                type="number"
+                                defaultValue={product.stock}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit-description-${product.id}`}>Description</Label>
+                              <Input
+                                id={`edit-description-${product.id}`}
+                                name="description"
+                                defaultValue={product.description}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button type="submit" size="sm">Save</Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditingProduct(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </form>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <TableRow key={product.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                            <Package className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-semibold">{product.name}</p>
+                            <p className="text-sm text-muted-foreground line-clamp-1">
+                              {product.description}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold">{product.name}</p>
-                          <p className="text-sm text-muted-foreground line-clamp-1">
-                            {product.description}
-                          </p>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Hash className="h-3 w-3 text-muted-foreground" />
+                          <code className="text-sm bg-muted px-2 py-1 rounded">
+                            {product.sku}
+                          </code>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Hash className="h-3 w-3 text-muted-foreground" />
-                        <code className="text-sm bg-muted px-2 py-1 rounded">
-                          {product.sku}
-                        </code>
-                      </div>
-                    </TableCell>
-                    <TableCell>{product.category}</TableCell>
-                    <TableCell className="font-bold">
-                      ${product.price.toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`font-medium ${
-                        product.stock > 10 ? 'text-success' : 
-                        product.stock > 0 ? 'text-warning' : 'text-destructive'
-                      }`}>
-                        {product.stock} units
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusColor(product.status)}>
-                        {getStatusText(product.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(product.lastSold).toLocaleDateString()}
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                      <TableCell>{product.category}</TableCell>
+                      <TableCell className="font-bold">
+                        ${product.price.toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`font-medium ${
+                          product.stock > 10 ? 'text-success' : 
+                          product.stock > 0 ? 'text-warning' : 'text-destructive'
+                        }`}>
+                          {product.stock} units
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusColor(product.status)}>
+                          {getStatusText(product.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(product.lastSold).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(product)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(product.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
                 ))}
               </TableBody>
             </Table>

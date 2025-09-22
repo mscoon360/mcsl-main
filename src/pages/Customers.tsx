@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, User, Mail, Phone, Building, Users } from "lucide-react";
+import { Plus, Search, User, Mail, Phone, Building, Users, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Link } from "react-router-dom";
@@ -31,6 +31,7 @@ export default function Customers() {
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [customers, setCustomers] = useLocalStorage<typeof mockCustomers>('dashboard-customers', []);
+  const [editingCustomer, setEditingCustomer] = useState<string | null>(null);
   const filteredCustomers = customers.filter(customer => customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || customer.company.toLowerCase().includes(searchTerm.toLowerCase()) || customer.email.toLowerCase().includes(searchTerm.toLowerCase()));
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -55,6 +56,50 @@ export default function Customers() {
     });
     form.reset();
     setShowForm(false);
+  };
+
+  const handleEdit = (customer: typeof mockCustomers[0]) => {
+    setEditingCustomer(customer.id);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    
+    const updatedCustomer = {
+      id: editingCustomer!,
+      name: String(data.get("name") || ""),
+      email: String(data.get("email") || ""),
+      phone: String(data.get("phone") || ""),
+      company: String(data.get("company") || ""),
+      address: String(data.get("address") || ""),
+      city: String(data.get("city") || ""),
+      totalSales: 0, // Keep existing value in real implementation
+      lastPurchase: new Date().toISOString(),
+      status: "active"
+    };
+
+    setCustomers(prev => prev.map(customer => 
+      customer.id === editingCustomer ? { ...customer, ...updatedCustomer } : customer
+    ));
+
+    toast({
+      title: "Customer Updated Successfully!",
+      description: "Customer information has been updated."
+    });
+
+    setEditingCustomer(null);
+  };
+
+  const handleDelete = (customerId: string) => {
+    if (window.confirm("Are you sure you want to delete this customer?")) {
+      setCustomers(prev => prev.filter(customer => customer.id !== customerId));
+      toast({
+        title: "Customer Deleted",
+        description: "Customer has been removed from your database."
+      });
+    }
   };
   return <div className="space-y-6">
       {/* Header */}
@@ -151,51 +196,146 @@ export default function Customers() {
                   <TableHead>Total Sales</TableHead>
                   <TableHead>Last Purchase</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.map(customer => <TableRow key={customer.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                          <User className="h-5 w-5" />
+                {filteredCustomers.map(customer => (
+                  editingCustomer === customer.id ? (
+                    <TableRow key={customer.id}>
+                      <TableCell colSpan={7} className="p-4">
+                        <form onSubmit={handleEditSubmit} className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor={`edit-name-${customer.id}`}>Name</Label>
+                              <Input
+                                id={`edit-name-${customer.id}`}
+                                name="name"
+                                defaultValue={customer.name}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit-email-${customer.id}`}>Email</Label>
+                              <Input
+                                id={`edit-email-${customer.id}`}
+                                name="email"
+                                type="email"
+                                defaultValue={customer.email}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit-phone-${customer.id}`}>Phone</Label>
+                              <Input
+                                id={`edit-phone-${customer.id}`}
+                                name="phone"
+                                defaultValue={customer.phone}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit-company-${customer.id}`}>Company</Label>
+                              <Input
+                                id={`edit-company-${customer.id}`}
+                                name="company"
+                                defaultValue={customer.company}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit-address-${customer.id}`}>Address</Label>
+                              <Input
+                                id={`edit-address-${customer.id}`}
+                                name="address"
+                                defaultValue={customer.address}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit-city-${customer.id}`}>City</Label>
+                              <Input
+                                id={`edit-city-${customer.id}`}
+                                name="city"
+                                defaultValue={customer.city}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button type="submit" size="sm">Save</Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditingCustomer(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </form>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <TableRow key={customer.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                            <User className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-semibold">{customer.name}</p>
+                            <p className="text-sm text-muted-foreground">{customer.city}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold">{customer.name}</p>
-                          <p className="text-sm text-muted-foreground">{customer.city}</p>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="h-3 w-3 text-muted-foreground" />
+                            {customer.email}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Phone className="h-3 w-3 text-muted-foreground" />
+                            {customer.phone}
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Mail className="h-3 w-3 text-muted-foreground" />
-                          {customer.email}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Building className="h-4 w-4 text-muted-foreground" />
+                          {customer.company}
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Phone className="h-3 w-3 text-muted-foreground" />
-                          {customer.phone}
+                      </TableCell>
+                      <TableCell className="font-bold text-success">
+                        ${customer.totalSales.toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(customer.lastPurchase).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
+                          {customer.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(customer)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(customer.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building className="h-4 w-4 text-muted-foreground" />
-                        {customer.company}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-bold text-success">
-                      ${customer.totalSales.toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(customer.lastPurchase).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
-                        {customer.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>)}
+                      </TableCell>
+                    </TableRow>
+                  )
+                ))}
               </TableBody>
             </Table> : <div className="text-center py-12">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
