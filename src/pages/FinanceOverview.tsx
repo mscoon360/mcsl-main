@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrendingUp, TrendingDown, DollarSign, Receipt, Calendar, BarChart3, PieChart } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Receipt, Calendar, BarChart3, PieChart, Download } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, parseISO } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell, LineChart, Line, Pie } from "recharts";
+import * as XLSX from 'xlsx';
 
 interface MonthlyFinancials {
   month: string;
@@ -19,6 +21,7 @@ interface MonthlyFinancials {
 }
 
 export default function FinanceOverview() {
+  const { toast } = useToast();
   const [selectedPeriod, setSelectedPeriod] = useState('12-months');
 
   // Get data from localStorage
@@ -171,6 +174,59 @@ export default function FinanceOverview() {
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
+  const handleExportFinancialReport = () => {
+    // Prepare performance data for Excel
+    const performanceExport = performanceData.map(month => ({
+      Month: month.month,
+      Income: month.income,
+      Expenses: month.expenses,
+      'Net Profit': month.net
+    }));
+
+    // Prepare summary data
+    const summaryData = [
+      { Month: '', Income: '', Expenses: '', 'Net Profit': '' },
+      { Month: 'SUMMARY', Income: '', Expenses: '', 'Net Profit': '' },
+      { Month: 'Total Income', Income: periodTotals.income, Expenses: '', 'Net Profit': '' },
+      { Month: 'Total Expenses', Income: '', Expenses: periodTotals.expenses, 'Net Profit': '' },
+      { Month: 'Net Profit/Loss', Income: '', Expenses: '', 'Net Profit': periodTotals.net },
+      { Month: '', Income: '', Expenses: '', 'Net Profit': '' },
+      { Month: 'Current Month Breakdown', Income: '', Expenses: '', 'Net Profit': '' },
+      { Month: 'Sales Income', Income: currentMonthData.salesIncome, Expenses: '', 'Net Profit': '' },
+      { Month: 'Collection Income', Income: currentMonthData.collectionIncome, Expenses: '', 'Net Profit': '' },
+      { Month: 'Working Capital Expenses', Income: '', Expenses: currentMonthData.workingCapitalExpenses, 'Net Profit': '' },
+      { Month: 'Fixed Capital Expenses', Income: '', Expenses: currentMonthData.fixedCapitalExpenses, 'Net Profit': '' }
+    ];
+
+    const finalData = [...performanceExport, ...summaryData];
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(finalData);
+
+    // Set column widths
+    ws['!cols'] = [
+      { width: 15 }, // Month
+      { width: 15 }, // Income
+      { width: 15 }, // Expenses
+      { width: 15 }  // Net Profit
+    ];
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Financial Overview');
+
+    // Generate filename
+    const filename = `Financial_Overview_${selectedPeriod}_${format(new Date(), 'yyyy_MM_dd')}.xlsx`;
+
+    // Save file
+    XLSX.writeFile(wb, filename);
+
+    toast({
+      title: "Financial Report Exported",
+      description: `Complete financial overview downloaded as ${filename}`
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -179,16 +235,22 @@ export default function FinanceOverview() {
           <h1 className="text-3xl font-bold text-foreground">Finance Overview</h1>
           <p className="text-muted-foreground">Comprehensive financial analysis and insights</p>
         </div>
-        <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="6-months">Last 6 Months</SelectItem>
-            <SelectItem value="12-months">Last 12 Months</SelectItem>
-            <SelectItem value="24-months">Last 24 Months</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="6-months">Last 6 Months</SelectItem>
+              <SelectItem value="12-months">Last 12 Months</SelectItem>
+              <SelectItem value="24-months">Last 24 Months</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" onClick={handleExportFinancialReport}>
+            <Download className="h-4 w-4 mr-2" />
+            Export Excel
+          </Button>
+        </div>
       </div>
 
       {/* Current Month Summary */}

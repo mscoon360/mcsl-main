@@ -4,11 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Receipt, Calendar, DollarSign, User, Package, Filter, TrendingUp, FileText } from "lucide-react";
+import { Receipt, Calendar, DollarSign, User, Package, Filter, TrendingUp, FileText, Download } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isWithinInterval, parseISO, differenceInMonths } from "date-fns";
+import * as XLSX from 'xlsx';
 
 export default function Income() {
+  const { toast } = useToast();
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [viewType, setViewType] = useState<'summary' | 'detailed' | 'breakdown'>('summary');
   const [incomeSource, setIncomeSource] = useState<'all' | 'sales' | 'collections'>('all');
@@ -170,6 +173,58 @@ export default function Income() {
 
   const filteredData = getFilteredData();
 
+  const handleExportIncomeReport = () => {
+    // Prepare income transactions for Excel
+    const transactionExport = filteredData.items.map(item => ({
+      Date: format(parseISO(item.date), 'MM/dd/yyyy'),
+      Type: item.type === 'sale' ? 'Product Sale' : 'Rental Payment',
+      Customer: item.customer,
+      Description: item.description,
+      Amount: item.amount,
+      'Payment Method': item.type === 'collection' ? item.paymentMethod || 'N/A' : 'N/A'
+    }));
+
+    // Add summary data
+    const summaryData = [
+      { Date: '', Type: '', Customer: '', Description: '', Amount: '', 'Payment Method': '' },
+      { Date: '', Type: 'SUMMARY', Customer: '', Description: '', Amount: '', 'Payment Method': '' },
+      { Date: '', Type: 'Total Income', Customer: '', Description: '', Amount: incomeData.totalIncome, 'Payment Method': '' },
+      { Date: '', Type: 'Sales Income', Customer: '', Description: '', Amount: incomeData.salesIncome, 'Payment Method': '' },
+      { Date: '', Type: 'Collection Income', Customer: '', Description: '', Amount: incomeData.collectionIncome, 'Payment Method': '' },
+      { Date: '', Type: 'Total Contract Value', Customer: '', Description: '', Amount: totalContractValue, 'Payment Method': '' }
+    ];
+
+    const finalData = [...transactionExport, ...summaryData];
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(finalData);
+
+    // Set column widths
+    ws['!cols'] = [
+      { width: 12 }, // Date
+      { width: 18 }, // Type
+      { width: 20 }, // Customer
+      { width: 40 }, // Description
+      { width: 12 }, // Amount
+      { width: 15 }  // Payment Method
+    ];
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Income Report');
+
+    // Generate filename
+    const filename = `Income_Report_${format(parseISO(`${selectedMonth}-01`), 'yyyy_MM')}.xlsx`;
+
+    // Save file
+    XLSX.writeFile(wb, filename);
+
+    toast({
+      title: "Income Report Exported",
+      description: `Income report downloaded as ${filename}`
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -178,30 +233,34 @@ export default function Income() {
           <h1 className="text-3xl font-bold text-foreground">Income Tracking</h1>
           <p className="text-muted-foreground">Detailed breakdown of all income sources</p>
         </div>
-        <div className="flex gap-2">
-          <Select value={viewType} onValueChange={(value: 'summary' | 'detailed' | 'breakdown') => setViewType(value)}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="summary">Summary</SelectItem>
-              <SelectItem value="detailed">Detailed</SelectItem>
-              <SelectItem value="breakdown">Breakdown</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {monthOptions.map(option => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+          <div className="flex gap-2">
+            <Select value={viewType} onValueChange={(value: 'summary' | 'detailed' | 'breakdown') => setViewType(value)}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="summary">Summary</SelectItem>
+                <SelectItem value="detailed">Detailed</SelectItem>
+                <SelectItem value="breakdown">Breakdown</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={handleExportIncomeReport}>
+              <Download className="h-4 w-4 mr-2" />
+              Export Excel
+            </Button>
+          </div>
       </div>
 
       {/* Filters */}

@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Building, Wrench, Trash2, Calendar, DollarSign, Filter, TrendingDown } from "lucide-react";
+import { Plus, Building, Wrench, Trash2, Calendar, DollarSign, Filter, TrendingDown, Download } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isWithinInterval, parseISO } from "date-fns";
+import * as XLSX from 'xlsx';
 
 interface Expenditure {
   id: string;
@@ -173,6 +174,57 @@ export default function Expenditure() {
     });
   };
 
+  const handleExportToExcel = () => {
+    // Prepare data for Excel export
+    const exportData = sortedExpenses.map(expense => ({
+      Date: format(parseISO(expense.date), 'MM/dd/yyyy'),
+      Category: expense.category === 'working-capital' ? 'Working Capital' : 'Fixed Capital',
+      Type: expense.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      Description: expense.description,
+      Amount: expense.amount
+    }));
+
+    // Add summary row
+    const summaryData = [
+      { Date: '', Category: '', Type: '', Description: '', Amount: '' },
+      { Date: '', Category: 'SUMMARY', Type: '', Description: '', Amount: '' },
+      { Date: '', Category: 'Total Expenses', Type: '', Description: '', Amount: totalExpenses },
+      { Date: '', Category: 'Working Capital', Type: '', Description: '', Amount: workingCapitalTotal },
+      { Date: '', Category: 'Fixed Capital', Type: '', Description: '', Amount: fixedCapitalTotal },
+      { Date: '', Category: 'Payroll', Type: '', Description: '', Amount: payrollTotal },
+      { Date: '', Category: 'Tax', Type: '', Description: '', Amount: taxTotal }
+    ];
+
+    const finalData = [...exportData, ...summaryData];
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(finalData);
+
+    // Set column widths
+    ws['!cols'] = [
+      { width: 12 }, // Date
+      { width: 18 }, // Category
+      { width: 20 }, // Type
+      { width: 40 }, // Description
+      { width: 12 }  // Amount
+    ];
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Expenses');
+
+    // Generate filename with current month
+    const filename = `Expenses_${format(parseISO(`${selectedMonth}-01`), 'yyyy_MM')}.xlsx`;
+
+    // Save file
+    XLSX.writeFile(wb, filename);
+
+    toast({
+      title: "Excel Export Complete",
+      description: `Financial report downloaded as ${filename}`
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -194,6 +246,10 @@ export default function Expenditure() {
               ))}
             </SelectContent>
           </Select>
+          <Button variant="outline" onClick={handleExportToExcel}>
+            <Download className="h-4 w-4 mr-2" />
+            Export Excel
+          </Button>
           <Button onClick={() => setShowExpenseForm(!showExpenseForm)}>
             <Plus className="h-4 w-4 mr-2" />
             {showExpenseForm ? "Cancel" : "Add Expense"}
