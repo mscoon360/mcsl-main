@@ -5,7 +5,8 @@ import {
   Package, 
   FileText, 
   Settings,
-  Building2
+  Building2,
+  Truck
 } from "lucide-react";
 import {
   Sidebar,
@@ -28,6 +29,7 @@ const navigation = [
       { name: "Customers", href: "/customers", icon: Users },
       { name: "Products", href: "/products", icon: Package },
       { name: "Rental Agreements", href: "/rental-agreements", icon: FileText },
+      { name: "Fulfillment", href: "/fulfillment", icon: Truck },
     ]
   },
   {
