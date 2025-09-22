@@ -28,6 +28,8 @@ export default function RentalPayments() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<'date' | 'month' | 'year'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Get sales data to extract rental agreements
   const [sales] = useLocalStorage<Array<{
@@ -272,36 +274,81 @@ export default function RentalPayments() {
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Filters and Sorting */}
       <Card className="dashboard-card">
         <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <Label>Search Payments</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by customer or product..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <Label>Search Payments</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by customer or product..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              
+              <div className="w-full md:w-48">
+                <Label>Filter by Status</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
+                    <SelectItem value="due">Due</SelectItem>
+                    <SelectItem value="overdue">Overdue</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             
-            <div className="w-full md:w-48">
-              <Label>Filter by Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="due">Due</SelectItem>
-                  <SelectItem value="overdue">Overdue</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="w-full md:w-48">
+                <Label>Sort By</Label>
+                <Select value={sortBy} onValueChange={(value: 'date' | 'month' | 'year') => setSortBy(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date">Due Date</SelectItem>
+                    <SelectItem value="month">Month</SelectItem>
+                    <SelectItem value="year">Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="w-full md:w-48">
+                <Label>Sort Order</Label>
+                <Select value={sortOrder} onValueChange={(value: 'asc' | 'desc') => setSortOrder(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asc">Ascending</SelectItem>
+                    <SelectItem value="desc">Descending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-end">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSortBy('date');
+                    setSortOrder('asc');
+                    setStatusFilter('all');
+                    setSearchTerm('');
+                  }}
+                >
+                  Reset Filters
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
