@@ -38,6 +38,12 @@ export default function Products() {
     product.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Calculate statistics
+  const totalProducts = products.length;
+  const inStockProducts = products.filter(p => p.status === 'active').length;
+  const lowStockProducts = products.filter(p => p.status === 'low_stock').length;
+  const averagePrice = products.length > 0 ? products.reduce((sum, p) => sum + p.price, 0) / products.length : 0;
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -267,9 +273,9 @@ export default function Products() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{totalProducts}</div>
             <p className="text-xs text-muted-foreground">
-              Start building your catalog
+              {totalProducts === 0 ? "Start building your catalog" : "Products in your catalog"}
             </p>
           </CardContent>
         </Card>
@@ -280,9 +286,9 @@ export default function Products() {
             <Package className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">0</div>
+            <div className="text-2xl font-bold text-success">{inStockProducts}</div>
             <p className="text-xs text-muted-foreground">
-              Add products to track inventory
+              {totalProducts === 0 ? "Add products to track inventory" : "Products available"}
             </p>
           </CardContent>
         </Card>
@@ -293,9 +299,9 @@ export default function Products() {
             <Package className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">0</div>
+            <div className="text-2xl font-bold text-warning">{lowStockProducts}</div>
             <p className="text-xs text-muted-foreground">
-              Inventory tracking ready
+              {totalProducts === 0 ? "Inventory tracking ready" : "Need restocking"}
             </p>
           </CardContent>
         </Card>
@@ -306,9 +312,9 @@ export default function Products() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$0.00</div>
+            <div className="text-2xl font-bold">${averagePrice.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              Start with your first product
+              {totalProducts === 0 ? "Start with your first product" : "Average product price"}
             </p>
           </CardContent>
         </Card>
