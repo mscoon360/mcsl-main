@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Receipt, Calendar, DollarSign, User, Package, Filter, TrendingUp } from "lucide-react";
+import { Receipt, Calendar, DollarSign, User, Package, Filter, TrendingUp, FileText } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isWithinInterval, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isWithinInterval, parseISO, differenceInMonths } from "date-fns";
 
 export default function Income() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
@@ -23,6 +23,10 @@ export default function Income() {
       quantity: number;
       price: number;
       isRental?: boolean;
+      contractLength?: string;
+      paymentPeriod?: string;
+      startDate?: Date;
+      endDate?: Date;
     }>;
     date: string;
     status: string;
@@ -89,6 +93,24 @@ export default function Income() {
   };
 
   const incomeData = calculateIncomeData(selectedMonth);
+
+  // Calculate total contract value from all rental agreements
+  const calculateTotalContractValue = () => {
+    return sales
+      .flatMap(sale => 
+        sale.items
+          .filter(item => item.isRental && item.startDate && item.endDate)
+          .map(item => {
+            const startDate = new Date(item.startDate!);
+            const endDate = new Date(item.endDate!);
+            const monthsInContract = differenceInMonths(endDate, startDate);
+            return item.price * monthsInContract * item.quantity;
+          })
+      )
+      .reduce((sum, value) => sum + value, 0);
+  };
+
+  const totalContractValue = calculateTotalContractValue();
 
   // Filter data based on income source
   const getFilteredData = () => {
@@ -205,7 +227,7 @@ export default function Income() {
       </Card>
 
       {/* Income Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-card-foreground">Total Income</CardTitle>
@@ -247,11 +269,24 @@ export default function Income() {
 
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Avg. Transaction</CardTitle>
-            <Calendar className="h-4 w-4 text-purple-500" />
+            <CardTitle className="text-sm font-medium text-card-foreground">Total Contract Value</CardTitle>
+            <FileText className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-purple-600">${totalContractValue.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              All rental agreements
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="dashboard-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-card-foreground">Avg. Transaction</CardTitle>
+            <Calendar className="h-4 w-4 text-orange-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
               ${filteredData.items.length > 0 ? (filteredData.total / filteredData.items.length).toFixed(2) : '0.00'}
             </div>
             <p className="text-xs text-muted-foreground">
