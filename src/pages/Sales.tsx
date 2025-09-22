@@ -28,12 +28,12 @@ const mockSales: Array<{
 export default function Sales() {
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
-  const [salesItems, setSalesItems] = useState([
-    { product: "", quantity: 1, price: 0, total: 0 }
+const [salesItems, setSalesItems] = useState([
+    { product: "", quantity: 1, price: 0, total: 0, isRental: false, contractLength: "", paymentPeriod: "monthly" }
   ]);
 
   const addSalesItem = () => {
-    setSalesItems([...salesItems, { product: "", quantity: 1, price: 0, total: 0 }]);
+    setSalesItems([...salesItems, { product: "", quantity: 1, price: 0, total: 0, isRental: false, contractLength: "", paymentPeriod: "monthly" }]);
   };
 
   const updateSalesItem = (index: number, field: string, value: any) => {
@@ -62,7 +62,7 @@ export default function Sales() {
       description: `Total sale amount: $${calculateGrandTotal().toFixed(2)}`,
     });
     setShowForm(false);
-    setSalesItems([{ product: "", quantity: 1, price: 0, total: 0 }]);
+    setSalesItems([{ product: "", quantity: 1, price: 0, total: 0, isRental: false, contractLength: "", paymentPeriod: "monthly" }]);
   };
 
   return (
@@ -135,76 +135,119 @@ export default function Sales() {
                 <div className="space-y-3">
                   {salesItems.map((item, index) => (
                     <Card key={index} className="p-4">
-                      <div className="grid grid-cols-5 gap-4 items-end">
-                        <div className="space-y-2">
-                          <Label>Product</Label>
-                          <Select
-                            value={item.product}
-                            onValueChange={(value) => {
-                              const product = mockProducts.find(p => p.id === value);
-                              updateSalesItem(index, 'product', value);
-                              if (product) {
-                                updateSalesItem(index, 'price', product.price);
-                              }
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select product" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {mockProducts.length === 0 ? (
-                                <div className="p-2 text-center">
-                                  <p className="text-sm text-muted-foreground">No products available</p>
-                                  <Link to="/products" className="text-sm text-primary hover:underline">
-                                    Add products first
-                                  </Link>
-                                </div>
-                              ) : (
-                                mockProducts.map((product) => (
-                                  <SelectItem key={product.id} value={product.id}>
-                                    {product.name} - ${product.price}
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Quantity</Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) => updateSalesItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Unit Price</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={item.price}
-                            onChange={(e) => updateSalesItem(index, 'price', parseFloat(e.target.value) || 0)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Total</Label>
-                          <div className="font-bold text-lg text-success">
-                            ${item.total.toFixed(2)}
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-5 gap-4 items-end">
+                          <div className="space-y-2">
+                            <Label>Product</Label>
+                            <Select
+                              value={item.product}
+                              onValueChange={(value) => {
+                                const product = mockProducts.find(p => p.id === value);
+                                updateSalesItem(index, 'product', value);
+                                if (product) {
+                                  updateSalesItem(index, 'price', product.price);
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select product" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {mockProducts.length === 0 ? (
+                                  <div className="p-2 text-center">
+                                    <p className="text-sm text-muted-foreground">No products available</p>
+                                    <Link to="/products" className="text-sm text-primary hover:underline">
+                                      Add products first
+                                    </Link>
+                                  </div>
+                                ) : (
+                                  mockProducts.map((product) => (
+                                    <SelectItem key={product.id} value={product.id}>
+                                      {product.name} - ${product.price}
+                                    </SelectItem>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Quantity</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => updateSalesItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Unit Price</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={item.price}
+                              onChange={(e) => updateSalesItem(index, 'price', parseFloat(e.target.value) || 0)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Total</Label>
+                            <div className="font-bold text-lg text-success">
+                              ${item.total.toFixed(2)}
+                            </div>
+                          </div>
+                          <div>
+                            {salesItems.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => removeSalesItem(index)}
+                              >
+                                Remove
+                              </Button>
+                            )}
                           </div>
                         </div>
-                        <div>
-                          {salesItems.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => removeSalesItem(index)}
-                            >
-                              Remove
-                            </Button>
-                          )}
+                        
+                        <div className="flex items-center space-x-2">
+                          <input 
+                            type="checkbox" 
+                            id={`rental-${index}`} 
+                            checked={item.isRental}
+                            onChange={(e) => updateSalesItem(index, 'isRental', e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300" 
+                          />
+                          <Label htmlFor={`rental-${index}`}>Rental Agreement</Label>
                         </div>
+                        
+                        {item.isRental && (
+                          <div className="grid grid-cols-2 gap-4 p-3 bg-muted rounded-lg">
+                            <div className="space-y-2">
+                              <Label>Contract Length</Label>
+                              <Input
+                                placeholder="e.g., 12 months, 2 years"
+                                value={item.contractLength}
+                                onChange={(e) => updateSalesItem(index, 'contractLength', e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Payment Period</Label>
+                              <Select
+                                value={item.paymentPeriod}
+                                onValueChange={(value) => updateSalesItem(index, 'paymentPeriod', value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="monthly">Monthly</SelectItem>
+                                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                                  <SelectItem value="biannually">Bi-annually</SelectItem>
+                                  <SelectItem value="annually">Annually</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </Card>
                   ))}
