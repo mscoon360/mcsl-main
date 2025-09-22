@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, CreditCard, Calendar, DollarSign, User, CheckCircle, AlertCircle, Clock } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
-import { format, addMonths, addDays, differenceInDays, parseISO } from "date-fns";
+import { format, addMonths, addDays, differenceInDays, parseISO, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 
 interface PaymentSchedule {
   id: string;
@@ -230,6 +230,37 @@ export default function RentalPayments() {
     })
     .reduce((sum, p) => sum + p.amount, 0);
 
+  // Generate next 12 months and group payments by month
+  const generateMonthlyView = () => {
+    const months = [];
+    const currentDate = new Date();
+    
+    for (let i = 0; i < 12; i++) {
+      const monthDate = addMonths(currentDate, i);
+      const monthKey = format(monthDate, 'yyyy-MM');
+      const monthPayments = filteredPayments.filter(payment => {
+        const paymentDate = new Date(payment.dueDate);
+        return isSameMonth(paymentDate, monthDate);
+      });
+      
+      months.push({
+        date: monthDate,
+        monthKey,
+        title: format(monthDate, 'MMMM yyyy'),
+        payments: monthPayments,
+        totalAmount: monthPayments.reduce((sum, p) => sum + p.amount, 0),
+        paidAmount: monthPayments.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0),
+        overdueCount: monthPayments.filter(p => p.status === 'overdue').length,
+        dueCount: monthPayments.filter(p => p.status === 'due').length,
+        paidCount: monthPayments.filter(p => p.status === 'paid').length
+      });
+    }
+    
+    return months;
+  };
+
+  const monthlyView = generateMonthlyView();
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -385,97 +416,136 @@ export default function RentalPayments() {
         </CardContent>
       </Card>
 
-      {/* Payment Schedule Table */}
-      <Card className="dashboard-card">
-        <CardHeader>
-          <CardTitle className="text-card-foreground">Payment Schedule</CardTitle>
-          <CardDescription>
-            Track rental payment due dates and payment status
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {filteredPayments.length === 0 ? (
-            <div className="text-center py-12">
-              <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">No Payments Found</h3>
-              <p className="text-muted-foreground mb-4">
-                {paymentSchedules.length === 0 
-                  ? "Payment schedules will be generated from rental agreements." 
-                  : "No payments match your search criteria."
-                }
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Paid Date</TableHead>
-                    <TableHead>Method</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPayments.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          {payment.customer}
-                        </div>
-                      </TableCell>
-                      <TableCell>{payment.product}</TableCell>
-                      <TableCell className="font-bold">${payment.amount.toFixed(2)}</TableCell>
-                      <TableCell>{format(new Date(payment.dueDate), 'MMM dd, yyyy')}</TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(payment.status)}>
-                          <div className="flex items-center gap-1">
-                            {getStatusIcon(payment.status)}
-                            {payment.status}
-                          </div>
+      {/* Monthly Payment Schedule */}
+      <div className="space-y-6">
+        {filteredPayments.length === 0 ? (
+          <Card className="dashboard-card">
+            <CardContent className="pt-6">
+              <div className="text-center py-12">
+                <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">No Payments Found</h3>
+                <p className="text-muted-foreground mb-4">
+                  {paymentSchedules.length === 0 
+                    ? "Payment schedules will be generated from rental agreements." 
+                    : "No payments match your search criteria."
+                  }
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          monthlyView.map((month) => (
+            <Card key={month.monthKey} className="dashboard-card">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl text-card-foreground flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      {month.title}
+                    </CardTitle>
+                    <CardDescription>
+                      {month.payments.length} payment{month.payments.length !== 1 ? 's' : ''} scheduled
+                      {month.totalAmount > 0 && ` • $${month.totalAmount.toFixed(2)} total`}
+                    </CardDescription>
+                  </div>
+                  {month.payments.length > 0 && (
+                    <div className="flex gap-2">
+                      {month.paidCount > 0 && (
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          {month.paidCount} paid
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {payment.paidDate ? format(new Date(payment.paidDate), 'MMM dd, yyyy') : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {payment.paymentMethod ? (
-                          <Badge variant="outline">{payment.paymentMethod}</Badge>
-                        ) : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {payment.status !== 'paid' ? (
-                          <div className="flex gap-2">
+                      )}
+                      {month.dueCount > 0 && (
+                        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          {month.dueCount} due
+                        </Badge>
+                      )}
+                      {month.overdueCount > 0 && (
+                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                          {month.overdueCount} overdue
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              
+              {month.payments.length > 0 && (
+                <CardContent>
+                  <div className="space-y-3">
+                    {month.payments.map((payment) => (
+                      <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg bg-card/50">
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium text-card-foreground">{payment.customer}</span>
+                            <span className="text-muted-foreground">•</span>
+                            <span className="text-sm text-muted-foreground">{payment.product}</span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm">
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-bold text-card-foreground">${payment.amount.toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">Due {format(new Date(payment.dueDate), 'MMM dd')}</span>
+                            </div>
+                            {payment.paidDate && (
+                              <div className="flex items-center gap-1">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <span className="text-muted-foreground">Paid {format(new Date(payment.paidDate), 'MMM dd')}</span>
+                              </div>
+                            )}
+                            {payment.paymentMethod && (
+                              <Badge variant="outline" className="text-xs">{payment.paymentMethod}</Badge>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <Badge className={getStatusColor(payment.status)}>
+                            <div className="flex items-center gap-1">
+                              {getStatusIcon(payment.status)}
+                              {payment.status}
+                            </div>
+                          </Badge>
+                          
+                          {payment.status !== 'paid' ? (
                             <Button
                               size="sm"
                               onClick={() => markPayment(payment.id, 'paid', 'cash')}
                             >
                               Mark Paid
                             </Button>
-                          </div>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => markPayment(payment.id, 'due')}
-                          >
-                            Mark Unpaid
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => markPayment(payment.id, 'due')}
+                            >
+                              Mark Unpaid
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              )}
+              
+              {month.payments.length === 0 && (
+                <CardContent>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No payments scheduled for this month</p>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 }
