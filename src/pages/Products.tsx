@@ -30,6 +30,8 @@ export default function Products() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isRentalProduct, setIsRentalProduct] = useState(false);
   const [isRentalOnly, setIsRentalOnly] = useState(false);
+  const [editIsRentalProduct, setEditIsRentalProduct] = useState(false);
+  const [editIsRentalOnly, setEditIsRentalOnly] = useState(false);
   const [products, setProducts] = useLocalStorage<Array<{id:string; name:string; description:string; price:number; sku:string; category:string; stock:number; status:string; lastSold:string; isRental?:boolean; isRentalOnly?:boolean;}>>('dashboard-products', []);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
 
@@ -115,6 +117,9 @@ export default function Products() {
 
   const handleEdit = (product: typeof mockProducts[0]) => {
     setEditingProduct(product.id);
+    const currentProduct = products.find(p => p.id === product.id);
+    setEditIsRentalProduct(currentProduct?.isRental || false);
+    setEditIsRentalOnly(currentProduct?.isRentalOnly || false);
   };
 
   const handleEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -140,6 +145,8 @@ export default function Products() {
       stock,
       status,
       lastSold: new Date().toISOString(),
+      isRental: editIsRentalProduct,
+      isRentalOnly: editIsRentalOnly,
     };
 
     setProducts(prev => prev.map(product => 
@@ -152,6 +159,8 @@ export default function Products() {
     });
 
     setEditingProduct(null);
+    setEditIsRentalProduct(false);
+    setEditIsRentalOnly(false);
   };
 
   const handleDelete = (productId: string) => {
@@ -434,7 +443,36 @@ export default function Products() {
                                 defaultValue={product.description}
                               />
                             </div>
+                           </div>
+                          
+                          <div className="space-y-4">
+                            <div className="flex items-center space-x-2">
+                              <input 
+                                type="checkbox" 
+                                id={`edit-isRental-${product.id}`} 
+                                name="isRental"
+                                checked={editIsRentalProduct}
+                                onChange={(e) => setEditIsRentalProduct(e.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300" 
+                              />
+                              <Label htmlFor={`edit-isRental-${product.id}`}>Rental Product</Label>
+                            </div>
+                            
+                            {editIsRentalProduct && (
+                              <div className="flex items-center space-x-2">
+                                <input 
+                                  type="checkbox" 
+                                  id={`edit-isRentalOnly-${product.id}`} 
+                                  name="isRentalOnly"
+                                  checked={editIsRentalOnly}
+                                  onChange={(e) => setEditIsRentalOnly(e.target.checked)}
+                                  className="h-4 w-4 rounded border-gray-300" 
+                                />
+                                <Label htmlFor={`edit-isRentalOnly-${product.id}`}>Rental Only (not available for direct sales)</Label>
+                              </div>
+                            )}
                           </div>
+                          
                           <div className="flex gap-2">
                             <Button type="submit" size="sm">Save</Button>
                             <Button
