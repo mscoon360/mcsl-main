@@ -243,7 +243,7 @@ export default function Sales() {
                           updateSalesItem(index, 'price', product.price);
                         }
                       }}>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Select product" />
                               </SelectTrigger>
                               <SelectContent>
