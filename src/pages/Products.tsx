@@ -29,7 +29,8 @@ export default function Products() {
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isRentalProduct, setIsRentalProduct] = useState(false);
-  const [products, setProducts] = useLocalStorage<Array<{id:string; name:string; description:string; price:number; sku:string; category:string; stock:number; status:string; lastSold:string;}>>('dashboard-products', []);
+  const [isRentalOnly, setIsRentalOnly] = useState(false);
+  const [products, setProducts] = useLocalStorage<Array<{id:string; name:string; description:string; price:number; sku:string; category:string; stock:number; status:string; lastSold:string; isRental?:boolean; isRentalOnly?:boolean;}>>('dashboard-products', []);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
 
   const filteredProducts = products.filter(product =>
@@ -96,6 +97,8 @@ export default function Products() {
       stock,
       status,
       lastSold: new Date().toISOString(),
+      isRental: isRentalProduct,
+      isRentalOnly: isRentalOnly,
     };
 
     setProducts((prev) => [...prev, newProduct]);
@@ -106,6 +109,7 @@ export default function Products() {
     });
     setShowForm(false);
     setIsRentalProduct(false);
+    setIsRentalOnly(false);
     form.reset();
   };
 
@@ -239,9 +243,22 @@ export default function Products() {
                 </div>
                 
                 {isRentalProduct && (
-                  <div className="space-y-2">
-                    <Label htmlFor="rentalPrice">Rental Price *</Label>
-                    <Input id="rentalPrice" name="rentalPrice" type="number" step="0.01" placeholder="50.00" required={isRentalProduct} />
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="rentalPrice">Rental Price *</Label>
+                      <Input id="rentalPrice" name="rentalPrice" type="number" step="0.01" placeholder="50.00" required={isRentalProduct} />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input 
+                        type="checkbox" 
+                        id="isRentalOnly" 
+                        name="isRentalOnly"
+                        checked={isRentalOnly}
+                        onChange={(e) => setIsRentalOnly(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300" 
+                      />
+                      <Label htmlFor="isRentalOnly">Rental Only (not available for direct sales)</Label>
+                    </div>
                   </div>
                 )}
               </div>

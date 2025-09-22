@@ -2,11 +2,18 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, FileText, Calendar, DollarSign, User } from "lucide-react";
+import { Search, FileText, Calendar, DollarSign, User, Plus, CalendarIcon } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { format, differenceInMonths } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface RentalAgreement {
   id: string;
@@ -24,10 +31,46 @@ interface RentalAgreement {
 }
 
 export default function RentalAgreements() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState("");
+  const [contractLength, setContractLength] = useState("");
+  const [paymentPeriod, setPaymentPeriod] = useState("monthly");
+  const [startDate, setStartDate] = useState<Date>();
+  const [quantity, setQuantity] = useState(1);
   
+  // Get customers and products from localStorage
+  const [customers] = useLocalStorage<Array<{
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    company: string;
+    address: string;
+    city: string;
+    totalSales: number;
+    lastPurchase: string;
+    status: string;
+  }>>('dashboard-customers', []);
+
+  const [products, setProducts] = useLocalStorage<Array<{
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    sku: string;
+    category: string;
+    stock: number;
+    status: string;
+    lastSold: string;
+    isRental?: boolean;
+    isRentalOnly?: boolean;
+  }>>('dashboard-products', []);
+
   // Get sales data and filter for rental agreements
-  const [sales] = useLocalStorage<Array<{
+  const [sales, setSales] = useLocalStorage<Array<{
     id: string;
     customer: string;
     total: number;
@@ -63,13 +106,16 @@ export default function RentalAgreements() {
           startDate,
           endDate,
           monthlyAmount: item.price,
-          totalValue: item.price * monthsInContract, // Monthly price * total months
+          totalValue: item.price * monthsInContract,
           status: endDate > new Date() ? 'active' : 'expired' as 'active' | 'expired',
           saleId: sale.id,
           saleDate: sale.date
         };
       })
   );
+
+  // Filter products for rental (rental products or rental-only products)
+  const rentalProducts = products.filter(p => p.isRental || p.isRentalOnly);
 
   // Filter agreements based on search term
   const filteredAgreements = rentalAgreements.filter(agreement =>
@@ -92,6 +138,110 @@ export default function RentalAgreements() {
     .filter(a => a.status === 'active')
     .reduce((sum, a) => sum + a.monthlyAmount, 0);
 
+  const calculateEndDate = (start: Date, contractLength: string) => {
+    const [number, unit] = contractLength.split(' ');
+    if (number && unit && start) {
+      const endDate = new Date(start);
+      if (unit === 'months') {
+        endDate.setMonth(endDate.getMonth() + parseInt(number));
+      } else if (unit === 'years') {
+        endDate.setFullYear(endDate.getFullYear() + parseInt(number));
+      }
+      return endDate;
+    }
+    return undefined;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedCustomer || !selectedProduct || !contractLength || !startDate) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const product = products.find(p => p.id === selectedProduct);
+    if (!product) {
+      toast({
+        title: "Product Not Found",
+        description: "Selected product is not available.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check stock availability
+    if (product.stock < quantity) {
+      toast({
+        title: "Insufficient Stock",
+        description: "Not enough stock available for this rental.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const endDate = calculateEndDate(startDate, contractLength);
+    if (!endDate) {
+      toast({
+        title: "Invalid Contract Length",
+        description: "Please select a valid contract length.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const customer = customers.find(c => c.id === selectedCustomer);
+    const monthsInContract = differenceInMonths(endDate, startDate);
+    const totalValue = product.price * monthsInContract * quantity;
+
+    // Create new rental agreement as a sale entry
+    const newSale = {
+      id: Date.now().toString(),
+      customer: customer?.name || "Unknown Customer",
+      total: totalValue,
+      items: [{
+        product: product.name,
+        quantity: quantity,
+        price: product.price,
+        isRental: true,
+        contractLength: contractLength,
+        paymentPeriod: paymentPeriod,
+        startDate: startDate,
+        endDate: endDate
+      }],
+      date: new Date().toISOString().split('T')[0],
+      status: "completed"
+    };
+
+    // Update product stock
+    const updatedProducts = products.map(p => 
+      p.id === selectedProduct 
+        ? { ...p, stock: p.stock - quantity, lastSold: new Date().toISOString().split('T')[0] }
+        : p
+    );
+
+    setProducts(updatedProducts);
+    setSales(prev => [...prev, newSale]);
+
+    toast({
+      title: "Rental Agreement Created!",
+      description: `Rental agreement for ${product.name} has been created successfully.`
+    });
+
+    // Reset form
+    setShowForm(false);
+    setSelectedCustomer("");
+    setSelectedProduct("");
+    setContractLength("");
+    setPaymentPeriod("monthly");
+    setStartDate(undefined);
+    setQuantity(1);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -100,7 +250,197 @@ export default function RentalAgreements() {
           <h1 className="text-3xl font-bold text-foreground">Rental Agreements</h1>
           <p className="text-muted-foreground">Manage and track all rental agreements</p>
         </div>
+        <Button onClick={() => setShowForm(!showForm)}>
+          <Plus className="h-4 w-4 mr-2" />
+          {showForm ? "Cancel" : "New Rental Agreement"}
+        </Button>
       </div>
+
+      {/* New Rental Agreement Form */}
+      {showForm && (
+        <Card className="dashboard-card">
+          <CardHeader>
+            <CardTitle className="text-card-foreground">Create New Rental Agreement</CardTitle>
+            <CardDescription>
+              Set up a new rental agreement for a customer.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="customer">Customer *</Label>
+                  <Select value={selectedCustomer} onValueChange={setSelectedCustomer} required disabled={customers.length === 0}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={customers.length === 0 ? "Add customers first" : "Select customer"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.map(customer => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.name} - {customer.company}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {customers.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      <Link to="/customers" className="text-primary hover:underline">
+                        Add customers first
+                      </Link> to create rental agreements.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="product">Product *</Label>
+                  <Select value={selectedProduct} onValueChange={setSelectedProduct} required disabled={rentalProducts.length === 0}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={rentalProducts.length === 0 ? "No rental products available" : "Select product"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {rentalProducts.map(product => (
+                        <SelectItem key={product.id} value={product.id}>
+                          {product.name} - ${product.price}/month
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {rentalProducts.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      <Link to="/products" className="text-primary hover:underline">
+                        Add rental products first
+                      </Link> to create rental agreements.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Quantity *</Label>
+                  <Input 
+                    type="number" 
+                    min="1" 
+                    value={quantity} 
+                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)} 
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Contract Length *</Label>
+                  <div className="flex gap-2">
+                    <Select value={contractLength.split(' ')[0] || ""} onValueChange={(value) => {
+                      const unit = contractLength.split(' ')[1] || 'months';
+                      setContractLength(`${value} ${unit}`);
+                    }}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue placeholder="Qty" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24, 36].map(num => (
+                          <SelectItem key={num} value={num.toString()}>
+                            {num}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={contractLength.split(' ')[1] || "months"} onValueChange={(value) => {
+                      const number = contractLength.split(' ')[0] || '1';
+                      setContractLength(`${number} ${value}`);
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="months">Months</SelectItem>
+                        <SelectItem value="years">Years</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Payment Period *</Label>
+                  <Select value={paymentPeriod} onValueChange={setPaymentPeriod}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="quarterly">Quarterly</SelectItem>
+                      <SelectItem value="biannually">Bi-annually</SelectItem>
+                      <SelectItem value="annually">Annually</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Contract Start Date *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Contract End Date</Label>
+                  <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
+                    {startDate && contractLength ? format(calculateEndDate(startDate, contractLength) || new Date(), "PPP") : "Auto-calculated"}
+                  </div>
+                </div>
+              </div>
+
+              {selectedProduct && startDate && contractLength && (
+                <div className="p-4 bg-muted rounded-lg">
+                  <h4 className="font-semibold mb-2">Agreement Summary</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Monthly Amount:</span>
+                      <div className="font-bold">${products.find(p => p.id === selectedProduct)?.price || 0}/month</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Total Contract Value:</span>
+                      <div className="font-bold text-success">
+                        ${(() => {
+                          const product = products.find(p => p.id === selectedProduct);
+                          if (product && startDate && contractLength) {
+                            const endDate = calculateEndDate(startDate, contractLength);
+                            if (endDate) {
+                              const months = differenceInMonths(endDate, startDate);
+                              return (product.price * months * quantity).toFixed(2);
+                            }
+                          }
+                          return '0.00';
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Button type="submit" className="w-full">
+                Create Rental Agreement
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -180,7 +520,7 @@ export default function RentalAgreements() {
               <h3 className="text-lg font-semibold text-foreground mb-2">No Rental Agreements Found</h3>
               <p className="text-muted-foreground mb-4">
                 {rentalAgreements.length === 0 
-                  ? "Create your first rental agreement in the Sales Log." 
+                  ? "Create your first rental agreement using the form above." 
                   : "No agreements match your search criteria."
                 }
               </p>
