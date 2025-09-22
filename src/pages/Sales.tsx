@@ -89,30 +89,34 @@ export default function Sales() {
     }]);
   };
   const updateSalesItem = (index: number, field: string, value: any) => {
-    const updated = [...salesItems];
-    updated[index] = {
-      ...updated[index],
-      [field]: value
-    };
-    if (field === 'quantity' || field === 'price') {
-      updated[index].total = updated[index].quantity * updated[index].price;
-    }
+    setSalesItems((prev) => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        [field]: value,
+      };
 
-    // Calculate end date when start date or contract length changes
-    if ((field === 'startDate' || field === 'contractLength') && updated[index].startDate && updated[index].contractLength) {
-      const startDate = updated[index].startDate;
-      const [number, unit] = updated[index].contractLength.split(' ');
-      if (number && unit) {
-        const endDate = new Date(startDate);
-        if (unit === 'months') {
-          endDate.setMonth(endDate.getMonth() + parseInt(number));
-        } else if (unit === 'years') {
-          endDate.setFullYear(endDate.getFullYear() + parseInt(number));
-        }
-        updated[index].endDate = endDate;
+      if (field === 'quantity' || field === 'price') {
+        updated[index].total = updated[index].quantity * updated[index].price;
       }
-    }
-    setSalesItems(updated);
+
+      // Calculate end date when start date or contract length changes
+      if ((field === 'startDate' || field === 'contractLength') && updated[index].startDate && updated[index].contractLength) {
+        const startDate = updated[index].startDate;
+        const [number, unit] = updated[index].contractLength.split(' ');
+        if (number && unit) {
+          const endDate = new Date(startDate);
+          if (unit === 'months') {
+            endDate.setMonth(endDate.getMonth() + parseInt(number));
+          } else if (unit === 'years') {
+            endDate.setFullYear(endDate.getFullYear() + parseInt(number));
+          }
+          updated[index].endDate = endDate;
+        }
+      }
+
+      return updated;
+    });
   };
   const removeSalesItem = (index: number) => {
     setSalesItems(salesItems.filter((_, i) => i !== index));
