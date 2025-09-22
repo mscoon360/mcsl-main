@@ -10,24 +10,46 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-
-// Your real data - start by adding customers and products
-const mockCustomers: Array<{id: string, name: string, email: string}> = [];
-
-const mockProducts: Array<{id: string, name: string, price: number, sku: string}> = [];
-
-const mockSales: Array<{
-  id: string,
-  customer: string,
-  total: number,
-  items: Array<{product: string, quantity: number, price: number}>,
-  date: string,
-  status: string
-}> = [];
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 export default function Sales() {
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
+  
+  // Get customers and products from localStorage
+  const [customers] = useLocalStorage<Array<{
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    company: string;
+    address: string;
+    city: string;
+    totalSales: number;
+    lastPurchase: string;
+    status: string;
+  }>>('dashboard-customers', []);
+  
+  const [products] = useLocalStorage<Array<{
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    sku: string;
+    category: string;
+    stock: number;
+    status: string;
+    lastSold: string;
+  }>>('dashboard-products', []);
+  
+  const [sales, setSales] = useLocalStorage<Array<{
+    id: string;
+    customer: string;
+    total: number;
+    items: Array<{product: string, quantity: number, price: number}>;
+    date: string;
+    status: string;
+  }>>('dashboard-sales', []);
 const [salesItems, setSalesItems] = useState([
     { product: "", quantity: 1, price: 0, total: 0, isRental: false, contractLength: "", paymentPeriod: "monthly" }
   ]);
@@ -96,19 +118,19 @@ const [salesItems, setSalesItems] = useState([
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="customer">Customer</Label>
-                  <Select required disabled={mockCustomers.length === 0}>
+                  <Select required disabled={customers.length === 0}>
                     <SelectTrigger>
-                      <SelectValue placeholder={mockCustomers.length === 0 ? "Add customers first" : "Select customer"} />
+                      <SelectValue placeholder={customers.length === 0 ? "Add customers first" : "Select customer"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockCustomers.map((customer) => (
+                      {customers.map((customer) => (
                         <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name}
+                          {customer.name} - {customer.company}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {mockCustomers.length === 0 && (
+                  {customers.length === 0 && (
                     <p className="text-sm text-muted-foreground">
                       <Link to="/customers" className="text-primary hover:underline">
                         Add customers first
@@ -142,7 +164,7 @@ const [salesItems, setSalesItems] = useState([
                             <Select
                               value={item.product}
                               onValueChange={(value) => {
-                                const product = mockProducts.find(p => p.id === value);
+                                const product = products.find(p => p.id === value);
                                 updateSalesItem(index, 'product', value);
                                 if (product) {
                                   updateSalesItem(index, 'price', product.price);
@@ -153,7 +175,7 @@ const [salesItems, setSalesItems] = useState([
                                 <SelectValue placeholder="Select product" />
                               </SelectTrigger>
                               <SelectContent>
-                                {mockProducts.length === 0 ? (
+                                {products.length === 0 ? (
                                   <div className="p-2 text-center">
                                     <p className="text-sm text-muted-foreground">No products available</p>
                                     <Link to="/products" className="text-sm text-primary hover:underline">
@@ -161,9 +183,9 @@ const [salesItems, setSalesItems] = useState([
                                     </Link>
                                   </div>
                                 ) : (
-                                  mockProducts.map((product) => (
+                                  products.map((product) => (
                                     <SelectItem key={product.id} value={product.id}>
-                                      {product.name} - ${product.price}
+                                      {product.name} - ${product.price.toFixed(2)}
                                     </SelectItem>
                                   ))
                                 )}
@@ -299,7 +321,7 @@ const [salesItems, setSalesItems] = useState([
           </div>
         </CardHeader>
         <CardContent>
-          {mockSales.length > 0 ? (
+          {sales.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -311,7 +333,7 @@ const [salesItems, setSalesItems] = useState([
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockSales.map((sale) => (
+                {sales.map((sale) => (
                   <TableRow key={sale.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
