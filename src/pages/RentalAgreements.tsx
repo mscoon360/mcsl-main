@@ -52,7 +52,7 @@ export default function RentalAgreements() {
       .map(item => {
         const startDate = new Date(item.startDate!);
         const endDate = new Date(item.endDate!);
-        const monthsInContract = differenceInMonths(endDate, startDate) + 1; // +1 to include the start month
+        const monthsInContract = differenceInMonths(endDate, startDate);
         
         return {
           id: `${sale.id}-${item.product}`,
@@ -63,7 +63,7 @@ export default function RentalAgreements() {
           startDate,
           endDate,
           monthlyAmount: item.price,
-          totalValue: item.price * monthsInContract, // Total contract value based on months
+          totalValue: item.price * monthsInContract, // Monthly price * total months
           status: endDate > new Date() ? 'active' : 'expired' as 'active' | 'expired',
           saleId: sale.id,
           saleDate: sale.date
