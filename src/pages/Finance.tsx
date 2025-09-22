@@ -96,36 +96,16 @@ export default function Finance() {
     const monthStart = startOfMonth(parseISO(`${month}-01`));
     const monthEnd = endOfMonth(parseISO(`${month}-01`));
 
-    // Calculate sales income (one-time sales in the month)
+    // Calculate sales income (all one-time sales in the month, excluding rental agreements)
     const salesIncome = sales
       .filter(sale => {
         const saleDate = parseISO(sale.date);
         return isWithinInterval(saleDate, { start: monthStart, end: monthEnd }) &&
-               !sale.items.some(item => item.isRental); // Exclude rental sales
+               !sale.items.some(item => item.isRental); // Only count non-rental sales
       })
       .reduce((sum, sale) => sum + sale.total, 0);
 
-    // Calculate rental income (monthly recurring from active agreements)
-    const rentalIncome = sales
-      .flatMap(sale => 
-        sale.items
-          .filter(item => item.isRental && item.startDate && item.endDate)
-          .map(item => {
-            const startDate = new Date(item.startDate!);
-            const endDate = new Date(item.endDate!);
-            
-            // Check if the selected month falls within the rental period
-            if (isWithinInterval(monthStart, { start: startDate, end: endDate }) ||
-                isWithinInterval(monthEnd, { start: startDate, end: endDate }) ||
-                (monthStart >= startDate && monthEnd <= endDate)) {
-              return item.price * item.quantity;
-            }
-            return 0;
-          })
-      )
-      .reduce((sum, amount) => sum + amount, 0);
-
-    // Calculate collection income (actual payments received in the month)
+    // Calculate collection income (actual payments received from rental contracts in the month)
     const collectionIncome = rentalPayments
       .filter(payment => {
         const paymentDate = parseISO(payment.dueDate); // Using dueDate as payment date for paid items
@@ -133,6 +113,9 @@ export default function Finance() {
                isWithinInterval(paymentDate, { start: monthStart, end: monthEnd });
       })
       .reduce((sum, payment) => sum + payment.amount, 0);
+
+    // Rental income is now tracked through actual collections, not theoretical recurring amounts
+    const rentalIncome = 0;
 
     // Calculate expenses for the month
     const monthExpenses = expenditures.filter(expense => {
@@ -148,7 +131,7 @@ export default function Finance() {
       .filter(expense => expense.category === 'fixed-capital')
       .reduce((sum, expense) => sum + expense.amount, 0);
 
-    const totalIncome = salesIncome + rentalIncome + collectionIncome;
+    const totalIncome = salesIncome + collectionIncome;
     const totalExpenses = workingCapitalExpenses + fixedCapitalExpenses;
     const netIncome = totalIncome - totalExpenses;
 
@@ -424,20 +407,12 @@ export default function Finance() {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-green-500" />
-                <span className="font-medium">Rental Income</span>
+                <span className="font-medium">Contract Collections</span>
               </div>
-              <div className="text-2xl font-bold text-green-600">${monthlyData.rentalIncome.toFixed(2)}</div>
-              <p className="text-sm text-muted-foreground">Monthly recurring rentals</p>
+              <div className="text-2xl font-bold text-green-600">${monthlyData.collectionIncome.toFixed(2)}</div>
+              <p className="text-sm text-muted-foreground">Rental payments received</p>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-purple-500" />
-                <span className="font-medium">Collections</span>
-              </div>
-              <div className="text-2xl font-bold text-purple-600">${monthlyData.collectionIncome.toFixed(2)}</div>
-              <p className="text-sm text-muted-foreground">Payments received</p>
-            </div>
           </div>
         </CardContent>
       </Card>
