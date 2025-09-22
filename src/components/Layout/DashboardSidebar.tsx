@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { useState } from "react";
 import { 
   BarChart3, 
   Users, 
@@ -6,7 +7,9 @@ import {
   FileText, 
   Settings,
   Building2,
-  Truck
+  Truck,
+  CreditCard,
+  ChevronDown
 } from "lucide-react";
 import {
   Sidebar,
@@ -17,8 +20,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const navigation = [
   {
@@ -28,7 +35,14 @@ const navigation = [
       { name: "Sales Log", href: "/sales", icon: FileText },
       { name: "Customers", href: "/customers", icon: Users },
       { name: "Products", href: "/products", icon: Package },
-      { name: "Rental Agreements", href: "/rental-agreements", icon: FileText },
+      { 
+        name: "Rental Agreements", 
+        icon: FileText,
+        subItems: [
+          { name: "All Agreements", href: "/rental-agreements" },
+          { name: "Payments", href: "/rental-payments" }
+        ]
+      },
       { name: "Fulfillment", href: "/fulfillment", icon: Truck },
     ]
   },
@@ -45,11 +59,27 @@ export function DashboardSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const isCollapsed = state === "collapsed";
+  const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
 
   const isActive = (path: string) => {
     if (path === "/" && location.pathname === "/") return true;
     if (path !== "/" && location.pathname.startsWith(path)) return true;
     return false;
+  };
+
+  const isGroupActive = (item: any) => {
+    if (item.href) return isActive(item.href);
+    if (item.subItems) {
+      return item.subItems.some((subItem: any) => isActive(subItem.href));
+    }
+    return false;
+  };
+
+  const toggleDropdown = (itemName: string) => {
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [itemName]: !prev[itemName]
+    }));
   };
 
   return (
@@ -81,23 +111,78 @@ export function DashboardSidebar() {
               <SidebarMenu>
                 {section.items.map((item) => (
                   <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton asChild disabled={item.disabled}>
-                      <NavLink
-                        to={item.href}
-                        className={({ isActive: navIsActive }) =>
-                          `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                            isActive(item.href)
-                              ? "bg-primary text-primary-foreground"
-                              : item.disabled
-                              ? "text-sidebar-foreground/40 cursor-not-allowed"
-                              : "text-sidebar-foreground hover:bg-sidebar-accent"
-                          }`
-                        }
+                    {item.subItems ? (
+                      <Collapsible 
+                        open={openDropdowns[item.name] || isGroupActive(item)} 
+                        onOpenChange={() => toggleDropdown(item.name)}
                       >
-                        <item.icon className="h-5 w-5" />
-                        {!isCollapsed && <span className="font-medium">{item.name}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton 
+                            className={`group w-full ${
+                              isGroupActive(item) 
+                                ? "bg-primary text-primary-foreground" 
+                                : "text-sidebar-foreground hover:bg-sidebar-accent"
+                            }`}
+                          >
+                            <item.icon className="h-5 w-5" />
+                            {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                            {!isCollapsed && (
+                              <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${
+                                openDropdowns[item.name] || isGroupActive(item) ? 'rotate-180' : ''
+                              }`} />
+                            )}
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        
+                        {!isCollapsed && (
+                          <CollapsibleContent>
+                            <SidebarMenuSub>
+                              {item.subItems.map((subItem) => (
+                                <SidebarMenuSubItem key={subItem.name}>
+                                  <SidebarMenuSubButton asChild>
+                                    <NavLink
+                                      to={subItem.href}
+                                      className={({ isActive: navIsActive }) =>
+                                        `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                                          isActive(subItem.href)
+                                            ? "bg-primary text-primary-foreground"
+                                            : "text-sidebar-foreground hover:bg-sidebar-accent"
+                                        }`
+                                      }
+                                    >
+                                      {subItem.name === "Payments" ? (
+                                        <CreditCard className="h-4 w-4" />
+                                      ) : (
+                                        <FileText className="h-4 w-4" />
+                                      )}
+                                      <span className="font-medium">{subItem.name}</span>
+                                    </NavLink>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
+                            </SidebarMenuSub>
+                          </CollapsibleContent>
+                        )}
+                      </Collapsible>
+                    ) : (
+                      <SidebarMenuButton asChild disabled={item.disabled}>
+                        <NavLink
+                          to={item.href}
+                          className={({ isActive: navIsActive }) =>
+                            `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                              isActive(item.href)
+                                ? "bg-primary text-primary-foreground"
+                                : item.disabled
+                                ? "text-sidebar-foreground/40 cursor-not-allowed"
+                                : "text-sidebar-foreground hover:bg-sidebar-accent"
+                            }`
+                          }
+                        >
+                          <item.icon className="h-5 w-5" />
+                          {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    )}
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>

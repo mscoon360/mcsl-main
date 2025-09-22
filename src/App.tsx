@@ -9,6 +9,7 @@ import Sales from "./pages/Sales";
 import Customers from "./pages/Customers";
 import Products from "./pages/Products";
 import RentalAgreements from "./pages/RentalAgreements";
+import RentalPayments from "./pages/RentalPayments";
 import Fulfillment from "./pages/Fulfillment";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="customers" element={<Customers />} />
             <Route path="products" element={<Products />} />
             <Route path="rental-agreements" element={<RentalAgreements />} />
+            <Route path="rental-payments" element={<RentalPayments />} />
             <Route path="fulfillment" element={<Fulfillment />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
