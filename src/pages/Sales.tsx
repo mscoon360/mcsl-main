@@ -267,7 +267,9 @@ export default function Sales() {
                         }
                       }}>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select product" />
+                                <SelectValue placeholder="Select product">
+                                  {item.product && products.find(p => p.id === item.product)?.name}
+                                </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 {products.length === 0 ? <div className="p-2 text-center">
