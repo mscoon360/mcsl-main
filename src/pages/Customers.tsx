@@ -29,13 +29,40 @@ export default function Customers() {
   } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const filteredCustomers = mockCustomers.filter(customer => customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || customer.company.toLowerCase().includes(searchTerm.toLowerCase()) || customer.email.toLowerCase().includes(searchTerm.toLowerCase()));
-  const handleSubmit = (e: React.FormEvent) => {
+  const [customers, setCustomers] = useState<typeof mockCustomers>(mockCustomers);
+  const filteredCustomers = customers.filter(
+    (customer) =>
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+
+    const newCustomer = {
+      id: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Date.now().toString(),
+      name: String(data.get("name") || ""),
+      email: String(data.get("email") || ""),
+      phone: String(data.get("phone") || ""),
+      company: String(data.get("company") || ""),
+      address: String(data.get("address") || ""),
+      city: String(data.get("city") || ""),
+      totalSales: 0,
+      lastPurchase: new Date().toISOString(),
+      status: "active",
+    };
+
+    setCustomers((prev) => [newCustomer, ...prev]);
+
     toast({
       title: "Customer Added Successfully!",
-      description: "New customer has been added to your database."
+      description: "New customer has been added to your database.",
     });
+
+    form.reset();
     setShowForm(false);
   };
   return <div className="space-y-6">
@@ -66,38 +93,40 @@ export default function Customers() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Contact Name *</Label>
-                  <Input id="name" placeholder="John Doe" required />
+                  <Input id="name" name="name" placeholder="John Doe" required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address *</Label>
-                  <Input id="email" type="email" placeholder="john@company.com" required />
+                  <Input id="email" name="email" type="email" placeholder="john@company.com" required />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" />
+                  <Input id="phone" name="phone" type="tel" placeholder="+1 (555) 123-4567" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="company">Company Name *</Label>
-                  <Input id="company" placeholder="ABC Corporation" required />
+                  <Input id="company" name="company" placeholder="ABC Corporation" required />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="address">Address</Label>
-                <Input id="address" placeholder="123 Business Avenue, Suite 100" />
+                <Input id="address" name="address" placeholder="123 Business Avenue, Suite 100" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                
-                
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input id="city" name="city" placeholder="San Francisco" />
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes (Optional)</Label>
-                <Textarea id="notes" placeholder="Any additional notes about this customer..." className="min-h-[100px]" />
+                <Textarea id="notes" name="notes" placeholder="Any additional notes about this customer..." className="min-h-[100px]" />
               </div>
 
               <Button type="submit" className="w-full">
