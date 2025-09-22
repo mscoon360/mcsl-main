@@ -122,7 +122,7 @@ export default function Sales() {
   };
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Create the new sale object
     const newSale = {
       id: Date.now().toString(),
@@ -141,10 +141,9 @@ export default function Sales() {
       date: saleDate,
       status: "completed"
     };
-    
+
     // Add to sales array
     setSales([...sales, newSale]);
-    
     toast({
       title: "Sale Logged Successfully!",
       description: `Total sale amount: $${calculateGrandTotal().toFixed(2)}`
@@ -175,59 +174,7 @@ export default function Sales() {
       </div>
 
       {/* Sales Statistics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="dashboard-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{sales.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {sales.length === 0 ? "Start logging sales" : "Total recorded sales"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="dashboard-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-success" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">
-              ${sales.reduce((sum, sale) => sum + sale.total, 0).toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {sales.length === 0 ? "Revenue tracking ready" : "Total sales revenue"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="dashboard-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ongoing Contracts</CardTitle>
-            <FileText className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              {sales.filter(sale => sale.items.some(item => {
-                // Check if any item in the sale is a rental with active contract
-                if (!item.isRental || !item.startDate || !item.endDate) return false;
-                const now = new Date();
-                const startDate = new Date(item.startDate);
-                const endDate = new Date(item.endDate);
-                return now >= startDate && now <= endDate;
-              })).length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {sales.length === 0 ? "Active rental agreements" : "Currently active"}
-            </p>
-          </CardContent>
-        </Card>
-
-        
-      </div>
+      
         <Button onClick={() => setShowForm(!showForm)}>
           <Plus className="h-4 w-4 mr-2" />
           {showForm ? "Cancel" : "Log New Sale"}
@@ -294,9 +241,7 @@ export default function Sales() {
                         }
                       }}>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select product">
-                                  {item.product ? products.find(p => p.id === item.product)?.name || "Select product" : "Select product"}
-                                </SelectValue>
+                                <SelectValue placeholder="Select product" />
                               </SelectTrigger>
                               <SelectContent>
                                 {products.length === 0 ? <div className="p-2 text-center">
@@ -404,15 +349,7 @@ export default function Sales() {
                               </div>
                             </div>
                           </div>}
-                </div>
-
-                {/* Add Another Item Button */}
-                <div className="flex justify-center pt-4">
-                  <Button type="button" variant="outline" onClick={addSalesItem} className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Another Item
-                  </Button>
-                </div>
+                      </div>
                     </Card>)}
                 </div>
 
