@@ -12,15 +12,8 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO, addDays } from "date-fns";
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-
-// Extend jsPDF type to include autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface InvoiceItem {
   description: string;
@@ -271,137 +264,148 @@ export default function Invoices() {
   };
 
   const generateInvoicePDF = (invoice: Invoice) => {
-    const doc = new jsPDF();
-    
-    // Company Header
-    doc.setFontSize(20);
-    doc.setTextColor(40, 40, 40);
-    doc.text('INVOICE', 20, 30);
-    
-    // Invoice details - right side
-    doc.setFontSize(12);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Invoice #: ${invoice.invoiceNumber}`, 120, 30);
-    doc.text(`Issue Date: ${format(parseISO(invoice.issueDate), 'MMM dd, yyyy')}`, 120, 40);
-    doc.text(`Due Date: ${format(parseISO(invoice.dueDate), 'MMM dd, yyyy')}`, 120, 50);
-    doc.text(`Status: ${invoice.status.toUpperCase()}`, 120, 60);
-    
-    // Company info (left side)
-    doc.setTextColor(40, 40, 40);
-    doc.text('Your Company Name', 20, 50);
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text('123 Business Street', 20, 60);
-    doc.text('City, State 12345', 20, 70);
-    doc.text('Phone: (555) 123-4567', 20, 80);
-    doc.text('Email: info@company.com', 20, 90);
-    
-    // Bill to section
-    doc.setFontSize(12);
-    doc.setTextColor(40, 40, 40);
-    doc.text('Bill To:', 20, 110);
-    doc.setFontSize(11);
-    doc.text(invoice.customerName, 20, 125);
-    
-    // Get customer details for full address
-    const customer = customers.find(c => c.id === invoice.customerId);
-    if (customer) {
-      let yPos = 135;
-      if (customer.company) {
-        doc.text(customer.company, 20, yPos);
-        yPos += 10;
-      }
-      if (customer.address) {
-        doc.text(customer.address, 20, yPos);
-        yPos += 10;
-      }
-      if (customer.city) {
-        doc.text(customer.city, 20, yPos);
-        yPos += 10;
-      }
-      if (customer.email) {
-        doc.text(customer.email, 20, yPos);
-        yPos += 10;
-      }
-      if (customer.phone) {
-        doc.text(customer.phone, 20, yPos);
-      }
-    }
-    
-    // Items table
-    const tableStartY = 180;
-    const tableData = invoice.items.map(item => [
-      item.description,
-      item.quantity.toString(),
-      `$${item.unitPrice.toFixed(2)}`,
-      `$${item.total.toFixed(2)}`
-    ]);
-    
-    doc.autoTable({
-      startY: tableStartY,
-      head: [['Description', 'Qty', 'Unit Price', 'Total']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: {
-        fillColor: [66, 139, 202],
-        textColor: 255,
-        fontSize: 10,
-        fontStyle: 'bold'
-      },
-      bodyStyles: {
-        fontSize: 9,
-        textColor: 50
-      },
-      columnStyles: {
-        0: { cellWidth: 80 },
-        1: { cellWidth: 20, halign: 'center' },
-        2: { cellWidth: 30, halign: 'right' },
-        3: { cellWidth: 30, halign: 'right' }
-      },
-      margin: { left: 20, right: 20 }
-    });
-    
-    // Calculate totals position
-    const finalY = (doc as any).lastAutoTable.finalY + 20;
-    
-    // Totals section
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text('Subtotal:', 130, finalY);
-    doc.text(`$${invoice.subtotal.toFixed(2)}`, 170, finalY, { align: 'right' });
-    
-    doc.text(`Tax (${invoice.taxRate}%):`, 130, finalY + 10);
-    doc.text(`$${invoice.taxAmount.toFixed(2)}`, 170, finalY + 10, { align: 'right' });
-    
-    // Total line
-    doc.setFontSize(12);
-    doc.setTextColor(40, 40, 40);
-    doc.setFont(undefined, 'bold');
-    doc.text('TOTAL:', 130, finalY + 25);
-    doc.text(`$${invoice.total.toFixed(2)}`, 170, finalY + 25, { align: 'right' });
-    
-    // Payment terms and notes
-    if (invoice.paymentTerms) {
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(9);
+    try {
+      const doc = new jsPDF();
+      
+      // Company Header
+      doc.setFontSize(20);
+      doc.setTextColor(40, 40, 40);
+      doc.text('INVOICE', 20, 30);
+      
+      // Invoice details - right side
+      doc.setFontSize(12);
       doc.setTextColor(100, 100, 100);
-      doc.text(`Payment Terms: ${invoice.paymentTerms}`, 20, finalY + 50);
+      doc.text(`Invoice #: ${invoice.invoiceNumber}`, 120, 30);
+      doc.text(`Issue Date: ${format(parseISO(invoice.issueDate), 'MMM dd, yyyy')}`, 120, 40);
+      doc.text(`Due Date: ${format(parseISO(invoice.dueDate), 'MMM dd, yyyy')}`, 120, 50);
+      doc.text(`Status: ${invoice.status.toUpperCase()}`, 120, 60);
+      
+      // Company info (left side)
+      doc.setTextColor(40, 40, 40);
+      doc.text('Your Company Name', 20, 50);
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('123 Business Street', 20, 60);
+      doc.text('City, State 12345', 20, 70);
+      doc.text('Phone: (555) 123-4567', 20, 80);
+      doc.text('Email: info@company.com', 20, 90);
+      
+      // Bill to section
+      doc.setFontSize(12);
+      doc.setTextColor(40, 40, 40);
+      doc.text('Bill To:', 20, 110);
+      doc.setFontSize(11);
+      doc.text(invoice.customerName, 20, 125);
+      
+      // Get customer details for full address
+      const customer = customers.find(c => c.id === invoice.customerId);
+      if (customer) {
+        let yPos = 135;
+        if (customer.company) {
+          doc.text(customer.company, 20, yPos);
+          yPos += 10;
+        }
+        if (customer.address) {
+          doc.text(customer.address, 20, yPos);
+          yPos += 10;
+        }
+        if (customer.city) {
+          doc.text(customer.city, 20, yPos);
+          yPos += 10;
+        }
+        if (customer.email) {
+          doc.text(customer.email, 20, yPos);
+          yPos += 10;
+        }
+        if (customer.phone) {
+          doc.text(customer.phone, 20, yPos);
+        }
+      }
+      
+      // Items table
+      const tableStartY = 180;
+      const tableData = invoice.items.map(item => [
+        item.description,
+        item.quantity.toString(),
+        `$${item.unitPrice.toFixed(2)}`,
+        `$${item.total.toFixed(2)}`
+      ]);
+      
+      autoTable(doc, {
+        startY: tableStartY,
+        head: [['Description', 'Qty', 'Unit Price', 'Total']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [66, 139, 202],
+          textColor: 255,
+          fontSize: 10,
+          fontStyle: 'bold'
+        },
+        bodyStyles: {
+          fontSize: 9,
+          textColor: 50
+        },
+        columnStyles: {
+          0: { cellWidth: 80 },
+          1: { cellWidth: 20, halign: 'center' },
+          2: { cellWidth: 30, halign: 'right' },
+          3: { cellWidth: 30, halign: 'right' }
+        },
+        margin: { left: 20, right: 20 }
+      });
+      
+      // Calculate totals position
+      const finalY = (doc as any).lastAutoTable.finalY + 20;
+      
+      // Totals section
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Subtotal:', 130, finalY);
+      doc.text(`$${invoice.subtotal.toFixed(2)}`, 170, finalY, { align: 'right' });
+      
+      doc.text(`Tax (${invoice.taxRate}%):`, 130, finalY + 10);
+      doc.text(`$${invoice.taxAmount.toFixed(2)}`, 170, finalY + 10, { align: 'right' });
+      
+      // Total line
+      doc.setFontSize(12);
+      doc.setTextColor(40, 40, 40);
+      doc.setFont(undefined, 'bold');
+      doc.text('TOTAL:', 130, finalY + 25);
+      doc.text(`$${invoice.total.toFixed(2)}`, 170, finalY + 25, { align: 'right' });
+      
+      // Payment terms and notes
+      if (invoice.paymentTerms) {
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Payment Terms: ${invoice.paymentTerms}`, 20, finalY + 50);
+      }
+      
+      if (invoice.notes) {
+        doc.text('Notes:', 20, finalY + 65);
+        const splitNotes = doc.splitTextToSize(invoice.notes, 170);
+        doc.text(splitNotes, 20, finalY + 75);
+      }
+      
+      // Footer
+      const pageHeight = doc.internal.pageSize.height;
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text('Thank you for your business!', 20, pageHeight - 20);
+      
+      // Save the PDF
+      doc.save(`Invoice_${invoice.invoiceNumber}.pdf`);
+      
+      console.log('PDF generated successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "PDF Generation Error",
+        description: "There was an issue generating the PDF. Please try again.",
+        variant: "destructive"
+      });
     }
-    
-    if (invoice.notes) {
-      doc.text('Notes:', 20, finalY + 65);
-      const splitNotes = doc.splitTextToSize(invoice.notes, 170);
-      doc.text(splitNotes, 20, finalY + 75);
-    }
-    
-    // Footer
-    const pageHeight = doc.internal.pageSize.height;
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text('Thank you for your business!', 20, pageHeight - 20);
-    
-    // Save the PDF
-    doc.save(`Invoice_${invoice.invoiceNumber}.pdf`);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
