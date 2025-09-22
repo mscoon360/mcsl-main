@@ -119,10 +119,12 @@ export default function Products() {
               </div>
 
               <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Unit Price *</Label>
-                  <Input id="price" type="number" step="0.01" placeholder="299.99" required />
-                </div>
+                {!isRentalProduct && (
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Unit Price *</Label>
+                    <Input id="price" type="number" step="0.01" placeholder="299.99" required />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
                   <Input id="category" placeholder="Medical Supplies" />
