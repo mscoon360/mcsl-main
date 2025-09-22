@@ -39,7 +39,7 @@ const navigation = [
         name: "Rental Agreements", 
         icon: FileText,
         subItems: [
-          { name: "All Agreements", href: "/rental-agreements" },
+          { name: "Collections", href: "/rental-agreements" },
           { name: "Payments", href: "/rental-payments" }
         ]
       },
