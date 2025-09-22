@@ -97,12 +97,12 @@ export default function Invoices() {
   });
 
   // Helper function to calculate payment amount based on contract terms
-  const calculatePaymentAmount = (totalPrice: number, contractLength: string, paymentPeriod: string) => {
-    if (!contractLength || !paymentPeriod) return totalPrice;
+  const calculatePaymentAmount = (totalContractValue: number, contractLength: string, paymentPeriod: string) => {
+    if (!contractLength || !paymentPeriod) return totalContractValue;
 
     // Parse contract length (e.g., "12 months", "2 years", "52 weeks")
     const contractMatch = contractLength.toLowerCase().match(/(\d+)\s*(month|year|week|day)/);
-    if (!contractMatch) return totalPrice;
+    if (!contractMatch) return totalContractValue;
 
     const contractValue = parseInt(contractMatch[1]);
     const contractUnit = contractMatch[2];
@@ -110,34 +110,30 @@ export default function Invoices() {
     // Parse payment period (e.g., "monthly", "weekly", "yearly", "daily")
     const paymentUnit = paymentPeriod.toLowerCase().replace('ly', '');
 
-    // Convert everything to the same unit for calculation
-    let totalPeriods = contractValue;
+    // Calculate how many payment periods are in the contract length
+    let numberOfPayments = 1;
     
-    // Convert contract length to payment periods
-    if (contractUnit === 'year' && paymentUnit === 'month') {
-      totalPeriods = contractValue * 12;
+    if (contractUnit === 'month' && paymentUnit === 'month') {
+      numberOfPayments = contractValue; // 12 months / monthly = 12 payments
+    } else if (contractUnit === 'year' && paymentUnit === 'month') {
+      numberOfPayments = contractValue * 12; // 2 years / monthly = 24 payments
     } else if (contractUnit === 'year' && paymentUnit === 'week') {
-      totalPeriods = contractValue * 52;
-    } else if (contractUnit === 'year' && paymentUnit === 'day') {
-      totalPeriods = contractValue * 365;
+      numberOfPayments = contractValue * 52; // 1 year / weekly = 52 payments
     } else if (contractUnit === 'month' && paymentUnit === 'week') {
-      totalPeriods = contractValue * 4.33; // Average weeks per month
-    } else if (contractUnit === 'month' && paymentUnit === 'day') {
-      totalPeriods = contractValue * 30; // Average days per month
-    } else if (contractUnit === 'week' && paymentUnit === 'day') {
-      totalPeriods = contractValue * 7;
-    } else if (contractUnit === 'week' && paymentUnit === 'month') {
-      totalPeriods = contractValue / 4.33;
-    } else if (contractUnit === 'day' && paymentUnit === 'week') {
-      totalPeriods = contractValue / 7;
-    } else if (contractUnit === 'day' && paymentUnit === 'month') {
-      totalPeriods = contractValue / 30;
-    } else if (contractUnit !== paymentUnit.replace('ly', '')) {
-      // Default fallback
-      return totalPrice;
+      numberOfPayments = Math.round(contractValue * 4.33); // 3 months / weekly = ~13 payments
+    } else if (contractUnit === 'week' && paymentUnit === 'week') {
+      numberOfPayments = contractValue; // 12 weeks / weekly = 12 payments
+    } else if (contractUnit === 'day' && paymentUnit === 'day') {
+      numberOfPayments = contractValue; // 30 days / daily = 30 payments
+    } else if (contractUnit === 'year' && paymentUnit === 'year') {
+      numberOfPayments = contractValue; // 2 years / yearly = 2 payments
+    } else {
+      // Default: assume same unit
+      numberOfPayments = contractValue;
     }
 
-    return totalPrice / totalPeriods;
+    // Return total contract value divided by number of payments
+    return totalContractValue / numberOfPayments;
   };
 
   // Get available items for the selected customer (products + rental items)
