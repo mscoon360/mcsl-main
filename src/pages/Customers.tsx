@@ -25,22 +25,17 @@ const mockCustomers: Array<{
   status: string;
 }> = [];
 export default function Customers() {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [customers, setCustomers] = useLocalStorage<typeof mockCustomers>('dashboard-customers', []);
-  const filteredCustomers = customers.filter(
-    (customer) =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
+  const filteredCustomers = customers.filter(customer => customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || customer.company.toLowerCase().includes(searchTerm.toLowerCase()) || customer.email.toLowerCase().includes(searchTerm.toLowerCase()));
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const data = new FormData(form);
-
     const newCustomer = {
       id: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Date.now().toString(),
       name: String(data.get("name") || ""),
@@ -51,16 +46,13 @@ export default function Customers() {
       city: String(data.get("city") || ""),
       totalSales: 0,
       lastPurchase: new Date().toISOString(),
-      status: "active",
+      status: "active"
     };
-
-    setCustomers((prev) => [newCustomer, ...prev]);
-
+    setCustomers(prev => [newCustomer, ...prev]);
     toast({
       title: "Customer Added Successfully!",
-      description: "New customer has been added to your database.",
+      description: "New customer has been added to your database."
     });
-
     form.reset();
     setShowForm(false);
   };
@@ -117,10 +109,7 @@ export default function Customers() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input id="city" name="city" placeholder="San Francisco" />
-                </div>
+                
               </div>
 
               <div className="space-y-2">
