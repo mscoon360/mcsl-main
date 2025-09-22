@@ -27,6 +27,7 @@ const navigation = [
       { name: "Sales Log", href: "/sales", icon: FileText },
       { name: "Customers", href: "/customers", icon: Users },
       { name: "Products", href: "/products", icon: Package },
+      { name: "Rental Agreements", href: "/rental-agreements", icon: FileText },
     ]
   },
   {

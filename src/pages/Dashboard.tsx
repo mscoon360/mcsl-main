@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, DollarSign, ShoppingCart, Users, TrendingUp, Plus } from "lucide-react";
+import { BarChart3, DollarSign, ShoppingCart, Users, TrendingUp, Plus, Package, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 
@@ -191,9 +191,9 @@ export default function Dashboard() {
               </Link>
             </Button>
             <Button asChild className="w-full justify-start" variant="outline">
-              <Link to="/sales">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                View Reports
+              <Link to="/rental-agreements">
+                <FileText className="h-4 w-4 mr-2" />
+                Rental Agreements
               </Link>
             </Button>
           </CardContent>
