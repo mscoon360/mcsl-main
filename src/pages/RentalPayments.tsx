@@ -77,7 +77,7 @@ export default function RentalPayments() {
             let currentDate = new Date(startDate);
             let paymentIndex = 0;
             
-            while (currentDate <= endDate) {
+            while (currentDate < endDate) { // Changed from <= to < to exclude end date
               let nextPaymentDate: Date;
               let periodMultiplier: number;
               
@@ -104,10 +104,7 @@ export default function RentalPayments() {
               }
               
               const paymentAmount = monthlyAmount * periodMultiplier;
-              console.log(`Payment calculation: ${monthlyAmount} * ${periodMultiplier} = ${paymentAmount} for ${item.paymentPeriod} period`);
-              
-              // Don't create payment past the end date
-              if (currentDate > endDate) break;
+              console.log(`Payment schedule: Contract ${format(startDate, 'MMM dd')} to ${format(endDate, 'MMM dd')}, Payment ${paymentIndex + 1} on ${format(currentDate, 'MMM dd')} for ${item.paymentPeriod} (${paymentAmount})`);
               
               const daysFromNow = differenceInDays(currentDate, new Date());
               let status: PaymentSchedule['status'] = 'due';
@@ -123,7 +120,7 @@ export default function RentalPayments() {
                 agreementId,
                 customer: sale.customer,
                 product: item.product,
-                amount: paymentAmount, // Use calculated payment amount
+                amount: paymentAmount,
                 dueDate: currentDate.toISOString().split('T')[0],
                 status
               });
