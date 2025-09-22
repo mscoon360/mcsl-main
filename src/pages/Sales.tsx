@@ -143,7 +143,7 @@ export default function Sales() {
     };
 
     // Add to sales array
-    setSales([...sales, newSale]);
+    setSales(prev => [...prev, newSale]);
     toast({
       title: "Sale Logged Successfully!",
       description: `Total sale amount: $${calculateGrandTotal().toFixed(2)}`
@@ -231,7 +231,8 @@ export default function Sales() {
                         <div className="grid grid-cols-5 gap-4 items-end">
                           <div className="space-y-2">
                             <Label>Product</Label>
-                            <Select value={item.product} onValueChange={value => {
+                            <Select key={`prod-${index}-${item.product}`} value={item.product} onValueChange={(value) => {
+                        console.log('Product selected:', value);
                         const product = products.find(p => p.id === value);
                         updateSalesItem(index, 'product', value);
                         if (product) {
@@ -239,9 +240,7 @@ export default function Sales() {
                         }
                       }}>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select product">
-                                  {item.product ? products.find(p => p.id === item.product)?.name : "Select product"}
-                                </SelectValue>
+                                <SelectValue placeholder="Select product" />
                               </SelectTrigger>
                               <SelectContent>
                                 {products.length === 0 ? <div className="p-2 text-center">
@@ -250,7 +249,7 @@ export default function Sales() {
                                       Add products first
                                     </Link>
                                   </div> : products.map(product => <SelectItem key={product.id} value={product.id}>
-                                      {product.name} - ${product.price.toFixed(2)}
+                                      {product.name}
                                     </SelectItem>)}
                               </SelectContent>
                             </Select>
