@@ -13,6 +13,7 @@ import {
   DollarSign,
   Receipt
 } from "lucide-react";
+import magicCareLogo from "@/assets/magic-care-logo.png";
 import {
   Sidebar,
   SidebarContent,
@@ -103,8 +104,8 @@ export function DashboardSidebar() {
         {/* Company Logo/Header */}
         <div className="p-3 md:p-4 border-b border-sidebar-border">
           <div className="flex items-center gap-2 md:gap-3">
-            <div className="flex h-6 w-6 md:h-8 md:w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Building2 className="h-3 w-3 md:h-5 md:w-5" />
+            <div className="flex h-6 w-6 md:h-8 md:w-8 items-center justify-center rounded-lg overflow-hidden">
+              <img src={magicCareLogo} alt="Magic Care Solutions Logo" className="h-full w-full object-contain" />
             </div>
             {!isCollapsed && (
               <div>
