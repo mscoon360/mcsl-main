@@ -261,6 +261,9 @@ export default function RentalPayments() {
 
   const monthlyView = generateMonthlyView();
 
+  // Get overdue unpaid payments for special attention
+  const overdueUnpaidPayments = filteredPayments.filter(p => p.status === 'overdue');
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -415,6 +418,70 @@ export default function RentalPayments() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Overdue Payments Alert Section */}
+      {overdueUnpaidPayments.length > 0 && (
+        <Card className="dashboard-card border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+          <CardHeader>
+            <CardTitle className="text-red-800 dark:text-red-200 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Overdue Payments - Immediate Action Required
+            </CardTitle>
+            <CardDescription className="text-red-700 dark:text-red-300">
+              {overdueUnpaidPayments.length} payment{overdueUnpaidPayments.length !== 1 ? 's' : ''} overdue requiring immediate attention
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {overdueUnpaidPayments.map((payment) => (
+                <div key={payment.id} className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-white dark:bg-red-900/20 dark:border-red-700">
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      <span className="font-medium text-red-800 dark:text-red-200">{payment.customer}</span>
+                      <span className="text-red-600 dark:text-red-400">•</span>
+                      <span className="text-sm text-red-700 dark:text-red-300">{payment.product}</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        <span className="font-bold text-red-800 dark:text-red-200">${payment.amount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        <span className="text-red-700 dark:text-red-300">Due {format(new Date(payment.dueDate), 'MMM dd, yyyy')}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        <span className="text-red-700 dark:text-red-300 font-medium">
+                          {Math.abs(differenceInDays(new Date(payment.dueDate), new Date()))} days overdue
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-700">
+                      <div className="flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        OVERDUE
+                      </div>
+                    </Badge>
+                    
+                    <Button
+                      size="sm"
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={() => markPayment(payment.id, 'paid', 'cash')}
+                    >
+                      Mark Paid Now
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Monthly Payment Schedule */}
       <div className="space-y-6">
