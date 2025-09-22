@@ -73,22 +73,28 @@ export default function RentalPayments() {
             
             while (currentDate <= endDate) {
               let nextPaymentDate: Date;
+              let periodMultiplier: number;
               
               switch (item.paymentPeriod) {
                 case 'monthly':
                   nextPaymentDate = addMonths(currentDate, 1);
+                  periodMultiplier = 1;
                   break;
                 case 'quarterly':
                   nextPaymentDate = addMonths(currentDate, 3);
+                  periodMultiplier = 3;
                   break;
                 case 'biannually':
                   nextPaymentDate = addMonths(currentDate, 6);
+                  periodMultiplier = 6;
                   break;
                 case 'annually':
                   nextPaymentDate = addMonths(currentDate, 12);
+                  periodMultiplier = 12;
                   break;
                 default:
                   nextPaymentDate = addMonths(currentDate, 1);
+                  periodMultiplier = 1;
               }
               
               // Don't create payment past the end date
@@ -108,7 +114,7 @@ export default function RentalPayments() {
                 agreementId,
                 customer: sale.customer,
                 product: item.product,
-                amount: monthlyAmount,
+                amount: monthlyAmount * periodMultiplier, // Multiply by period length
                 dueDate: currentDate.toISOString().split('T')[0],
                 status
               });
