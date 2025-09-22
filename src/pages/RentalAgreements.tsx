@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Search, FileText, Calendar, DollarSign, User } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { format } from "date-fns";
+import { format, differenceInMonths } from "date-fns";
 
 interface RentalAgreement {
   id: string;
@@ -49,20 +49,26 @@ export default function RentalAgreements() {
   const rentalAgreements: RentalAgreement[] = sales.flatMap(sale => 
     sale.items
       .filter(item => item.isRental && item.startDate && item.endDate)
-      .map(item => ({
-        id: `${sale.id}-${item.product}`,
-        customer: sale.customer,
-        product: item.product,
-        contractLength: item.contractLength || '',
-        paymentPeriod: item.paymentPeriod || 'monthly',
-        startDate: new Date(item.startDate!),
-        endDate: new Date(item.endDate!),
-        monthlyAmount: item.price,
-        totalValue: item.price * item.quantity,
-        status: new Date(item.endDate!) > new Date() ? 'active' : 'expired' as 'active' | 'expired',
-        saleId: sale.id,
-        saleDate: sale.date
-      }))
+      .map(item => {
+        const startDate = new Date(item.startDate!);
+        const endDate = new Date(item.endDate!);
+        const monthsInContract = differenceInMonths(endDate, startDate) + 1; // +1 to include the start month
+        
+        return {
+          id: `${sale.id}-${item.product}`,
+          customer: sale.customer,
+          product: item.product,
+          contractLength: item.contractLength || '',
+          paymentPeriod: item.paymentPeriod || 'monthly',
+          startDate,
+          endDate,
+          monthlyAmount: item.price,
+          totalValue: item.price * monthsInContract, // Total contract value based on months
+          status: endDate > new Date() ? 'active' : 'expired' as 'active' | 'expired',
+          saleId: sale.id,
+          saleDate: sale.date
+        };
+      })
   );
 
   // Filter agreements based on search term
