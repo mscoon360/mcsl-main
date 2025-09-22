@@ -40,7 +40,7 @@ const navigation = [
         icon: FileText,
         subItems: [
           { name: "All Agreements", href: "/rental-agreements" },
-          { name: "Payments", href: "/rental-payments" }
+          { name: "Collections", href: "/rental-payments" }
         ]
       },
       { name: "Fulfillment", href: "/fulfillment", icon: Truck },
@@ -150,7 +150,7 @@ export function DashboardSidebar() {
                                         }`
                                       }
                                     >
-                                      {subItem.name === "Payments" ? (
+                                      {subItem.name === "Collections" ? (
                                         <CreditCard className="h-4 w-4" />
                                       ) : (
                                         <FileText className="h-4 w-4" />
