@@ -10,7 +10,8 @@ import {
   Truck,
   CreditCard,
   ChevronDown,
-  DollarSign
+  DollarSign,
+  Receipt
 } from "lucide-react";
 import {
   Sidebar,
@@ -56,7 +57,8 @@ const navigation = [
         subItems: [
           { name: "Overview", href: "/finance" },
           { name: "Income", href: "/income" },
-          { name: "Expenditure", href: "/expenditure" }
+          { name: "Expenditure", href: "/expenditure" },
+          { name: "Invoices", href: "/invoices" }
         ]
       },
       { name: "Inventory", href: "/inventory", icon: Package, disabled: true },
@@ -167,6 +169,8 @@ export function DashboardSidebar() {
                                         <DollarSign className="h-4 w-4" />
                                       ) : subItem.name === "Expenditure" ? (
                                         <FileText className="h-4 w-4" />
+                                      ) : subItem.name === "Invoices" ? (
+                                        <Receipt className="h-4 w-4" />
                                       ) : (
                                         <FileText className="h-4 w-4" />
                                       )}
