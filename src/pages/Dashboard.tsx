@@ -2,28 +2,60 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { BarChart3, DollarSign, ShoppingCart, Users, TrendingUp, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 export default function Dashboard() {
-  // Real data - ready for your input
+  // Get real data from localStorage
+  const [sales] = useLocalStorage<Array<{
+    id: string;
+    customer: string;
+    total: number;
+    items: Array<{
+      product: string;
+      quantity: number;
+      price: number;
+    }>;
+    date: string;
+    status: string;
+  }>>('dashboard-sales', []);
+
+  const [customers] = useLocalStorage<Array<{
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    company: string;
+    address: string;
+    city: string;
+    totalSales: number;
+    lastPurchase: string;
+    status: string;
+  }>>('dashboard-customers', []);
+
+  // Calculate real stats
+  const totalSales = sales.reduce((sum, sale) => sum + sale.total, 0);
+  const totalSalesCount = sales.length;
+  const customersCount = customers.length;
+  
   const stats = [
     {
       title: "Total Sales",
-      value: "$0.00",
-      change: "Start logging sales to see progress",
+      value: `$${totalSales.toFixed(2)}`,
+      change: totalSales > 0 ? `${totalSalesCount} sales completed` : "Start logging sales to see progress",
       icon: DollarSign,
       positive: true
     },
     {
       title: "Customers",
-      value: "0",
-      change: "Add your first customer",
+      value: customersCount.toString(),
+      change: customersCount > 0 ? `Active customers` : "Add your first customer",
       icon: Users,
       positive: true
     },
     {
       title: "Sales Closed",
-      value: "0",
-      change: "Log your first sale",
+      value: totalSalesCount.toString(),
+      change: totalSalesCount > 0 ? `Total transactions` : "Log your first sale",
       icon: ShoppingCart,
       positive: true
     },
@@ -36,7 +68,16 @@ export default function Dashboard() {
     }
   ];
 
-  const recentSales: Array<{customer: string, amount: string, product: string, date: string}> = [];
+  // Get recent sales (last 5)
+  const recentSales = sales
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5)
+    .map(sale => ({
+      customer: sale.customer,
+      amount: `$${sale.total.toFixed(2)}`,
+      product: sale.items.map(item => `${item.quantity}x ${item.product}`).join(', '),
+      date: new Date(sale.date).toLocaleDateString()
+    }));
 
   return (
     <div className="space-y-6">
