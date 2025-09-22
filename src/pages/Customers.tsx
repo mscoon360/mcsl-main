@@ -1,0 +1,251 @@
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, User, Mail, Phone, Building } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+// Mock customer data
+const mockCustomers = [
+  {
+    id: "1",
+    name: "ABC Corp",
+    email: "contact@abc.com",
+    phone: "+1 (555) 123-4567",
+    company: "ABC Corporation",
+    address: "123 Business Ave, Suite 100",
+    city: "New York",
+    totalSales: 12450.00,
+    lastPurchase: "2024-01-15",
+    status: "active"
+  },
+  {
+    id: "2",
+    name: "HealthTech Inc",
+    email: "info@healthtech.com",
+    phone: "+1 (555) 987-6543",
+    company: "HealthTech Solutions",
+    address: "456 Medical Center Dr",
+    city: "Los Angeles",
+    totalSales: 8920.00,
+    lastPurchase: "2024-01-14",
+    status: "active"
+  },
+  {
+    id: "3",
+    name: "City Hospital",
+    email: "admin@cityhospital.com",
+    phone: "+1 (555) 456-7890",
+    company: "City General Hospital",
+    address: "789 Hospital Blvd",
+    city: "Chicago",
+    totalSales: 25600.00,
+    lastPurchase: "2024-01-12",
+    status: "active"
+  },
+  {
+    id: "4",
+    name: "MediCare Plus",
+    email: "orders@medicareplus.com",
+    phone: "+1 (555) 234-5678",
+    company: "MediCare Plus Services",
+    address: "321 Healthcare Way",
+    city: "Miami",
+    totalSales: 5480.00,
+    lastPurchase: "2024-01-10",
+    status: "inactive"
+  }
+];
+
+export default function Customers() {
+  const { toast } = useToast();
+  const [showForm, setShowForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredCustomers = mockCustomers.filter(customer =>
+    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast({
+      title: "Customer Added Successfully!",
+      description: "New customer has been added to your database.",
+    });
+    setShowForm(false);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Customer Management</h1>
+          <p className="text-muted-foreground">
+            Manage your customer database and track their purchase history.
+          </p>
+        </div>
+        <Button onClick={() => setShowForm(!showForm)}>
+          <Plus className="h-4 w-4 mr-2" />
+          {showForm ? "Cancel" : "Add Customer"}
+        </Button>
+      </div>
+
+      {/* Add Customer Form */}
+      {showForm && (
+        <Card className="dashboard-card">
+          <CardHeader>
+            <CardTitle className="text-card-foreground">Add New Customer</CardTitle>
+            <CardDescription>
+              Enter the customer's information below.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Contact Name *</Label>
+                  <Input id="name" placeholder="John Doe" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address *</Label>
+                  <Input id="email" type="email" placeholder="john@company.com" required />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="company">Company Name *</Label>
+                  <Input id="company" placeholder="ABC Corporation" required />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Input id="address" placeholder="123 Business Avenue, Suite 100" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input id="city" placeholder="New York" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">State/Province</Label>
+                  <Input id="state" placeholder="NY" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Any additional notes about this customer..."
+                  className="min-h-[100px]"
+                />
+              </div>
+
+              <Button type="submit" className="w-full">
+                <User className="h-4 w-4 mr-2" />
+                Add Customer
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Customer List */}
+      <Card className="dashboard-card">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-card-foreground">Customer Database</CardTitle>
+              <CardDescription>
+                {filteredCustomers.length} customers in your database
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search customers..."
+                className="w-64"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Customer</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Company</TableHead>
+                <TableHead>Total Sales</TableHead>
+                <TableHead>Last Purchase</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredCustomers.map((customer) => (
+                <TableRow key={customer.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        <User className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="font-semibold">{customer.name}</p>
+                        <p className="text-sm text-muted-foreground">{customer.city}</p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Mail className="h-3 w-3 text-muted-foreground" />
+                        {customer.email}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Phone className="h-3 w-3 text-muted-foreground" />
+                        {customer.phone}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4 text-muted-foreground" />
+                      {customer.company}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-bold text-success">
+                    ${customer.totalSales.toFixed(2)}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(customer.lastPurchase).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
+                      {customer.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
