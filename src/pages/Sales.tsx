@@ -207,6 +207,8 @@ const [salesItems, setSalesItems] = useState([
                               type="number"
                               step="0.01"
                               value={item.price}
+                              readOnly={item.product !== ""}
+                              className={item.product !== "" ? "bg-muted" : ""}
                               onChange={(e) => updateSalesItem(index, 'price', parseFloat(e.target.value) || 0)}
                             />
                           </div>
