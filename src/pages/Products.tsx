@@ -28,8 +28,9 @@ export default function Products() {
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isRentalProduct, setIsRentalProduct] = useState(false);
+  const [products, setProducts] = useState<Array<{id:string; name:string; description:string; price:number; sku:string; category:string; stock:number; status:string; lastSold:string;}>>([]);
 
-  const filteredProducts = mockProducts.filter(product =>
+  const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.category.toLowerCase().includes(searchTerm.toLowerCase())
@@ -63,12 +64,41 @@ export default function Products() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const form = e.currentTarget as HTMLFormElement;
+    const data = new FormData(form);
+
+    const name = String(data.get('name') || '');
+    const sku = String(data.get('sku') || '');
+    const description = String(data.get('description') || '');
+    const category = String(data.get('category') || '');
+    const stock = parseInt(String(data.get('stock') || '0')) || 0;
+    const unitPrice = parseFloat(String(data.get('price') || '0')) || 0;
+    const rentalPriceVal = parseFloat(String(data.get('rentalPrice') || '0')) || 0;
+    const price = isRentalProduct ? rentalPriceVal : unitPrice;
+
+    const status = stock > 10 ? 'active' : stock > 0 ? 'low_stock' : 'out_of_stock';
+
+    const newProduct = {
+      id: `${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      name,
+      description,
+      price,
+      sku,
+      category,
+      stock,
+      status,
+      lastSold: new Date().toISOString(),
+    };
+
+    setProducts((prev) => [...prev, newProduct]);
+
     toast({
       title: "Product Added Successfully!",
       description: "New product has been added to your catalog.",
     });
     setShowForm(false);
     setIsRentalProduct(false);
+    form.reset();
   };
 
   return (
@@ -101,11 +131,11 @@ export default function Products() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="productName">Product Name *</Label>
-                  <Input id="productName" placeholder="Medical Supplies Kit" required />
+                  <Input id="productName" name="name" placeholder="Medical Supplies Kit" required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="sku">SKU/Product Code *</Label>
-                  <Input id="sku" placeholder="MSK-001" required />
+                  <Input id="sku" name="sku" placeholder="MSK-001" required />
                 </div>
               </div>
 
@@ -113,6 +143,7 @@ export default function Products() {
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
+                  name="description"
                   placeholder="Detailed product description..."
                   className="min-h-[100px]"
                 />
@@ -122,16 +153,16 @@ export default function Products() {
                 {!isRentalProduct && (
                   <div className="space-y-2">
                     <Label htmlFor="price">Unit Price *</Label>
-                    <Input id="price" type="number" step="0.01" placeholder="299.99" required={!isRentalProduct} />
+                    <Input id="price" name="price" type="number" step="0.01" placeholder="299.99" required={!isRentalProduct} />
                   </div>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
-                  <Input id="category" placeholder="Medical Supplies" />
+                  <Input id="category" name="category" placeholder="Medical Supplies" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="stock">Initial Stock</Label>
-                  <Input id="stock" type="number" placeholder="50" />
+                  <Input id="stock" name="stock" type="number" placeholder="50" />
                 </div>
               </div>
 
@@ -140,6 +171,7 @@ export default function Products() {
                   <input 
                     type="checkbox" 
                     id="isRental" 
+                    name="isRental"
                     checked={isRentalProduct}
                     onChange={(e) => setIsRentalProduct(e.target.checked)}
                     className="h-4 w-4 rounded border-gray-300" 
@@ -151,11 +183,11 @@ export default function Products() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="rentalPrice">Rental Price *</Label>
-                      <Input id="rentalPrice" type="number" step="0.01" placeholder="50.00" required={isRentalProduct} />
+                      <Input id="rentalPrice" name="rentalPrice" type="number" step="0.01" placeholder="50.00" required={isRentalProduct} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="paymentPeriod">Payment Period</Label>
-                      <select id="paymentPeriod" className="w-full px-3 py-2 border border-input bg-background rounded-md" required={isRentalProduct}>
+                      <select id="paymentPeriod" name="paymentPeriod" className="w-full px-3 py-2 border border-input bg-background rounded-md" required={isRentalProduct}>
                         <option value="monthly">Monthly</option>
                         <option value="quarterly">Quarterly</option>
                         <option value="biannually">Bi-annually</option>
@@ -170,6 +202,7 @@ export default function Products() {
                 <Label htmlFor="notes">Additional Notes</Label>
                 <Textarea
                   id="notes"
+                  name="notes"
                   placeholder="Any additional product information..."
                   className="min-h-[80px]"
                 />
