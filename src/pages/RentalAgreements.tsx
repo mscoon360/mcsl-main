@@ -138,6 +138,7 @@ export default function RentalAgreements() {
     .filter(a => a.status === 'active')
     .reduce((sum, a) => sum + a.monthlyAmount, 0);
   const totalContractValue = rentalAgreements
+    .filter(a => a.status === 'active')
     .reduce((sum, a) => sum + a.totalValue, 0);
 
   const calculateEndDate = (start: Date, contractLength: string) => {
@@ -496,7 +497,7 @@ export default function RentalAgreements() {
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-card-foreground">
-              Total Contract Value
+              Total Active Contract Value
             </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -505,7 +506,7 @@ export default function RentalAgreements() {
               ${totalContractValue.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              All contracts combined
+              Active contracts combined
             </p>
           </CardContent>
         </Card>
