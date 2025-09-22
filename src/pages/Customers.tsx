@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,14 +25,46 @@ const mockCustomers: Array<{
   status: string;
 }> = [];
 export default function Customers() {
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [customers, setCustomers] = useLocalStorage<typeof mockCustomers>('dashboard-customers', []);
   const [editingCustomer, setEditingCustomer] = useState<string | null>(null);
-  const filteredCustomers = customers.filter(customer => customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || customer.company.toLowerCase().includes(searchTerm.toLowerCase()) || customer.email.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  // Get sales data to calculate customer totals
+  const [sales] = useLocalStorage<Array<{
+    id: string;
+    customer: string;
+    total: number;
+    items: Array<{
+      product: string;
+      quantity: number;
+      price: number;
+    }>;
+    date: string;
+    status: string;
+  }>>('dashboard-sales', []);
+
+  // Calculate actual customer sales totals
+  const customersWithSales = customers.map(customer => {
+    const customerSales = sales.filter(sale => sale.customer === customer.name);
+    const totalSales = customerSales.reduce((sum, sale) => sum + sale.total, 0);
+    const lastPurchase = customerSales.length > 0 
+      ? customerSales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date
+      : customer.lastPurchase;
+    
+    return {
+      ...customer,
+      totalSales,
+      lastPurchase
+    };
+  });
+
+  const filteredCustomers = customersWithSales.filter(customer => 
+    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    customer.company.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -75,8 +107,8 @@ export default function Customers() {
       company: String(data.get("company") || ""),
       address: String(data.get("address") || ""),
       city: String(data.get("city") || ""),
-      totalSales: 0, // Keep existing value in real implementation
-      lastPurchase: new Date().toISOString(),
+      totalSales: customers.find(c => c.id === editingCustomer)?.totalSales || 0, // Keep existing sales total
+      lastPurchase: customers.find(c => c.id === editingCustomer)?.lastPurchase || new Date().toISOString(),
       status: "active"
     };
 
