@@ -49,7 +49,7 @@ const navigation = [
   {
     title: "Future Departments",
     items: [
-      { name: "Finance", href: "/finance", icon: BarChart3, disabled: true },
+      { name: "Finance", href: "/finance", icon: BarChart3 },
       { name: "Inventory", href: "/inventory", icon: Package, disabled: true },
     ]
   }
