@@ -463,9 +463,9 @@ export default function RentalAgreements() {
                           if (product && startDate && contractLength) {
                             const endDate = calculateEndDate(startDate, contractLength);
                             if (endDate) {
-                              const months = differenceInMonths(endDate, startDate);
-                              const total = product.price * months * quantity;
-                              return (total / monthsInPaymentPeriod(paymentPeriod)).toFixed(2);
+                              return (
+                                product.price * monthsInPaymentPeriod(paymentPeriod) * quantity
+                              ).toFixed(2);
                             }
                           }
                           return '0.00';
@@ -616,7 +616,7 @@ export default function RentalAgreements() {
                         <TableCell>${agreement.totalValue.toFixed(2)}</TableCell>
                         <TableCell>
                           ${(
-                            agreement.totalValue / monthsInPaymentPeriod(agreement.paymentPeriod)
+                            agreement.monthlyAmount * monthsInPaymentPeriod(agreement.paymentPeriod)
                           ).toFixed(2)}
                           /{periodShortLabel(agreement.paymentPeriod)}
                         </TableCell>
