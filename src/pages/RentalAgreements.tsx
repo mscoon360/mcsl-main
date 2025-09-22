@@ -132,6 +132,28 @@ export default function RentalAgreements() {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+  
+  // Months in a payment period (per user definition)
+  const monthsInPaymentPeriod = (period: string) => {
+    switch (period?.toLowerCase()) {
+      case 'monthly': return 1;
+      case 'quarterly': return 3;
+      case 'biannually':
+      case 'bi-annually': return 6;
+      case 'annually':
+      case 'yearly': return 12;
+      default: return 1;
+    }
+  };
+
+  const periodShortLabel = (period: string) => {
+    const p = period?.toLowerCase();
+    if (p === 'monthly') return 'month';
+    if (p === 'quarterly') return 'quarter';
+    if (p === 'biannually' || p === 'bi-annually') return 'biannual';
+    if (p === 'annually' || p === 'yearly') return 'year';
+    return p || 'period';
+  };
 
   const activeAgreements = rentalAgreements.filter(a => a.status === 'active').length;
   const totalMonthlyRevenue = rentalAgreements
@@ -433,6 +455,23 @@ export default function RentalAgreements() {
                         })()}
                       </div>
                     </div>
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">Payment Due ({paymentPeriod}):</span>
+                      <div className="font-bold">
+                        ${(() => {
+                          const product = products.find(p => p.id === selectedProduct);
+                          if (product && startDate && contractLength) {
+                            const endDate = calculateEndDate(startDate, contractLength);
+                            if (endDate) {
+                              const months = differenceInMonths(endDate, startDate);
+                              const total = product.price * months * quantity;
+                              return (total / monthsInPaymentPeriod(paymentPeriod)).toFixed(2);
+                            }
+                          }
+                          return '0.00';
+                        })()}/{periodShortLabel(paymentPeriod)}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -549,38 +588,45 @@ export default function RentalAgreements() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Contract Length</TableHead>
-                    <TableHead>Payment Period</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>End Date</TableHead>
-                    <TableHead>Monthly Amount</TableHead>
-                    <TableHead>Total Value</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
+                    <TableRow>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Contract Length</TableHead>
+                      <TableHead>Payment Period</TableHead>
+                      <TableHead>Start Date</TableHead>
+                      <TableHead>End Date</TableHead>
+                      <TableHead>Monthly Amount</TableHead>
+                      <TableHead>Total Value</TableHead>
+                      <TableHead>Payment Due</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAgreements.map((agreement) => (
-                    <TableRow key={agreement.id}>
-                      <TableCell className="font-medium">
-                        {agreement.customer}
-                      </TableCell>
-                      <TableCell>{agreement.product}</TableCell>
-                      <TableCell>{agreement.contractLength}</TableCell>
-                      <TableCell className="capitalize">{agreement.paymentPeriod}</TableCell>
-                      <TableCell>{format(agreement.startDate, 'MMM dd, yyyy')}</TableCell>
-                      <TableCell>{format(agreement.endDate, 'MMM dd, yyyy')}</TableCell>
-                      <TableCell>${agreement.monthlyAmount.toFixed(2)}</TableCell>
-                      <TableCell>${agreement.totalValue.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(agreement.status)}>
-                          {agreement.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                    {filteredAgreements.map((agreement) => (
+                      <TableRow key={agreement.id}>
+                        <TableCell className="font-medium">
+                          {agreement.customer}
+                        </TableCell>
+                        <TableCell>{agreement.product}</TableCell>
+                        <TableCell>{agreement.contractLength}</TableCell>
+                        <TableCell className="capitalize">{agreement.paymentPeriod}</TableCell>
+                        <TableCell>{format(agreement.startDate, 'MMM dd, yyyy')}</TableCell>
+                        <TableCell>{format(agreement.endDate, 'MMM dd, yyyy')}</TableCell>
+                        <TableCell>${agreement.monthlyAmount.toFixed(2)}</TableCell>
+                        <TableCell>${agreement.totalValue.toFixed(2)}</TableCell>
+                        <TableCell>
+                          ${(
+                            agreement.totalValue / monthsInPaymentPeriod(agreement.paymentPeriod)
+                          ).toFixed(2)}
+                          /{periodShortLabel(agreement.paymentPeriod)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(agreement.status)}>
+                            {agreement.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                 </TableBody>
               </Table>
             </div>
