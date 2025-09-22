@@ -18,7 +18,7 @@ interface PaymentSchedule {
   product: string;
   amount: number;
   dueDate: string;
-  status: 'paid' | 'due now' | 'due later' | 'overdue';
+  status: 'paid' | 'due' | 'overdue';
   paidDate?: string;
   paymentMethod?: string;
   notes?: string;
@@ -109,10 +109,12 @@ export default function RentalPayments() {
               console.log(`Payment schedule: Contract ${format(startDate, 'MMM dd')} to ${format(endDate, 'MMM dd')}, Payment ${paymentIndex + 1} on ${format(currentDate, 'MMM dd')} for ${item.paymentPeriod} (${paymentAmount})`);
               
               const daysFromNow = differenceInDays(currentDate, new Date());
-              let status: PaymentSchedule['status'] = 'due later';
+              let status: PaymentSchedule['status'] = 'due';
               
               if (daysFromNow < 0) {
                 status = 'overdue';
+              } else if (daysFromNow > 7) {
+                status = 'due';
               }
               
               newSchedules.push({
@@ -133,16 +135,6 @@ export default function RentalPayments() {
     });
 
     if (newSchedules.length > 0) {
-      // Find the payment closest to current date that isn't overdue and set it as "due now"
-      const today = new Date();
-      const futurePayments = newSchedules
-        .filter(p => p.status !== 'overdue')
-        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-      
-      if (futurePayments.length > 0) {
-        futurePayments[0].status = 'due now';
-      }
-      
       setPaymentSchedules(prev => [...prev, ...newSchedules]);
     }
   }, [sales, paymentSchedules, setPaymentSchedules]);
@@ -192,8 +184,7 @@ export default function RentalPayments() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'paid': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'due now': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-      case 'due later': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'due': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'overdue': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -202,8 +193,7 @@ export default function RentalPayments() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'paid': return <CheckCircle className="h-4 w-4" />;
-      case 'due now': return <AlertCircle className="h-4 w-4" />;
-      case 'due later': return <Clock className="h-4 w-4" />;
+      case 'due': return <Clock className="h-4 w-4" />;
       case 'overdue': return <AlertCircle className="h-4 w-4" />;
       default: return <Clock className="h-4 w-4" />;
     }
@@ -342,8 +332,7 @@ export default function RentalPayments() {
                   <SelectContent>
                     <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="paid">Paid</SelectItem>
-                    <SelectItem value="due now">Due Now</SelectItem>
-                    <SelectItem value="due later">Due Later</SelectItem>
+                    <SelectItem value="due">Due</SelectItem>
                     <SelectItem value="overdue">Overdue</SelectItem>
                   </SelectContent>
                 </Select>
@@ -473,7 +462,7 @@ export default function RentalPayments() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => markPayment(payment.id, 'due later')}
+                            onClick={() => markPayment(payment.id, 'due')}
                           >
                             Mark Unpaid
                           </Button>
