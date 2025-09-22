@@ -15,11 +15,12 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-
 export default function Sales() {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [showForm, setShowForm] = useState(false);
-  
+
   // Get customers and products from localStorage
   const [customers] = useLocalStorage<Array<{
     id: string;
@@ -33,7 +34,6 @@ export default function Sales() {
     lastPurchase: string;
     status: string;
   }>>('dashboard-customers', []);
-  
   const [products] = useLocalStorage<Array<{
     id: string;
     name: string;
@@ -45,14 +45,13 @@ export default function Sales() {
     status: string;
     lastSold: string;
   }>>('dashboard-products', []);
-  
   const [sales, setSales] = useLocalStorage<Array<{
     id: string;
     customer: string;
     total: number;
     items: Array<{
-      product: string; 
-      quantity: number; 
+      product: string;
+      quantity: number;
       price: number;
       isRental?: boolean;
       contractLength?: string;
@@ -63,22 +62,40 @@ export default function Sales() {
     date: string;
     status: string;
   }>>('dashboard-sales', []);
-  const [salesItems, setSalesItems] = useState([
-    { product: "", quantity: 1, price: 0, total: 0, isRental: false, contractLength: "", paymentPeriod: "monthly", startDate: undefined, endDate: undefined }
-  ]);
-
+  const [salesItems, setSalesItems] = useState([{
+    product: "",
+    quantity: 1,
+    price: 0,
+    total: 0,
+    isRental: false,
+    contractLength: "",
+    paymentPeriod: "monthly",
+    startDate: undefined,
+    endDate: undefined
+  }]);
   const addSalesItem = () => {
-    setSalesItems([...salesItems, { product: "", quantity: 1, price: 0, total: 0, isRental: false, contractLength: "", paymentPeriod: "monthly", startDate: undefined, endDate: undefined }]);
+    setSalesItems([...salesItems, {
+      product: "",
+      quantity: 1,
+      price: 0,
+      total: 0,
+      isRental: false,
+      contractLength: "",
+      paymentPeriod: "monthly",
+      startDate: undefined,
+      endDate: undefined
+    }]);
   };
-
   const updateSalesItem = (index: number, field: string, value: any) => {
     const updated = [...salesItems];
-    updated[index] = { ...updated[index], [field]: value };
-    
+    updated[index] = {
+      ...updated[index],
+      [field]: value
+    };
     if (field === 'quantity' || field === 'price') {
       updated[index].total = updated[index].quantity * updated[index].price;
     }
-    
+
     // Calculate end date when start date or contract length changes
     if ((field === 'startDate' || field === 'contractLength') && updated[index].startDate && updated[index].contractLength) {
       const startDate = updated[index].startDate;
@@ -93,30 +110,34 @@ export default function Sales() {
         updated[index].endDate = endDate;
       }
     }
-    
     setSalesItems(updated);
   };
-
   const removeSalesItem = (index: number) => {
     setSalesItems(salesItems.filter((_, i) => i !== index));
   };
-
   const calculateGrandTotal = () => {
     return salesItems.reduce((sum, item) => sum + item.total, 0);
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     toast({
       title: "Sale Logged Successfully!",
-      description: `Total sale amount: $${calculateGrandTotal().toFixed(2)}`,
+      description: `Total sale amount: $${calculateGrandTotal().toFixed(2)}`
     });
     setShowForm(false);
-    setSalesItems([{ product: "", quantity: 1, price: 0, total: 0, isRental: false, contractLength: "", paymentPeriod: "monthly", startDate: undefined, endDate: undefined }]);
+    setSalesItems([{
+      product: "",
+      quantity: 1,
+      price: 0,
+      total: 0,
+      isRental: false,
+      contractLength: "",
+      paymentPeriod: "monthly",
+      startDate: undefined,
+      endDate: undefined
+    }]);
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -163,16 +184,14 @@ export default function Sales() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">
-              {sales.filter(sale => 
-                sale.items.some(item => {
-                  // Check if any item in the sale is a rental with active contract
-                  if (!item.isRental || !item.startDate || !item.endDate) return false;
-                  const now = new Date();
-                  const startDate = new Date(item.startDate);
-                  const endDate = new Date(item.endDate);
-                  return now >= startDate && now <= endDate;
-                })
-              ).length}
+              {sales.filter(sale => sale.items.some(item => {
+                // Check if any item in the sale is a rental with active contract
+                if (!item.isRental || !item.startDate || !item.endDate) return false;
+                const now = new Date();
+                const startDate = new Date(item.startDate);
+                const endDate = new Date(item.endDate);
+                return now >= startDate && now <= endDate;
+              })).length}
             </div>
             <p className="text-xs text-muted-foreground">
               {sales.length === 0 ? "Active rental agreements" : "Currently active"}
@@ -180,28 +199,7 @@ export default function Sales() {
           </CardContent>
         </Card>
 
-        <Card className="dashboard-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Previous Contracts</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {sales.filter(sale => 
-                sale.items.some(item => {
-                  // Check if any item in the sale is a completed rental contract
-                  if (!item.isRental || !item.endDate) return false;
-                  const now = new Date();
-                  const endDate = new Date(item.endDate);
-                  return now > endDate;
-                })
-              ).length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {sales.length === 0 ? "Completed contracts" : "Ended contracts"}
-            </p>
-          </CardContent>
-        </Card>
+        
       </div>
         <Button onClick={() => setShowForm(!showForm)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -210,8 +208,7 @@ export default function Sales() {
       </div>
 
       {/* New Sale Form */}
-      {showForm && (
-        <Card className="dashboard-card">
+      {showForm && <Card className="dashboard-card">
           <CardHeader>
             <CardTitle className="text-card-foreground">Log New Sale</CardTitle>
             <CardDescription>
@@ -229,20 +226,16 @@ export default function Sales() {
                       <SelectValue placeholder={customers.length === 0 ? "Add customers first" : "Select customer"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
+                      {customers.map(customer => <SelectItem key={customer.id} value={customer.id}>
                           {customer.name} - {customer.company}
-                        </SelectItem>
-                      ))}
+                        </SelectItem>)}
                     </SelectContent>
                   </Select>
-                  {customers.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
+                  {customers.length === 0 && <p className="text-sm text-muted-foreground">
                       <Link to="/customers" className="text-primary hover:underline">
                         Add customers first
                       </Link> to start logging sales.
-                    </p>
-                  )}
+                    </p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="date">Sale Date</Label>
@@ -261,62 +254,40 @@ export default function Sales() {
                 </div>
 
                 <div className="space-y-3">
-                  {salesItems.map((item, index) => (
-                    <Card key={index} className="p-4">
+                  {salesItems.map((item, index) => <Card key={index} className="p-4">
                       <div className="space-y-4">
                         <div className="grid grid-cols-5 gap-4 items-end">
                           <div className="space-y-2">
                             <Label>Product</Label>
-                            <Select
-                              value={item.product}
-                              onValueChange={(value) => {
-                                const product = products.find(p => p.id === value);
-                                updateSalesItem(index, 'product', value);
-                                if (product) {
-                                  updateSalesItem(index, 'price', product.price);
-                                }
-                              }}
-                            >
+                            <Select value={item.product} onValueChange={value => {
+                        const product = products.find(p => p.id === value);
+                        updateSalesItem(index, 'product', value);
+                        if (product) {
+                          updateSalesItem(index, 'price', product.price);
+                        }
+                      }}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select product" />
                               </SelectTrigger>
                               <SelectContent>
-                                {products.length === 0 ? (
-                                  <div className="p-2 text-center">
+                                {products.length === 0 ? <div className="p-2 text-center">
                                     <p className="text-sm text-muted-foreground">No products available</p>
                                     <Link to="/products" className="text-sm text-primary hover:underline">
                                       Add products first
                                     </Link>
-                                  </div>
-                                ) : (
-                                  products.map((product) => (
-                                    <SelectItem key={product.id} value={product.id}>
+                                  </div> : products.map(product => <SelectItem key={product.id} value={product.id}>
                                       {product.name} - ${product.price.toFixed(2)}
-                                    </SelectItem>
-                                  ))
-                                )}
+                                    </SelectItem>)}
                               </SelectContent>
                             </Select>
                           </div>
                           <div className="space-y-2">
                             <Label>Quantity</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) => updateSalesItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                            />
+                            <Input type="number" min="1" value={item.quantity} onChange={e => updateSalesItem(index, 'quantity', parseInt(e.target.value) || 1)} />
                           </div>
                           <div className="space-y-2">
                             <Label>Unit Price</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={item.price}
-                              readOnly={item.product !== ""}
-                              className={item.product !== "" ? "bg-muted" : ""}
-                              onChange={(e) => updateSalesItem(index, 'price', parseFloat(e.target.value) || 0)}
-                            />
+                            <Input type="number" step="0.01" value={item.price} readOnly={item.product !== ""} className={item.product !== "" ? "bg-muted" : ""} onChange={e => updateSalesItem(index, 'price', parseFloat(e.target.value) || 0)} />
                           </div>
                           <div className="space-y-2">
                             <Label>Total</Label>
@@ -325,60 +296,38 @@ export default function Sales() {
                             </div>
                           </div>
                           <div>
-                            {salesItems.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => removeSalesItem(index)}
-                              >
+                            {salesItems.length > 1 && <Button type="button" variant="destructive" size="sm" onClick={() => removeSalesItem(index)}>
                                 Remove
-                              </Button>
-                            )}
+                              </Button>}
                           </div>
                         </div>
                         
                         <div className="flex items-center space-x-2">
-                          <input 
-                            type="checkbox" 
-                            id={`rental-${index}`} 
-                            checked={item.isRental}
-                            onChange={(e) => updateSalesItem(index, 'isRental', e.target.checked)}
-                            className="h-4 w-4 rounded border-gray-300" 
-                          />
+                          <input type="checkbox" id={`rental-${index}`} checked={item.isRental} onChange={e => updateSalesItem(index, 'isRental', e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
                           <Label htmlFor={`rental-${index}`}>Rental Agreement</Label>
                         </div>
                         
-                        {item.isRental && (
-                          <div className="grid grid-cols-2 gap-4 p-3 bg-muted rounded-lg">
+                        {item.isRental && <div className="grid grid-cols-2 gap-4 p-3 bg-muted rounded-lg">
                             <div className="space-y-2">
                               <Label>Contract Length</Label>
                               <div className="flex gap-2">
-                                <Select
-                                  value={item.contractLength.split(' ')[0] || ""}
-                                  onValueChange={(value) => {
-                                    const unit = item.contractLength.split(' ')[1] || 'months';
-                                    updateSalesItem(index, 'contractLength', `${value} ${unit}`);
-                                  }}
-                                >
+                                <Select value={item.contractLength.split(' ')[0] || ""} onValueChange={value => {
+                          const unit = item.contractLength.split(' ')[1] || 'months';
+                          updateSalesItem(index, 'contractLength', `${value} ${unit}`);
+                        }}>
                                   <SelectTrigger className="w-20">
                                     <SelectValue placeholder="Qty" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {[1,2,3,4,5,6,7,8,9,10,11,12,18,24,36].map((num) => (
-                                      <SelectItem key={num} value={num.toString()}>
+                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24, 36].map(num => <SelectItem key={num} value={num.toString()}>
                                         {num}
-                                      </SelectItem>
-                                    ))}
+                                      </SelectItem>)}
                                   </SelectContent>
                                 </Select>
-                                <Select
-                                  value={item.contractLength.split(' ')[1] || "months"}
-                                  onValueChange={(value) => {
-                                    const number = item.contractLength.split(' ')[0] || '1';
-                                    updateSalesItem(index, 'contractLength', `${number} ${value}`);
-                                  }}
-                                >
+                                <Select value={item.contractLength.split(' ')[1] || "months"} onValueChange={value => {
+                          const number = item.contractLength.split(' ')[0] || '1';
+                          updateSalesItem(index, 'contractLength', `${number} ${value}`);
+                        }}>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Unit" />
                                   </SelectTrigger>
@@ -391,10 +340,7 @@ export default function Sales() {
                             </div>
                             <div className="space-y-2">
                               <Label>Payment Period</Label>
-                              <Select
-                                value={item.paymentPeriod}
-                                onValueChange={(value) => updateSalesItem(index, 'paymentPeriod', value)}
-                              >
+                              <Select value={item.paymentPeriod} onValueChange={value => updateSalesItem(index, 'paymentPeriod', value)}>
                                 <SelectTrigger>
                                   <SelectValue />
                                 </SelectTrigger>
@@ -411,25 +357,13 @@ export default function Sales() {
                               <Label>Contract Start Date</Label>
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    className={cn(
-                                      "w-full justify-start text-left font-normal",
-                                      !item.startDate && "text-muted-foreground"
-                                    )}
-                                  >
+                                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !item.startDate && "text-muted-foreground")}>
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {item.startDate ? format(item.startDate, "PPP") : <span>Pick a date</span>}
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0" align="start">
-                                  <CalendarComponent
-                                    mode="single"
-                                    selected={item.startDate}
-                                    onSelect={(date) => updateSalesItem(index, 'startDate', date)}
-                                    initialFocus
-                                    className={cn("p-3 pointer-events-auto")}
-                                  />
+                                  <CalendarComponent mode="single" selected={item.startDate} onSelect={date => updateSalesItem(index, 'startDate', date)} initialFocus className={cn("p-3 pointer-events-auto")} />
                                 </PopoverContent>
                               </Popover>
                             </div>
@@ -440,11 +374,9 @@ export default function Sales() {
                                 {item.endDate ? format(item.endDate, "PPP") : "Auto-calculated"}
                               </div>
                             </div>
-                          </div>
-                        )}
+                          </div>}
                       </div>
-                    </Card>
-                  ))}
+                    </Card>)}
                 </div>
 
                 <div className="flex justify-end">
@@ -460,11 +392,7 @@ export default function Sales() {
               {/* Notes */}
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes (Optional)</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Add any additional notes about this sale..."
-                  className="min-h-[100px]"
-                />
+                <Textarea id="notes" placeholder="Add any additional notes about this sale..." className="min-h-[100px]" />
               </div>
 
               <Button type="submit" className="w-full" size="lg">
@@ -473,8 +401,7 @@ export default function Sales() {
               </Button>
             </form>
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
       {/* Sales History */}
       <Card className="dashboard-card">
@@ -493,8 +420,7 @@ export default function Sales() {
           </div>
         </CardHeader>
         <CardContent>
-          {sales.length > 0 ? (
-            <Table>
+          {sales.length > 0 ? <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Customer</TableHead>
@@ -505,8 +431,7 @@ export default function Sales() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sales.map((sale) => (
-                  <TableRow key={sale.id}>
+                {sales.map(sale => <TableRow key={sale.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
@@ -515,11 +440,9 @@ export default function Sales() {
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        {sale.items.map((item, idx) => (
-                          <div key={idx} className="text-sm">
+                        {sale.items.map((item, idx) => <div key={idx} className="text-sm">
                             {item.quantity}x {item.product}
-                          </div>
-                        ))}
+                          </div>)}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -536,12 +459,9 @@ export default function Sales() {
                     <TableCell className="text-right font-bold text-success">
                       ${sale.total.toFixed(2)}
                     </TableCell>
-                  </TableRow>
-                ))}
+                  </TableRow>)}
               </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-12">
+            </Table> : <div className="text-center py-12">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
                 <FileText className="h-8 w-8 text-muted-foreground" />
               </div>
@@ -563,10 +483,8 @@ export default function Sales() {
                   </Link>
                 </Button>
               </div>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 }
