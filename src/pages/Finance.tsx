@@ -246,11 +246,15 @@ export default function Finance() {
                 <div className="space-y-2">
                   <Label htmlFor="amount">Amount *</Label>
                   <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={newExpense.amount}
-                    onChange={(e) => setNewExpense(prev => ({...prev, amount: parseFloat(e.target.value) || 0}))}
+                    type="text"
+                    placeholder="0.00"
+                    value={newExpense.amount === 0 ? '' : newExpense.amount.toString()}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                        setNewExpense(prev => ({...prev, amount: value === '' ? 0 : parseFloat(value) || 0}));
+                      }
+                    }}
                     required
                   />
                 </div>
