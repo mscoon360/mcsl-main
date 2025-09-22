@@ -127,10 +127,16 @@ export default function Sales() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check stock availability for non-rental items
-    const stockErrors = salesItems.filter(item => {
-      const product = products.find(p => p.id === item.product);
-      return product && !item.isRental && product.stock < item.quantity;
+    // Check stock availability for all items (including rentals), aggregated per product
+    const qtyByProduct = salesItems.reduce((acc, item) => {
+      const id = item.product;
+      acc[id] = (acc[id] || 0) + item.quantity;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const stockErrors = Object.entries(qtyByProduct).filter(([productId, qty]) => {
+      const product = products.find(p => p.id === productId);
+      return product ? product.stock < qty : false;
     });
 
     if (stockErrors.length > 0) {
@@ -161,13 +167,15 @@ export default function Sales() {
       status: "completed"
     };
 
-    // Update product stock for non-rental sales
+    // Update product stock for all items (sales and rentals)
     const updatedProducts = products.map(product => {
-      const soldItem = salesItems.find(item => item.product === product.id && !item.isRental);
-      if (soldItem) {
+      const totalQtySold = salesItems
+        .filter(item => item.product === product.id)
+        .reduce((sum, i) => sum + i.quantity, 0);
+      if (totalQtySold > 0) {
         return {
           ...product,
-          stock: product.stock - soldItem.quantity,
+          stock: product.stock - totalQtySold,
           lastSold: saleDate
         };
       }
