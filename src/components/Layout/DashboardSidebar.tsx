@@ -94,17 +94,21 @@ export function DashboardSidebar() {
   };
 
   return (
-    <Sidebar className={isCollapsed ? "w-16" : "w-64"} collapsible="icon">
+    <Sidebar 
+      className={`${isCollapsed ? "w-16" : "w-64"} md:relative`} 
+      collapsible="icon"
+      side="left"
+    >
       <SidebarContent className="bg-sidebar-background">
         {/* Company Logo/Header */}
-        <div className="p-4 border-b border-sidebar-border">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Building2 className="h-5 w-5" />
+        <div className="p-3 md:p-4 border-b border-sidebar-border">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="flex h-6 w-6 md:h-8 md:w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Building2 className="h-3 w-3 md:h-5 md:w-5" />
             </div>
             {!isCollapsed && (
               <div>
-                <h2 className="text-lg font-semibold text-sidebar-foreground">Magic-Care</h2>
+                <h2 className="text-sm md:text-lg font-semibold text-sidebar-foreground">Magic-Care</h2>
                 <p className="text-xs text-sidebar-foreground/60">Solutions Limited</p>
               </div>
             )}
@@ -114,7 +118,7 @@ export function DashboardSidebar() {
         {navigation.map((section) => (
           <SidebarGroup key={section.title}>
             {!isCollapsed && (
-              <SidebarGroupLabel className="text-sidebar-foreground/60">
+              <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs">
                 {section.title}
               </SidebarGroupLabel>
             )}
@@ -135,10 +139,10 @@ export function DashboardSidebar() {
                                 : "text-sidebar-foreground hover:bg-sidebar-accent"
                             }`}
                           >
-                            <item.icon className="h-5 w-5" />
-                            {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                            <item.icon className="h-4 w-4 md:h-5 md:w-5" />
+                            {!isCollapsed && <span className="font-medium text-sm">{item.name}</span>}
                             {!isCollapsed && (
-                              <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${
+                              <ChevronDown className={`ml-auto h-3 w-3 md:h-4 md:w-4 transition-transform ${
                                 openDropdowns[item.name] || isGroupActive(item) ? 'rotate-180' : ''
                               }`} />
                             )}
@@ -154,7 +158,7 @@ export function DashboardSidebar() {
                                     <NavLink
                                       to={subItem.href}
                                       className={({ isActive: navIsActive }) =>
-                                        `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                                        `flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors text-sm ${
                                           isActive(subItem.href)
                                             ? "bg-primary text-primary-foreground"
                                             : "text-sidebar-foreground hover:bg-sidebar-accent"
@@ -162,17 +166,17 @@ export function DashboardSidebar() {
                                       }
                                     >
                                        {subItem.name === "Collections" ? (
-                                        <CreditCard className="h-4 w-4" />
+                                        <CreditCard className="h-3 w-3 md:h-4 md:w-4" />
                                       ) : subItem.name === "Overview" ? (
-                                        <BarChart3 className="h-4 w-4" />
+                                        <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
                                       ) : subItem.name === "Income" ? (
-                                        <DollarSign className="h-4 w-4" />
+                                        <DollarSign className="h-3 w-3 md:h-4 md:w-4" />
                                       ) : subItem.name === "Expenditure" ? (
-                                        <FileText className="h-4 w-4" />
+                                        <FileText className="h-3 w-3 md:h-4 md:w-4" />
                                       ) : subItem.name === "Invoices" ? (
-                                        <Receipt className="h-4 w-4" />
+                                        <Receipt className="h-3 w-3 md:h-4 md:w-4" />
                                       ) : (
-                                        <FileText className="h-4 w-4" />
+                                        <FileText className="h-3 w-3 md:h-4 md:w-4" />
                                       )}
                                       <span className="font-medium">{subItem.name}</span>
                                     </NavLink>
@@ -188,7 +192,7 @@ export function DashboardSidebar() {
                         <NavLink
                           to={item.href}
                           className={({ isActive: navIsActive }) =>
-                            `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                            `flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors text-sm ${
                               isActive(item.href)
                                 ? "bg-primary text-primary-foreground"
                                 : item.disabled
@@ -197,7 +201,7 @@ export function DashboardSidebar() {
                             }`
                           }
                         >
-                          <item.icon className="h-5 w-5" />
+                          <item.icon className="h-4 w-4 md:h-5 md:w-5" />
                           {!isCollapsed && <span className="font-medium">{item.name}</span>}
                         </NavLink>
                       </SidebarMenuButton>

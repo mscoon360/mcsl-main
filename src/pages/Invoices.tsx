@@ -594,17 +594,17 @@ export default function Invoices() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Invoice Management</h1>
-          <p className="text-muted-foreground">Create, manage, and track customer invoices</p>
+          <h1 className="mobile-heading font-bold text-foreground">Invoice Management</h1>
+          <p className="text-muted-foreground text-sm md:text-base">Create, manage, and track customer invoices</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={exportInvoices}>
+        <div className="mobile-button-group">
+          <Button variant="outline" onClick={exportInvoices} className="touch-button">
             <Download className="h-4 w-4 mr-2" />
             Export Excel
           </Button>
-          <Button onClick={() => setShowForm(!showForm)}>
+          <Button onClick={() => setShowForm(!showForm)} className="touch-button">
             <Plus className="h-4 w-4 mr-2" />
             {showForm ? "Cancel" : "New Invoice"}
           </Button>
@@ -612,25 +612,25 @@ export default function Invoices() {
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="mobile-stats-grid mb-6">
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Total Invoices</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium text-card-foreground">Total Invoices</CardTitle>
             <FileText className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{totalInvoices}</div>
+            <div className="text-xl md:text-2xl font-bold text-blue-600">{totalInvoices}</div>
             <p className="text-xs text-muted-foreground">All time</p>
           </CardContent>
         </Card>
 
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Paid Invoices</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium text-card-foreground">Paid Invoices</CardTitle>
             <DollarSign className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{paidInvoices}</div>
+            <div className="text-xl md:text-2xl font-bold text-green-600">{paidInvoices}</div>
             <p className="text-xs text-muted-foreground">
               {totalInvoices > 0 ? ((paidInvoices / totalInvoices) * 100).toFixed(1) : '0'}% of total
             </p>
@@ -639,22 +639,22 @@ export default function Invoices() {
 
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Overdue</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium text-card-foreground">Overdue</CardTitle>
             <Calendar className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{overdueInvoices}</div>
+            <div className="text-xl md:text-2xl font-bold text-red-600">{overdueInvoices}</div>
             <p className="text-xs text-muted-foreground">Require attention</p>
           </CardContent>
         </Card>
 
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Total Revenue</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium text-card-foreground">Total Revenue</CardTitle>
             <DollarSign className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">${totalRevenue.toFixed(2)}</div>
+            <div className="text-xl md:text-2xl font-bold text-success">${totalRevenue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">From paid invoices</p>
           </CardContent>
         </Card>
@@ -674,20 +674,20 @@ export default function Invoices() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Customer and Dates */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="mobile-form-grid">
                 <div className="space-y-2">
                   <Label>Customer *</Label>
                   <Select 
                     value={newInvoice.customerId} 
                     onValueChange={(value) => setNewInvoice({...newInvoice, customerId: value})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="touch-button">
                       <SelectValue placeholder="Select customer" />
                     </SelectTrigger>
                     <SelectContent>
                       {customers.map(customer => (
                         <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name} - {customer.company}
+                          <span className="text-sm">{customer.name} - {customer.company}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -701,6 +701,7 @@ export default function Invoices() {
                     value={newInvoice.issueDate}
                     onChange={(e) => setNewInvoice({...newInvoice, issueDate: e.target.value})}
                     required
+                    className="touch-button"
                   />
                 </div>
 
@@ -711,6 +712,7 @@ export default function Invoices() {
                     value={newInvoice.dueDate}
                     onChange={(e) => setNewInvoice({...newInvoice, dueDate: e.target.value})}
                     required
+                    className="touch-button"
                   />
                 </div>
               </div>
@@ -944,7 +946,7 @@ export default function Invoices() {
       {/* Invoices Table */}
       <Card className="dashboard-card">
         <CardHeader>
-          <CardTitle className="text-card-foreground">Invoices</CardTitle>
+          <CardTitle className="text-card-foreground mobile-subheading">Invoices</CardTitle>
           <CardDescription>
             {filteredInvoices.length} invoice{filteredInvoices.length !== 1 ? 's' : ''} found
           </CardDescription>
@@ -956,68 +958,72 @@ export default function Invoices() {
               <p>No invoices found</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Issue Date</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="w-32">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredInvoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        {invoice.customerName}
-                      </div>
-                    </TableCell>
-                    <TableCell>{format(parseISO(invoice.issueDate), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell>{format(parseISO(invoice.dueDate), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(invoice.status)}>
-                        {invoice.status.toUpperCase()}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-bold">${invoice.total.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => editInvoice(invoice)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        {invoice.status !== 'paid' && (
+            <div className="mobile-table-scroll">
+              <Table className="mobile-table">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[120px]">Invoice #</TableHead>
+                    <TableHead className="min-w-[150px]">Customer</TableHead>
+                    <TableHead className="hide-mobile">Issue Date</TableHead>
+                    <TableHead className="hide-mobile">Due Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right min-w-[80px]">Total</TableHead>
+                    <TableHead className="w-24 md:w-32">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredInvoices.map((invoice) => (
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-medium text-xs md:text-sm">{invoice.invoiceNumber}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                          <span className="text-xs md:text-sm truncate">{invoice.customerName}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hide-mobile text-xs">{format(parseISO(invoice.issueDate), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell className="hide-mobile text-xs">{format(parseISO(invoice.dueDate), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell>
+                        <Badge className={`${getStatusColor(invoice.status)} text-xs`}>
+                          {invoice.status.toUpperCase()}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-bold text-xs md:text-sm">${invoice.total.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => updateInvoiceStatus(invoice.id, 'paid')}
+                            onClick={() => editInvoice(invoice)}
+                            className="h-8 w-8 p-0"
                           >
-                            <DollarSign className="h-4 w-4" />
+                            <Edit className="h-3 w-3" />
                           </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => deleteInvoice(invoice.id)}
-                          className="hover:bg-destructive hover:text-destructive-foreground"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                          {invoice.status !== 'paid' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => updateInvoiceStatus(invoice.id, 'paid')}
+                              className="h-8 w-8 p-0"
+                            >
+                              <DollarSign className="h-3 w-3" />
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => deleteInvoice(invoice.id)}
+                            className="hover:bg-destructive hover:text-destructive-foreground h-8 w-8 p-0"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

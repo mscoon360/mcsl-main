@@ -152,4 +152,58 @@
   .gradient-card {
     background: var(--gradient-card);
   }
+  
+  /* Mobile-first responsive utilities */
+  .mobile-table-scroll {
+    @apply overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0;
+  }
+  
+  .mobile-card-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6;
+  }
+  
+  .mobile-form-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4;
+  }
+  
+  .mobile-button-group {
+    @apply flex flex-col sm:flex-row gap-2 sm:gap-4;
+  }
+  
+  .mobile-stats-grid {
+    @apply grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6;
+  }
+  
+  /* Touch-friendly buttons */
+  .touch-button {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  /* Mobile table styling */
+  .mobile-table {
+    @apply text-sm;
+  }
+  
+  .mobile-table th,
+  .mobile-table td {
+    @apply px-2 py-3 md:px-4;
+  }
+  
+  /* Responsive text sizing */
+  .mobile-heading {
+    @apply text-xl md:text-3xl;
+  }
+  
+  .mobile-subheading {
+    @apply text-lg md:text-xl;
+  }
+  
+  /* Hide elements on mobile */
+  .hide-mobile {
+    @apply hidden md:block;
+  }
+  
+  .show-mobile {
+    @apply block md:hidden;
+  }
 }
