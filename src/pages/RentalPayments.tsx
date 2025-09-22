@@ -139,16 +139,47 @@ export default function RentalPayments() {
     }
   }, [sales, paymentSchedules, setPaymentSchedules]);
 
-  // Filter payment schedules
-  const filteredPayments = paymentSchedules.filter(payment => {
-    const matchesSearch = searchTerm === "" || 
-      payment.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.product.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || payment.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  // Filter and sort payment schedules
+  const filteredPayments = paymentSchedules
+    .filter(payment => {
+      const matchesSearch = searchTerm === "" || 
+        payment.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        payment.product.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === "all" || payment.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.dueDate);
+      const dateB = new Date(b.dueDate);
+      
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'date':
+          comparison = dateA.getTime() - dateB.getTime();
+          break;
+        case 'month':
+          const monthA = `${dateA.getFullYear()}-${(dateA.getMonth() + 1).toString().padStart(2, '0')}`;
+          const monthB = `${dateB.getFullYear()}-${(dateB.getMonth() + 1).toString().padStart(2, '0')}`;
+          comparison = monthA.localeCompare(monthB);
+          // If same month, sort by date within month
+          if (comparison === 0) {
+            comparison = dateA.getTime() - dateB.getTime();
+          }
+          break;
+        case 'year':
+          comparison = dateA.getFullYear() - dateB.getFullYear();
+          // If same year, sort by date within year
+          if (comparison === 0) {
+            comparison = dateA.getTime() - dateB.getTime();
+          }
+          break;
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
 
   const getStatusColor = (status: string) => {
     switch (status) {
