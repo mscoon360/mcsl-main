@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, DollarSign, TrendingUp, TrendingDown, Calendar, Receipt, Building, Wrench } from "lucide-react";
+import { Plus, DollarSign, TrendingUp, TrendingDown, Calendar, Receipt, Building, Wrench, Trash2 } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, parseISO } from "date-fns";
@@ -181,6 +181,18 @@ export default function Finance() {
       type: ''
     });
     setShowExpenseForm(false);
+  };
+
+  const handleDeleteExpense = (expenseId: string) => {
+    const expense = expenditures.find(e => e.id === expenseId);
+    if (!expense) return;
+
+    setExpenditures(prev => prev.filter(e => e.id !== expenseId));
+    
+    toast({
+      title: "Expense Deleted",
+      description: `Expense of $${expense.amount.toFixed(2)} has been removed.`
+    });
   };
 
   const monthlyData = calculateMonthlyFinancials(selectedMonth);
@@ -484,8 +496,18 @@ export default function Finance() {
                         <span>{format(parseISO(expense.date), 'MMM dd')}</span>
                       </div>
                     </div>
-                    <div className="font-bold text-destructive">
-                      ${expense.amount.toFixed(2)}
+                    <div className="flex items-center gap-2">
+                      <div className="font-bold text-destructive">
+                        ${expense.amount.toFixed(2)}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteExpense(expense.id)}
+                        className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}
