@@ -51,6 +51,12 @@ export default function RentalPayments() {
   // Payment schedules storage
   const [paymentSchedules, setPaymentSchedules] = useLocalStorage<PaymentSchedule[]>('dashboard-payment-schedules', []);
 
+  // Force regeneration of payment schedules with correct amounts
+  useEffect(() => {
+    // Clear existing schedules to regenerate with correct logic
+    setPaymentSchedules([]);
+  }, []);
+
   // Generate payment schedules from rental agreements
   useEffect(() => {
     const existingScheduleAgreements = new Set(paymentSchedules.map(p => p.agreementId));
@@ -97,6 +103,9 @@ export default function RentalPayments() {
                   periodMultiplier = 1;
               }
               
+              const paymentAmount = monthlyAmount * periodMultiplier;
+              console.log(`Payment calculation: ${monthlyAmount} * ${periodMultiplier} = ${paymentAmount} for ${item.paymentPeriod} period`);
+              
               // Don't create payment past the end date
               if (currentDate > endDate) break;
               
@@ -114,7 +123,7 @@ export default function RentalPayments() {
                 agreementId,
                 customer: sale.customer,
                 product: item.product,
-                amount: monthlyAmount * periodMultiplier, // Multiply by period length
+                amount: paymentAmount, // Use calculated payment amount
                 dueDate: currentDate.toISOString().split('T')[0],
                 status
               });
