@@ -257,18 +257,35 @@ export default function FinanceOverview() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={performanceData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '']} />
-                <Bar dataKey="income" fill="#10b981" name="Income" />
-                <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
-                <Bar dataKey="net" fill="#3b82f6" name="Net Profit" />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="space-y-4">
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={performanceData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '']} />
+                  <Bar dataKey="income" fill="#10b981" name="Income" />
+                  <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
+                  <Bar dataKey="net" fill="#3b82f6" name="Net Profit" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Color Legend */}
+            <div className="flex justify-center gap-6">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: '#10b981' }}></div>
+                <span className="text-sm font-medium">Income</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: '#ef4444' }}></div>
+                <span className="text-sm font-medium">Expenses</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: '#3b82f6' }}></div>
+                <span className="text-sm font-medium">Net Profit</span>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -282,25 +299,40 @@ export default function FinanceOverview() {
           </CardHeader>
           <CardContent>
             {incomeBreakdown.length > 0 ? (
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPieChart>
-                    <Pie
-                      data={incomeBreakdown}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {incomeBreakdown.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '']} />
-                  </RechartsPieChart>
-                </ResponsiveContainer>
+              <div className="space-y-4">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                      <Pie
+                        data={incomeBreakdown}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {incomeBreakdown.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '']} />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Color Legend */}
+                <div className="flex justify-center gap-6">
+                  {incomeBreakdown.map((entry, index) => (
+                    <div key={entry.name} className="flex items-center gap-2">
+                      <div 
+                        className="w-4 h-4 rounded" 
+                        style={{ backgroundColor: entry.color }}
+                      ></div>
+                      <span className="text-sm font-medium">{entry.name}</span>
+                      <span className="text-sm text-muted-foreground">${entry.value.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="h-64 flex items-center justify-center text-muted-foreground">
@@ -320,25 +352,40 @@ export default function FinanceOverview() {
           </CardHeader>
           <CardContent>
             {expenseBreakdown.length > 0 ? (
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPieChart>
-                    <Pie
-                      data={expenseBreakdown}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {expenseBreakdown.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '']} />
-                  </RechartsPieChart>
-                </ResponsiveContainer>
+              <div className="space-y-4">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                      <Pie
+                        data={expenseBreakdown}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {expenseBreakdown.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '']} />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Color Legend */}
+                <div className="flex justify-center gap-6">
+                  {expenseBreakdown.map((entry, index) => (
+                    <div key={entry.name} className="flex items-center gap-2">
+                      <div 
+                        className="w-4 h-4 rounded" 
+                        style={{ backgroundColor: entry.color }}
+                      ></div>
+                      <span className="text-sm font-medium">{entry.name}</span>
+                      <span className="text-sm text-muted-foreground">${entry.value.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="h-64 flex items-center justify-center text-muted-foreground">
