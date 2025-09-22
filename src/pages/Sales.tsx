@@ -89,13 +89,12 @@ export default function Sales() {
     }]);
   };
   const updateSalesItem = (index: number, field: string, value: any) => {
-    setSalesItems((prev) => {
+    setSalesItems(prev => {
       const updated = [...prev];
       updated[index] = {
         ...updated[index],
-        [field]: value,
+        [field]: value
       };
-
       if (field === 'quantity' || field === 'price') {
         updated[index].total = updated[index].quantity * updated[index].price;
       }
@@ -114,7 +113,6 @@ export default function Sales() {
           updated[index].endDate = endDate;
         }
       }
-
       return updated;
     });
   };
@@ -123,16 +121,6 @@ export default function Sales() {
   };
   const calculateGrandTotal = () => {
     return salesItems.reduce((sum, item) => sum + item.total, 0);
-  };
-
-  const clearSalesLog = () => {
-    if (window.confirm("Are you sure you want to clear all sales history? This action cannot be undone.")) {
-      setSales([]);
-      toast({
-        title: "Sales Log Cleared",
-        description: "All sales history has been removed."
-      });
-    }
   };
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,12 +131,10 @@ export default function Sales() {
       acc[id] = (acc[id] || 0) + item.quantity;
       return acc;
     }, {} as Record<string, number>);
-
     const stockErrors = Object.entries(qtyByProduct).filter(([productId, qty]) => {
       const product = products.find(p => p.id === productId);
       return product ? product.stock < qty : false;
     });
-
     if (stockErrors.length > 0) {
       toast({
         title: "Insufficient Stock",
@@ -178,29 +164,21 @@ export default function Sales() {
     };
 
     // Update product stock for all items (sales and rentals)
-    setProducts((prevProducts) => {
-      const updated = prevProducts.map((product) => {
-        const totalQtySold = salesItems
-          .filter((item) => item.product === product.id)
-          .reduce((sum, i) => sum + i.quantity, 0);
-        if (totalQtySold > 0) {
-          const newStock = Math.max(0, product.stock - totalQtySold);
-          const status = newStock > 10 ? 'active' : newStock > 0 ? 'low_stock' : 'out_of_stock';
-          return {
-            ...product,
-            stock: newStock,
-            status,
-            lastSold: saleDate,
-          };
-        }
-        return product;
-      });
-      return updated;
+    const updatedProducts = products.map(product => {
+      const totalQtySold = salesItems.filter(item => item.product === product.id).reduce((sum, i) => sum + i.quantity, 0);
+      if (totalQtySold > 0) {
+        return {
+          ...product,
+          stock: product.stock - totalQtySold,
+          lastSold: saleDate
+        };
+      }
+      return product;
     });
 
     // Save updated products and sales
-    setSales((prev) => [...prev, newSale]);
-    
+    setProducts(updatedProducts);
+    setSales(prev => [...prev, newSale]);
     toast({
       title: "Sale Logged Successfully!",
       description: `Total sale amount: $${calculateGrandTotal().toFixed(2)}. Stock updated.`
@@ -288,7 +266,7 @@ export default function Sales() {
                         <div className="grid grid-cols-5 gap-4 items-end">
                           <div className="space-y-2">
                             <Label>Product</Label>
-                            <Select key={`prod-${index}-${item.product}`} value={item.product} onValueChange={(value) => {
+                            <Select key={`prod-${index}-${item.product}`} value={item.product} onValueChange={value => {
                         console.log('Product selected:', value);
                         const product = products.find(p => p.id === value);
                         updateSalesItem(index, 'product', value);
@@ -446,9 +424,6 @@ export default function Sales() {
             <div className="flex items-center gap-2">
               <Search className="h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search sales..." className="w-64" />
-              <Button variant="destructive" size="sm" onClick={clearSalesLog}>
-                Clear All Sales
-              </Button>
             </div>
           </div>
         </CardHeader>
@@ -464,35 +439,7 @@ export default function Sales() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sales.map(sale => <TableRow key={sale.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        {sale.customer}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {sale.items.map((item, idx) => <div key={idx} className="text-sm">
-                            {item.quantity}x {item.product}
-                          </div>)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {new Date(sale.date).toLocaleDateString()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={sale.status === 'completed' ? 'default' : 'secondary'}>
-                        {sale.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-bold text-success">
-                      ${sale.total.toFixed(2)}
-                    </TableCell>
-                  </TableRow>)}
+                {sales.map(sale => {})}
               </TableBody>
             </Table> : <div className="text-center py-12">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
