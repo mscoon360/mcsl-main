@@ -7,10 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package } from "lucide-react";
+import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package, CalendarIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 export default function Sales() {
   const { toast } = useToast();
@@ -50,12 +54,12 @@ export default function Sales() {
     date: string;
     status: string;
   }>>('dashboard-sales', []);
-const [salesItems, setSalesItems] = useState([
-    { product: "", quantity: 1, price: 0, total: 0, isRental: false, contractLength: "", paymentPeriod: "monthly" }
+  const [salesItems, setSalesItems] = useState([
+    { product: "", quantity: 1, price: 0, total: 0, isRental: false, contractLength: "", paymentPeriod: "monthly", startDate: undefined, endDate: undefined }
   ]);
 
   const addSalesItem = () => {
-    setSalesItems([...salesItems, { product: "", quantity: 1, price: 0, total: 0, isRental: false, contractLength: "", paymentPeriod: "monthly" }]);
+    setSalesItems([...salesItems, { product: "", quantity: 1, price: 0, total: 0, isRental: false, contractLength: "", paymentPeriod: "monthly", startDate: undefined, endDate: undefined }]);
   };
 
   const updateSalesItem = (index: number, field: string, value: any) => {
@@ -64,6 +68,21 @@ const [salesItems, setSalesItems] = useState([
     
     if (field === 'quantity' || field === 'price') {
       updated[index].total = updated[index].quantity * updated[index].price;
+    }
+    
+    // Calculate end date when start date or contract length changes
+    if ((field === 'startDate' || field === 'contractLength') && updated[index].startDate && updated[index].contractLength) {
+      const startDate = updated[index].startDate;
+      const [number, unit] = updated[index].contractLength.split(' ');
+      if (number && unit) {
+        const endDate = new Date(startDate);
+        if (unit === 'months') {
+          endDate.setMonth(endDate.getMonth() + parseInt(number));
+        } else if (unit === 'years') {
+          endDate.setFullYear(endDate.getFullYear() + parseInt(number));
+        }
+        updated[index].endDate = endDate;
+      }
     }
     
     setSalesItems(updated);
@@ -84,7 +103,7 @@ const [salesItems, setSalesItems] = useState([
       description: `Total sale amount: $${calculateGrandTotal().toFixed(2)}`,
     });
     setShowForm(false);
-    setSalesItems([{ product: "", quantity: 1, price: 0, total: 0, isRental: false, contractLength: "", paymentPeriod: "monthly" }]);
+    setSalesItems([{ product: "", quantity: 1, price: 0, total: 0, isRental: false, contractLength: "", paymentPeriod: "monthly", startDate: undefined, endDate: undefined }]);
   };
 
   return (
@@ -299,6 +318,40 @@ const [salesItems, setSalesItems] = useState([
                                   <SelectItem value="annually">Annually</SelectItem>
                                 </SelectContent>
                               </Select>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label>Contract Start Date</Label>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full justify-start text-left font-normal",
+                                      !item.startDate && "text-muted-foreground"
+                                    )}
+                                  >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {item.startDate ? format(item.startDate, "PPP") : <span>Pick a date</span>}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <CalendarComponent
+                                    mode="single"
+                                    selected={item.startDate}
+                                    onSelect={(date) => updateSalesItem(index, 'startDate', date)}
+                                    initialFocus
+                                    className={cn("p-3 pointer-events-auto")}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label>Contract End Date</Label>
+                              <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
+                                {item.endDate ? format(item.endDate, "PPP") : "Auto-calculated"}
+                              </div>
                             </div>
                           </div>
                         )}
