@@ -247,11 +247,41 @@ const [salesItems, setSalesItems] = useState([
                           <div className="grid grid-cols-2 gap-4 p-3 bg-muted rounded-lg">
                             <div className="space-y-2">
                               <Label>Contract Length</Label>
-                              <Input
-                                placeholder="e.g., 12 months, 2 years"
-                                value={item.contractLength}
-                                onChange={(e) => updateSalesItem(index, 'contractLength', e.target.value)}
-                              />
+                              <div className="flex gap-2">
+                                <Select
+                                  value={item.contractLength.split(' ')[0] || ""}
+                                  onValueChange={(value) => {
+                                    const unit = item.contractLength.split(' ')[1] || 'months';
+                                    updateSalesItem(index, 'contractLength', `${value} ${unit}`);
+                                  }}
+                                >
+                                  <SelectTrigger className="w-20">
+                                    <SelectValue placeholder="Qty" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {[1,2,3,4,5,6,7,8,9,10,11,12,18,24,36].map((num) => (
+                                      <SelectItem key={num} value={num.toString()}>
+                                        {num}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Select
+                                  value={item.contractLength.split(' ')[1] || "months"}
+                                  onValueChange={(value) => {
+                                    const number = item.contractLength.split(' ')[0] || '1';
+                                    updateSalesItem(index, 'contractLength', `${number} ${value}`);
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Unit" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="months">Months</SelectItem>
+                                    <SelectItem value="years">Years</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </div>
                             <div className="space-y-2">
                               <Label>Payment Period</Label>
