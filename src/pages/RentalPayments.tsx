@@ -200,20 +200,55 @@ export default function RentalPayments() {
   };
 
   const markPayment = (paymentId: string, status: PaymentSchedule['status'], paymentMethod?: string) => {
-    setPaymentSchedules(prev => prev.map(payment => 
-      payment.id === paymentId 
-        ? { 
-            ...payment, 
-            status,
-            paidDate: status === 'paid' ? new Date().toISOString().split('T')[0] : undefined,
-            paymentMethod: status === 'paid' ? (paymentMethod || 'cash') : undefined
+    setPaymentSchedules(prev => prev.map(payment => {
+      if (payment.id === paymentId) {
+        const updatedPayment = { 
+          ...payment, 
+          status,
+          paidDate: status === 'paid' ? new Date().toISOString().split('T')[0] : undefined,
+          paymentMethod: status === 'paid' ? (paymentMethod || 'cash') : undefined
+        };
+        
+        // Save to localStorage for finance page calculations when marked as paid
+        if (status === 'paid') {
+          const existingPaidPayments = JSON.parse(localStorage.getItem('paid-rental-payments') || '[]');
+          const paidPaymentRecord = {
+            id: payment.id,
+            customer: payment.customer,  
+            product: payment.product,
+            amount: payment.amount,
+            dueDate: payment.dueDate,
+            paidDate: updatedPayment.paidDate,
+            paymentMethod: updatedPayment.paymentMethod,
+            status: 'paid'
+          };
+          
+          // Check if already exists to prevent duplicates
+          const existingIndex = existingPaidPayments.findIndex((p: any) => p.id === payment.id);
+          if (existingIndex >= 0) {
+            existingPaidPayments[existingIndex] = paidPaymentRecord;
+          } else {
+            existingPaidPayments.push(paidPaymentRecord);
           }
-        : payment
-    ));
+          
+          localStorage.setItem('paid-rental-payments', JSON.stringify(existingPaidPayments));
+        } else {
+          // Remove from paid payments if unmarked
+          const existingPaidPayments = JSON.parse(localStorage.getItem('paid-rental-payments') || '[]');
+          const filteredPayments = existingPaidPayments.filter((p: any) => p.id !== payment.id);
+          localStorage.setItem('paid-rental-payments', JSON.stringify(filteredPayments));
+        }
+        
+        return updatedPayment;
+      }
+      return payment;
+    }));
 
     toast({
       title: status === 'paid' ? "Payment Recorded" : "Status Updated",
-      description: `Payment status updated to ${status}.`
+      description: status === 'paid' 
+        ? `Payment has been recorded and will appear in finance calculations.`
+        : `Payment status updated to ${status}.`
     });
   };
 

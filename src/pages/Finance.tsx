@@ -64,16 +64,17 @@ export default function Finance() {
     status: string;
   }>>('dashboard-sales', []);
 
-  const [rentalPayments] = useLocalStorage<Array<{
+  // Get paid payments from localStorage for finance calculations
+  const [paidPayments] = useLocalStorage<Array<{
     id: string;
     customer: string;
     product: string;
     amount: number;
     dueDate: string;
-    status: 'paid' | 'overdue' | 'upcoming';
+    paidDate: string;
     paymentMethod: string;
-    notes: string;
-  }>>('rental-payments', []);
+    status: 'paid';
+  }>>('paid-rental-payments', []);
 
   const [expenditures, setExpenditures] = useLocalStorage<Expenditure[]>('finance-expenditures', []);
 
@@ -106,11 +107,10 @@ export default function Finance() {
       .reduce((sum, sale) => sum + sale.total, 0);
 
     // Calculate collection income (actual payments received from rental contracts in the month)
-    const collectionIncome = rentalPayments
+    const collectionIncome = paidPayments
       .filter(payment => {
-        const paymentDate = parseISO(payment.dueDate); // Using dueDate as payment date for paid items
-        return payment.status === 'paid' && 
-               isWithinInterval(paymentDate, { start: monthStart, end: monthEnd });
+        const paymentDate = parseISO(payment.paidDate); // Use actual paid date
+        return isWithinInterval(paymentDate, { start: monthStart, end: monthEnd });
       })
       .reduce((sum, payment) => sum + payment.amount, 0);
 
