@@ -53,11 +53,6 @@ export default function RentalPayments() {
   // Payment schedules storage
   const [paymentSchedules, setPaymentSchedules] = useLocalStorage<PaymentSchedule[]>('dashboard-payment-schedules', []);
 
-  // Force regeneration of payment schedules with correct amounts
-  useEffect(() => {
-    // Clear existing schedules to regenerate with correct logic
-    setPaymentSchedules([]);
-  }, []);
 
   // Generate payment schedules from rental agreements
   useEffect(() => {
