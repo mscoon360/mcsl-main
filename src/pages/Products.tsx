@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Package, DollarSign, Hash, Edit, Trash2 } from "lucide-react";
@@ -32,6 +33,8 @@ export default function Products() {
   const [isRentalOnly, setIsRentalOnly] = useState(false);
   const [editIsRentalProduct, setEditIsRentalProduct] = useState(false);
   const [editIsRentalOnly, setEditIsRentalOnly] = useState(false);
+  const [productType, setProductType] = useState<'sale_only' | 'rental_only' | 'both'>('sale_only');
+  const [editProductType, setEditProductType] = useState<'sale_only' | 'rental_only' | 'both'>('sale_only');
   const [products, setProducts] = useLocalStorage<Array<{id:string; name:string; description:string; price:number; sku:string; category:string; stock:number; status:string; lastSold:string; isRental?:boolean; isRentalOnly?:boolean;}>>('dashboard-products', []);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
 
@@ -85,7 +88,7 @@ export default function Products() {
     const stock = parseInt(String(data.get('stock') || '0')) || 0;
     const unitPrice = parseFloat(String(data.get('price') || '0')) || 0;
     const rentalPriceVal = parseFloat(String(data.get('rentalPrice') || '0')) || 0;
-    const price = isRentalProduct ? rentalPriceVal : unitPrice;
+    const price = productType === 'sale_only' ? unitPrice : rentalPriceVal;
 
     const status = stock > 10 ? 'active' : stock > 0 ? 'low_stock' : 'out_of_stock';
 
@@ -99,8 +102,8 @@ export default function Products() {
       stock,
       status,
       lastSold: new Date().toISOString(),
-      isRental: isRentalProduct,
-      isRentalOnly: isRentalOnly,
+      isRental: productType !== 'sale_only',
+      isRentalOnly: productType === 'rental_only',
     };
 
     setProducts((prev) => [...prev, newProduct]);
@@ -110,16 +113,20 @@ export default function Products() {
       description: "New product has been added to your catalog.",
     });
     setShowForm(false);
-    setIsRentalProduct(false);
-    setIsRentalOnly(false);
+    setProductType('sale_only');
     form.reset();
   };
 
   const handleEdit = (product: typeof mockProducts[0]) => {
     setEditingProduct(product.id);
     const currentProduct = products.find(p => p.id === product.id);
-    setEditIsRentalProduct(currentProduct?.isRental || false);
-    setEditIsRentalOnly(currentProduct?.isRentalOnly || false);
+    if (currentProduct?.isRentalOnly) {
+      setEditProductType('rental_only');
+    } else if (currentProduct?.isRental) {
+      setEditProductType('both');
+    } else {
+      setEditProductType('sale_only');
+    }
   };
 
   const handleEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -145,8 +152,8 @@ export default function Products() {
       stock,
       status,
       lastSold: new Date().toISOString(),
-      isRental: editIsRentalProduct,
-      isRentalOnly: editIsRentalOnly,
+      isRental: editProductType !== 'sale_only',
+      isRentalOnly: editProductType === 'rental_only',
     };
 
     setProducts(prev => prev.map(product => 
@@ -159,8 +166,7 @@ export default function Products() {
     });
 
     setEditingProduct(null);
-    setEditIsRentalProduct(false);
-    setEditIsRentalOnly(false);
+    setEditProductType('sale_only');
   };
 
   const handleDelete = (productId: string) => {
@@ -222,10 +228,10 @@ export default function Products() {
               </div>
 
               <div className="grid grid-cols-3 gap-4">
-                {!isRentalProduct && (
+                {productType === 'sale_only' && (
                   <div className="space-y-2">
                     <Label htmlFor="price">Unit Price *</Label>
-                    <Input id="price" name="price" type="number" step="0.01" placeholder="299.99" required={!isRentalProduct} />
+                    <Input id="price" name="price" type="number" step="0.01" placeholder="299.99" required />
                   </div>
                 )}
                 <div className="space-y-2">
@@ -239,35 +245,24 @@ export default function Products() {
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <input 
-                    type="checkbox" 
-                    id="isRental" 
-                    name="isRental"
-                    checked={isRentalProduct}
-                    onChange={(e) => setIsRentalProduct(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300" 
-                  />
-                  <Label htmlFor="isRental">Rental Product</Label>
+                <div className="space-y-2">
+                  <Label>Product Availability</Label>
+                  <Select value={productType} onValueChange={(value: 'sale_only' | 'rental_only' | 'both') => setProductType(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sale_only">Available for Sale Only</SelectItem>
+                      <SelectItem value="rental_only">Available for Rental Only</SelectItem>
+                      <SelectItem value="both">Available for Both Sale and Rental</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
-                {isRentalProduct && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="rentalPrice">Rental Price *</Label>
-                      <Input id="rentalPrice" name="rentalPrice" type="number" step="0.01" placeholder="50.00" required={isRentalProduct} />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
-                        id="isRentalOnly" 
-                        name="isRentalOnly"
-                        checked={isRentalOnly}
-                        onChange={(e) => setIsRentalOnly(e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300" 
-                      />
-                      <Label htmlFor="isRentalOnly">Rental Only (not available for direct sales)</Label>
-                    </div>
+                {productType !== 'sale_only' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="rentalPrice">Rental Price (per month) *</Label>
+                    <Input id="rentalPrice" name="rentalPrice" type="number" step="0.01" placeholder="50.00" required />
                   </div>
                 )}
               </div>
@@ -446,31 +441,19 @@ export default function Products() {
                            </div>
                           
                           <div className="space-y-4">
-                            <div className="flex items-center space-x-2">
-                              <input 
-                                type="checkbox" 
-                                id={`edit-isRental-${product.id}`} 
-                                name="isRental"
-                                checked={editIsRentalProduct}
-                                onChange={(e) => setEditIsRentalProduct(e.target.checked)}
-                                className="h-4 w-4 rounded border-gray-300" 
-                              />
-                              <Label htmlFor={`edit-isRental-${product.id}`}>Rental Product</Label>
+                            <div className="space-y-2">
+                              <Label>Product Availability</Label>
+                              <Select value={editProductType} onValueChange={(value: 'sale_only' | 'rental_only' | 'both') => setEditProductType(value)}>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="sale_only">Available for Sale Only</SelectItem>
+                                  <SelectItem value="rental_only">Available for Rental Only</SelectItem>
+                                  <SelectItem value="both">Available for Both Sale and Rental</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
-                            
-                            {editIsRentalProduct && (
-                              <div className="flex items-center space-x-2">
-                                <input 
-                                  type="checkbox" 
-                                  id={`edit-isRentalOnly-${product.id}`} 
-                                  name="isRentalOnly"
-                                  checked={editIsRentalOnly}
-                                  onChange={(e) => setEditIsRentalOnly(e.target.checked)}
-                                  className="h-4 w-4 rounded border-gray-300" 
-                                />
-                                <Label htmlFor={`edit-isRentalOnly-${product.id}`}>Rental Only (not available for direct sales)</Label>
-                              </div>
-                            )}
                           </div>
                           
                           <div className="flex gap-2">
