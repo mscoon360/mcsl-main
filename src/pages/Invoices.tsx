@@ -96,6 +96,50 @@ export default function Invoices() {
     paymentTerms: 'Net 30'
   });
 
+  // Helper function to calculate payment amount based on contract terms
+  const calculatePaymentAmount = (totalPrice: number, contractLength: string, paymentPeriod: string) => {
+    if (!contractLength || !paymentPeriod) return totalPrice;
+
+    // Parse contract length (e.g., "12 months", "2 years", "52 weeks")
+    const contractMatch = contractLength.toLowerCase().match(/(\d+)\s*(month|year|week|day)/);
+    if (!contractMatch) return totalPrice;
+
+    const contractValue = parseInt(contractMatch[1]);
+    const contractUnit = contractMatch[2];
+
+    // Parse payment period (e.g., "monthly", "weekly", "yearly", "daily")
+    const paymentUnit = paymentPeriod.toLowerCase().replace('ly', '');
+
+    // Convert everything to the same unit for calculation
+    let totalPeriods = contractValue;
+    
+    // Convert contract length to payment periods
+    if (contractUnit === 'year' && paymentUnit === 'month') {
+      totalPeriods = contractValue * 12;
+    } else if (contractUnit === 'year' && paymentUnit === 'week') {
+      totalPeriods = contractValue * 52;
+    } else if (contractUnit === 'year' && paymentUnit === 'day') {
+      totalPeriods = contractValue * 365;
+    } else if (contractUnit === 'month' && paymentUnit === 'week') {
+      totalPeriods = contractValue * 4.33; // Average weeks per month
+    } else if (contractUnit === 'month' && paymentUnit === 'day') {
+      totalPeriods = contractValue * 30; // Average days per month
+    } else if (contractUnit === 'week' && paymentUnit === 'day') {
+      totalPeriods = contractValue * 7;
+    } else if (contractUnit === 'week' && paymentUnit === 'month') {
+      totalPeriods = contractValue / 4.33;
+    } else if (contractUnit === 'day' && paymentUnit === 'week') {
+      totalPeriods = contractValue / 7;
+    } else if (contractUnit === 'day' && paymentUnit === 'month') {
+      totalPeriods = contractValue / 30;
+    } else if (contractUnit !== paymentUnit.replace('ly', '')) {
+      // Default fallback
+      return totalPrice;
+    }
+
+    return totalPrice / totalPeriods;
+  };
+
   // Get available items for the selected customer (products + rental items)
   const getAvailableItemsForCustomer = () => {
     const availableItems = [];
@@ -107,7 +151,9 @@ export default function Invoices() {
         name: product.name,
         price: product.price,
         type: 'product',
-        description: product.description || product.name
+        description: product.description || product.name,
+        displayPrice: product.price,
+        paymentPeriod: null
       });
     });
     
@@ -120,15 +166,22 @@ export default function Invoices() {
           .flatMap(sale => 
             sale.items
               .filter(item => item.isRental)
-              .map(item => ({
-                id: `rental-${sale.id}-${item.product}`,
-                name: `${item.product} (Rental)`,
-                price: item.price,
-                type: 'rental',
-                description: `Rental service for ${item.product}`,
-                contractLength: item.contractLength,
-                paymentPeriod: item.paymentPeriod
-              }))
+              .map(item => {
+                const paymentAmount = calculatePaymentAmount(item.price, item.contractLength || '', item.paymentPeriod || '');
+                const periodDisplay = item.paymentPeriod ? `/${item.paymentPeriod.toLowerCase().replace('ly', '')}` : '';
+                
+                return {
+                  id: `rental-${sale.id}-${item.product}`,
+                  name: `${item.product} (Rental)`,
+                  price: paymentAmount,
+                  type: 'rental',
+                  description: `Rental service for ${item.product}${periodDisplay ? ` - ${periodDisplay} payment` : ''}`,
+                  contractLength: item.contractLength,
+                  paymentPeriod: item.paymentPeriod,
+                  displayPrice: paymentAmount,
+                  originalPrice: item.price
+                };
+              })
           );
         
         availableItems.push(...customerRentals);
@@ -522,7 +575,10 @@ export default function Invoices() {
                                     <Badge variant="outline" className="text-xs">Rental</Badge>
                                   )}
                                   <span className="text-muted-foreground text-sm">
-                                    ${availableItem.price.toFixed(2)}
+                                    ${availableItem.displayPrice.toFixed(2)}
+                                    {availableItem.paymentPeriod && (
+                                      <span>/{availableItem.paymentPeriod.toLowerCase().replace('ly', '')}</span>
+                                    )}
                                   </span>
                                 </div>
                               </SelectItem>
