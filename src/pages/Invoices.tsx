@@ -13,6 +13,14 @@ import { useToast } from "@/hooks/use-toast";
 import { format, parseISO, addDays } from "date-fns";
 import * as XLSX from 'xlsx';
 
+interface InvoiceItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  productId?: string;
+}
+
 interface Invoice {
   id: string;
   invoiceNumber: string;
@@ -21,12 +29,7 @@ interface Invoice {
   issueDate: string;
   dueDate: string;
   status: 'draft' | 'sent' | 'paid' | 'overdue';
-  items: Array<{
-    description: string;
-    quantity: number;
-    unitPrice: number;
-    total: number;
-  }>;
+  items: InvoiceItem[];
   subtotal: number;
   taxRate: number;
   taxAmount: number;
@@ -61,6 +64,25 @@ export default function Invoices() {
     description: string;
   }>>('dashboard-products', []);
 
+  // Get rental agreements to show customer's rental items
+  const [sales] = useLocalStorage<Array<{
+    id: string;
+    customer: string;
+    total: number;
+    items: Array<{
+      product: string;
+      quantity: number;
+      price: number;
+      isRental?: boolean;
+      contractLength?: string;
+      paymentPeriod?: string;
+      startDate?: Date;
+      endDate?: Date;
+    }>;
+    date: string;
+    status: string;
+  }>>('dashboard-sales', []);
+
   const [invoices, setInvoices] = useLocalStorage<Invoice[]>('invoices', []);
 
   const [newInvoice, setNewInvoice] = useState<Partial<Invoice>>({
@@ -68,11 +90,53 @@ export default function Invoices() {
     issueDate: format(new Date(), 'yyyy-MM-dd'),
     dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
     status: 'draft',
-    items: [{ description: '', quantity: 1, unitPrice: 0, total: 0 }],
+    items: [{ description: '', quantity: 1, unitPrice: 0, total: 0, productId: '' }],
     taxRate: 10,
     notes: '',
     paymentTerms: 'Net 30'
   });
+
+  // Get available items for the selected customer (products + rental items)
+  const getAvailableItemsForCustomer = () => {
+    const availableItems = [];
+    
+    // Add all products
+    products.forEach(product => {
+      availableItems.push({
+        id: `product-${product.id}`,
+        name: product.name,
+        price: product.price,
+        type: 'product',
+        description: product.description || product.name
+      });
+    });
+    
+    // Add rental items for the selected customer
+    if (newInvoice.customerId) {
+      const customer = customers.find(c => c.id === newInvoice.customerId);
+      if (customer) {
+        const customerRentals = sales
+          .filter(sale => sale.customer === customer.name)
+          .flatMap(sale => 
+            sale.items
+              .filter(item => item.isRental)
+              .map(item => ({
+                id: `rental-${sale.id}-${item.product}`,
+                name: `${item.product} (Rental)`,
+                price: item.price,
+                type: 'rental',
+                description: `Rental service for ${item.product}`,
+                contractLength: item.contractLength,
+                paymentPeriod: item.paymentPeriod
+              }))
+          );
+        
+        availableItems.push(...customerRentals);
+      }
+    }
+    
+    return availableItems;
+  };
 
   // Generate next invoice number
   const generateInvoiceNumber = () => {
@@ -84,7 +148,7 @@ export default function Invoices() {
     return `INV-${nextNumber.toString().padStart(4, '0')}-${currentYear}`;
   };
 
-  const calculateInvoiceTotals = (items: any[], taxRate: number) => {
+  const calculateInvoiceTotals = (items: InvoiceItem[], taxRate: number) => {
     const subtotal = items.reduce((sum, item) => sum + item.total, 0);
     const taxAmount = (subtotal * taxRate) / 100;
     const total = subtotal + taxAmount;
@@ -97,6 +161,17 @@ export default function Invoices() {
       ...updatedItems[index],
       [field]: value
     };
+    
+    // If selecting a product/service, auto-populate description and price
+    if (field === 'productId' && value) {
+      const availableItems = getAvailableItemsForCustomer();
+      const selectedItem = availableItems.find(item => item.id === value);
+      if (selectedItem) {
+        updatedItems[index].description = selectedItem.name;
+        updatedItems[index].unitPrice = selectedItem.price;
+        updatedItems[index].total = updatedItems[index].quantity * selectedItem.price;
+      }
+    }
     
     if (field === 'quantity' || field === 'unitPrice') {
       updatedItems[index].total = updatedItems[index].quantity * updatedItems[index].unitPrice;
@@ -114,7 +189,7 @@ export default function Invoices() {
   };
 
   const addInvoiceItem = () => {
-    const updatedItems = [...(newInvoice.items || []), { description: '', quantity: 1, unitPrice: 0, total: 0 }];
+    const updatedItems = [...(newInvoice.items || []), { description: '', quantity: 1, unitPrice: 0, total: 0, productId: '' }];
     setNewInvoice({ ...newInvoice, items: updatedItems });
   };
 
@@ -186,7 +261,7 @@ export default function Invoices() {
       issueDate: format(new Date(), 'yyyy-MM-dd'),
       dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
       status: 'draft',
-      items: [{ description: '', quantity: 1, unitPrice: 0, total: 0 }],
+      items: [{ description: '', quantity: 1, unitPrice: 0, total: 0, productId: '' }],
       taxRate: 10,
       notes: '',
       paymentTerms: 'Net 30'
@@ -429,12 +504,39 @@ export default function Invoices() {
                   <Card key={index} className="p-4">
                     <div className="grid grid-cols-5 gap-4 items-end">
                       <div className="space-y-2">
-                        <Label>Description</Label>
-                        <Input
-                          value={item.description}
-                          onChange={(e) => updateInvoiceItem(index, 'description', e.target.value)}
-                          placeholder="Service or product description"
-                        />
+                        <Label>Product/Service</Label>
+                        <Select
+                          value={item.productId || ''}
+                          onValueChange={(value) => updateInvoiceItem(index, 'productId', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select item or custom" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Custom Item</SelectItem>
+                            {getAvailableItemsForCustomer().map(availableItem => (
+                              <SelectItem key={availableItem.id} value={availableItem.id}>
+                                <div className="flex items-center gap-2">
+                                  <span>{availableItem.name}</span>
+                                  {availableItem.type === 'rental' && (
+                                    <Badge variant="outline" className="text-xs">Rental</Badge>
+                                  )}
+                                  <span className="text-muted-foreground text-sm">
+                                    ${availableItem.price.toFixed(2)}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {(!item.productId || item.productId === '') && (
+                          <Input
+                            value={item.description}
+                            onChange={(e) => updateInvoiceItem(index, 'description', e.target.value)}
+                            placeholder="Custom description"
+                            className="mt-2"
+                          />
+                        )}
                       </div>
                       
                       <div className="space-y-2">
