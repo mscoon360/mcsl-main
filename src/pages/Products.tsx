@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Package, DollarSign, Hash } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Link } from "react-router-dom";
 
 // Your product catalog - ready for real inventory
@@ -28,7 +29,7 @@ export default function Products() {
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isRentalProduct, setIsRentalProduct] = useState(false);
-  const [products, setProducts] = useState<Array<{id:string; name:string; description:string; price:number; sku:string; category:string; stock:number; status:string; lastSold:string;}>>([]);
+  const [products, setProducts] = useLocalStorage<Array<{id:string; name:string; description:string; price:number; sku:string; category:string; stock:number; status:string; lastSold:string;}>>('dashboard-products', []);
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

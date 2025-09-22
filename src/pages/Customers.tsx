@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, User, Mail, Phone, Building, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Link } from "react-router-dom";
 
 // Your customer database - ready for real data
@@ -24,12 +25,10 @@ const mockCustomers: Array<{
   status: string;
 }> = [];
 export default function Customers() {
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [customers, setCustomers] = useState<typeof mockCustomers>(mockCustomers);
+  const [customers, setCustomers] = useLocalStorage<typeof mockCustomers>('dashboard-customers', []);
   const filteredCustomers = customers.filter(
     (customer) =>
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
