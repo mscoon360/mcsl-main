@@ -4,44 +4,39 @@ import { BarChart3, DollarSign, ShoppingCart, Users, TrendingUp, Plus } from "lu
 import { Link } from "react-router-dom";
 
 export default function Dashboard() {
-  // Mock data for the dashboard
+  // Real data - ready for your input
   const stats = [
     {
       title: "Total Sales",
-      value: "$45,231.89",
-      change: "+20.1% from last month",
+      value: "$0.00",
+      change: "Start logging sales to see progress",
       icon: DollarSign,
       positive: true
     },
     {
       title: "Customers",
-      value: "2,350",
-      change: "+180 new this month",
+      value: "0",
+      change: "Add your first customer",
       icon: Users,
       positive: true
     },
     {
       title: "Sales Closed",
-      value: "147",
-      change: "+19% from last month",
+      value: "0",
+      change: "Log your first sale",
       icon: ShoppingCart,
       positive: true
     },
     {
       title: "Conversion Rate",
-      value: "14.2%",
-      change: "+2.5% from last month",
+      value: "0.0%",
+      change: "Track performance as you grow",
       icon: TrendingUp,
       positive: true
     }
   ];
 
-  const recentSales = [
-    { customer: "ABC Corp", amount: "$2,400", product: "Medical Supplies", date: "2 hours ago" },
-    { customer: "HealthTech Inc", amount: "$1,850", product: "Equipment Package", date: "4 hours ago" },
-    { customer: "City Hospital", amount: "$3,200", product: "Surgical Tools", date: "6 hours ago" },
-    { customer: "MediCare Plus", amount: "$890", product: "Diagnostic Kit", date: "8 hours ago" },
-  ];
+  const recentSales: Array<{customer: string, amount: string, product: string, date: string}> = [];
 
   return (
     <div className="space-y-6">
@@ -94,20 +89,36 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentSales.map((sale, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">{sale.customer}</p>
-                    <p className="text-xs text-muted-foreground">{sale.product}</p>
+            {recentSales.length > 0 ? (
+              <div className="space-y-4">
+                {recentSales.map((sale, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-foreground">{sale.customer}</p>
+                      <p className="text-xs text-muted-foreground">{sale.product}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-success">{sale.amount}</p>
+                      <p className="text-xs text-muted-foreground">{sale.date}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-success">{sale.amount}</p>
-                    <p className="text-xs text-muted-foreground">{sale.date}</p>
-                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
+                  <ShoppingCart className="h-8 w-8 text-muted-foreground" />
                 </div>
-              ))}
-            </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">No sales yet</h3>
+                <p className="text-muted-foreground mb-4">Your recent sales will appear here once you start logging them.</p>
+                <Button asChild>
+                  <Link to="/sales">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Log Your First Sale
+                  </Link>
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 

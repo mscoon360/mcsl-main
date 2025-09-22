@@ -7,45 +7,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, DollarSign, Calendar, User } from "lucide-react";
+import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock data
-const mockCustomers = [
-  { id: "1", name: "ABC Corp", email: "contact@abc.com" },
-  { id: "2", name: "HealthTech Inc", email: "info@healthtech.com" },
-  { id: "3", name: "City Hospital", email: "admin@cityhospital.com" },
-];
+// Your real data - start by adding customers and products
+const mockCustomers: Array<{id: string, name: string, email: string}> = [];
 
-const mockProducts = [
-  { id: "1", name: "Medical Supplies Kit", price: 299.99, sku: "MSK-001" },
-  { id: "2", name: "Surgical Tools Set", price: 1499.99, sku: "STS-002" },
-  { id: "3", name: "Diagnostic Equipment", price: 899.99, sku: "DE-003" },
-];
+const mockProducts: Array<{id: string, name: string, price: number, sku: string}> = [];
 
-const mockSales = [
-  {
-    id: "1",
-    customer: "ABC Corp",
-    total: 2400.00,
-    items: [
-      { product: "Medical Supplies Kit", quantity: 8, price: 299.99 }
-    ],
-    date: "2024-01-15",
-    status: "completed"
-  },
-  {
-    id: "2", 
-    customer: "HealthTech Inc",
-    total: 1850.00,
-    items: [
-      { product: "Diagnostic Equipment", quantity: 2, price: 899.99 },
-      { product: "Medical Supplies Kit", quantity: 1, price: 299.99 }
-    ],
-    date: "2024-01-14",
-    status: "completed"
-  }
-];
+const mockSales: Array<{
+  id: string,
+  customer: string,
+  total: number,
+  items: Array<{product: string, quantity: number, price: number}>,
+  date: string,
+  status: string
+}> = [];
 
 export default function Sales() {
   const { toast } = useToast();
@@ -118,9 +96,9 @@ export default function Sales() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="customer">Customer</Label>
-                  <Select required>
+                  <Select required disabled={mockCustomers.length === 0}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select customer" />
+                      <SelectValue placeholder={mockCustomers.length === 0 ? "Add customers first" : "Select customer"} />
                     </SelectTrigger>
                     <SelectContent>
                       {mockCustomers.map((customer) => (
@@ -130,6 +108,13 @@ export default function Sales() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {mockCustomers.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      <Link to="/customers" className="text-primary hover:underline">
+                        Add customers first
+                      </Link> to start logging sales.
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="date">Sale Date</Label>
@@ -167,11 +152,20 @@ export default function Sales() {
                               <SelectValue placeholder="Select product" />
                             </SelectTrigger>
                             <SelectContent>
-                              {mockProducts.map((product) => (
-                                <SelectItem key={product.id} value={product.id}>
-                                  {product.name} - ${product.price}
-                                </SelectItem>
-                              ))}
+                              {mockProducts.length === 0 ? (
+                                <div className="p-2 text-center">
+                                  <p className="text-sm text-muted-foreground">No products available</p>
+                                  <Link to="/products" className="text-sm text-primary hover:underline">
+                                    Add products first
+                                  </Link>
+                                </div>
+                              ) : (
+                                mockProducts.map((product) => (
+                                  <SelectItem key={product.id} value={product.id}>
+                                    {product.name} - ${product.price}
+                                  </SelectItem>
+                                ))
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
@@ -262,52 +256,78 @@ export default function Sales() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockSales.map((sale) => (
-                <TableRow key={sale.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      {sale.customer}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {sale.items.map((item, idx) => (
-                        <div key={idx} className="text-sm">
-                          {item.quantity}x {item.product}
-                        </div>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      {new Date(sale.date).toLocaleDateString()}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={sale.status === 'completed' ? 'default' : 'secondary'}>
-                      {sale.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-bold text-success">
-                    ${sale.total.toFixed(2)}
-                  </TableCell>
+          {mockSales.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Items</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {mockSales.map((sale) => (
+                  <TableRow key={sale.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        {sale.customer}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {sale.items.map((item, idx) => (
+                          <div key={idx} className="text-sm">
+                            {item.quantity}x {item.product}
+                          </div>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        {new Date(sale.date).toLocaleDateString()}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={sale.status === 'completed' ? 'default' : 'secondary'}>
+                        {sale.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-success">
+                      ${sale.total.toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-12">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
+                <FileText className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">No sales logged yet</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                Start by adding customers and products, then log your first sale to see your transaction history here.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button asChild variant="outline">
+                  <Link to="/customers">
+                    <Users className="h-4 w-4 mr-2" />
+                    Add Customers
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/products">
+                    <Package className="h-4 w-4 mr-2" />
+                    Add Products
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

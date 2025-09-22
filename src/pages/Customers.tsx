@@ -6,60 +6,23 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, User, Mail, Phone, Building } from "lucide-react";
+import { Plus, Search, User, Mail, Phone, Building, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 
-// Mock customer data
-const mockCustomers = [
-  {
-    id: "1",
-    name: "ABC Corp",
-    email: "contact@abc.com",
-    phone: "+1 (555) 123-4567",
-    company: "ABC Corporation",
-    address: "123 Business Ave, Suite 100",
-    city: "New York",
-    totalSales: 12450.00,
-    lastPurchase: "2024-01-15",
-    status: "active"
-  },
-  {
-    id: "2",
-    name: "HealthTech Inc",
-    email: "info@healthtech.com",
-    phone: "+1 (555) 987-6543",
-    company: "HealthTech Solutions",
-    address: "456 Medical Center Dr",
-    city: "Los Angeles",
-    totalSales: 8920.00,
-    lastPurchase: "2024-01-14",
-    status: "active"
-  },
-  {
-    id: "3",
-    name: "City Hospital",
-    email: "admin@cityhospital.com",
-    phone: "+1 (555) 456-7890",
-    company: "City General Hospital",
-    address: "789 Hospital Blvd",
-    city: "Chicago",
-    totalSales: 25600.00,
-    lastPurchase: "2024-01-12",
-    status: "active"
-  },
-  {
-    id: "4",
-    name: "MediCare Plus",
-    email: "orders@medicareplus.com",
-    phone: "+1 (555) 234-5678",
-    company: "MediCare Plus Services",
-    address: "321 Healthcare Way",
-    city: "Miami",
-    totalSales: 5480.00,
-    lastPurchase: "2024-01-10",
-    status: "inactive"
-  }
-];
+// Your customer database - ready for real data
+const mockCustomers: Array<{
+  id: string,
+  name: string,
+  email: string,
+  phone: string,
+  company: string,
+  address: string,
+  city: string,
+  totalSales: number,
+  lastPurchase: string,
+  status: string
+}> = [];
 
 export default function Customers() {
   const { toast } = useToast();
@@ -186,64 +149,82 @@ export default function Customers() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Company</TableHead>
-                <TableHead>Total Sales</TableHead>
-                <TableHead>Last Purchase</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCustomers.map((customer) => (
-                <TableRow key={customer.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                        <User className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="font-semibold">{customer.name}</p>
-                        <p className="text-sm text-muted-foreground">{customer.city}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
-                        {customer.email}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Phone className="h-3 w-3 text-muted-foreground" />
-                        {customer.phone}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Building className="h-4 w-4 text-muted-foreground" />
-                      {customer.company}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-bold text-success">
-                    ${customer.totalSales.toFixed(2)}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(customer.lastPurchase).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
-                      {customer.status}
-                    </Badge>
-                  </TableCell>
+          {filteredCustomers.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Total Sales</TableHead>
+                  <TableHead>Last Purchase</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredCustomers.map((customer) => (
+                  <TableRow key={customer.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                          <User className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="font-semibold">{customer.name}</p>
+                          <p className="text-sm text-muted-foreground">{customer.city}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          {customer.email}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-3 w-3 text-muted-foreground" />
+                          {customer.phone}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Building className="h-4 w-4 text-muted-foreground" />
+                        {customer.company}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-bold text-success">
+                      ${customer.totalSales.toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(customer.lastPurchase).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
+                        {customer.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-12">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
+                <Users className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">No customers yet</h3>
+              <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                Start building your customer database by adding your first customer. All customer information will be stored securely.
+              </p>
+              <Button asChild>
+                <Link to="#" onClick={() => setShowForm(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Your First Customer
+                </Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

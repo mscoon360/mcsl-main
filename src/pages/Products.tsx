@@ -8,65 +8,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Package, DollarSign, Hash } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 
-// Mock product data
-const mockProducts = [
-  {
-    id: "1",
-    name: "Medical Supplies Kit",
-    description: "Comprehensive medical supplies package for healthcare facilities",
-    price: 299.99,
-    sku: "MSK-001",
-    category: "Medical Supplies",
-    stock: 45,
-    status: "active",
-    lastSold: "2024-01-15"
-  },
-  {
-    id: "2",
-    name: "Surgical Tools Set",
-    description: "Professional surgical instruments for medical procedures",
-    price: 1499.99,
-    sku: "STS-002",
-    category: "Surgical Equipment",
-    stock: 12,
-    status: "active",
-    lastSold: "2024-01-13"
-  },
-  {
-    id: "3",
-    name: "Diagnostic Equipment",
-    description: "Advanced diagnostic tools for patient assessment",
-    price: 899.99,
-    sku: "DE-003",
-    category: "Diagnostic Tools",
-    stock: 8,
-    status: "active",
-    lastSold: "2024-01-14"
-  },
-  {
-    id: "4",
-    name: "Patient Monitoring Device",
-    description: "Digital patient monitoring system with real-time alerts",
-    price: 2299.99,
-    sku: "PMD-004",
-    category: "Monitoring Equipment",
-    stock: 3,
-    status: "low_stock",
-    lastSold: "2024-01-10"
-  },
-  {
-    id: "5",
-    name: "Emergency Response Kit",
-    description: "Complete emergency medical response kit for hospitals",
-    price: 549.99,
-    sku: "ERK-005",
-    category: "Emergency Equipment",
-    stock: 0,
-    status: "out_of_stock",
-    lastSold: "2024-01-05"
-  }
-];
+// Your product catalog - ready for real inventory
+const mockProducts: Array<{
+  id: string,
+  name: string,
+  description: string,
+  price: number,
+  sku: string,
+  category: string,
+  stock: number,
+  status: string,
+  lastSold: string
+}> = [];
 
 export default function Products() {
   const { toast } = useToast();
@@ -202,9 +157,9 @@ export default function Products() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockProducts.length}</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">
-              Active catalog items
+              Start building your catalog
             </p>
           </CardContent>
         </Card>
@@ -215,11 +170,9 @@ export default function Products() {
             <Package className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">
-              {mockProducts.filter(p => p.status === 'active').length}
-            </div>
+            <div className="text-2xl font-bold text-success">0</div>
             <p className="text-xs text-muted-foreground">
-              Available for sale
+              Add products to track inventory
             </p>
           </CardContent>
         </Card>
@@ -230,11 +183,9 @@ export default function Products() {
             <Package className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">
-              {mockProducts.filter(p => p.status === 'low_stock').length}
-            </div>
+            <div className="text-2xl font-bold text-warning">0</div>
             <p className="text-xs text-muted-foreground">
-              Need reordering
+              Inventory tracking ready
             </p>
           </CardContent>
         </Card>
@@ -245,11 +196,9 @@ export default function Products() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ${(mockProducts.reduce((sum, p) => sum + p.price, 0) / mockProducts.length).toFixed(2)}
-            </div>
+            <div className="text-2xl font-bold">$0.00</div>
             <p className="text-xs text-muted-foreground">
-              Per unit
+              Start with your first product
             </p>
           </CardContent>
         </Card>
@@ -277,66 +226,84 @@ export default function Products() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Sold</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                        <Package className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="font-semibold">{product.name}</p>
-                        <p className="text-sm text-muted-foreground line-clamp-1">
-                          {product.description}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Hash className="h-3 w-3 text-muted-foreground" />
-                      <code className="text-sm bg-muted px-2 py-1 rounded">
-                        {product.sku}
-                      </code>
-                    </div>
-                  </TableCell>
-                  <TableCell>{product.category}</TableCell>
-                  <TableCell className="font-bold">
-                    ${product.price.toFixed(2)}
-                  </TableCell>
-                  <TableCell>
-                    <span className={`font-medium ${
-                      product.stock > 10 ? 'text-success' : 
-                      product.stock > 0 ? 'text-warning' : 'text-destructive'
-                    }`}>
-                      {product.stock} units
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusColor(product.status)}>
-                      {getStatusText(product.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(product.lastSold).toLocaleDateString()}
-                  </TableCell>
+          {filteredProducts.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product</TableHead>
+                  <TableHead>SKU</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Stock</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Last Sold</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredProducts.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                          <Package className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="font-semibold">{product.name}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-1">
+                            {product.description}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Hash className="h-3 w-3 text-muted-foreground" />
+                        <code className="text-sm bg-muted px-2 py-1 rounded">
+                          {product.sku}
+                        </code>
+                      </div>
+                    </TableCell>
+                    <TableCell>{product.category}</TableCell>
+                    <TableCell className="font-bold">
+                      ${product.price.toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`font-medium ${
+                        product.stock > 10 ? 'text-success' : 
+                        product.stock > 0 ? 'text-warning' : 'text-destructive'
+                      }`}>
+                        {product.stock} units
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusColor(product.status)}>
+                        {getStatusText(product.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(product.lastSold).toLocaleDateString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-12">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
+                <Package className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">No products yet</h3>
+              <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                Start building your product catalog by adding your first product with pricing and inventory details.
+              </p>
+              <Button asChild>
+                <Link to="#" onClick={() => setShowForm(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Your First Product
+                </Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
