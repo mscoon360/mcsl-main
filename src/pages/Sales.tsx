@@ -124,6 +124,16 @@ export default function Sales() {
   const calculateGrandTotal = () => {
     return salesItems.reduce((sum, item) => sum + item.total, 0);
   };
+
+  const clearSalesLog = () => {
+    if (window.confirm("Are you sure you want to clear all sales history? This action cannot be undone.")) {
+      setSales([]);
+      toast({
+        title: "Sales Log Cleared",
+        description: "All sales history has been removed."
+      });
+    }
+  };
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -436,6 +446,9 @@ export default function Sales() {
             <div className="flex items-center gap-2">
               <Search className="h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search sales..." className="w-64" />
+              <Button variant="destructive" size="sm" onClick={clearSalesLog}>
+                Clear All Sales
+              </Button>
             </div>
           </div>
         </CardHeader>
