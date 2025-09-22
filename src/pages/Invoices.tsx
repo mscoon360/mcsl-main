@@ -90,7 +90,7 @@ export default function Invoices() {
     issueDate: format(new Date(), 'yyyy-MM-dd'),
     dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
     status: 'draft',
-    items: [{ description: '', quantity: 1, unitPrice: 0, total: 0, productId: '' }],
+      items: [{ description: '', quantity: 1, unitPrice: 0, total: 0, productId: 'custom' }],
     taxRate: 10,
     notes: '',
     paymentTerms: 'Net 30'
@@ -189,7 +189,7 @@ export default function Invoices() {
   };
 
   const addInvoiceItem = () => {
-    const updatedItems = [...(newInvoice.items || []), { description: '', quantity: 1, unitPrice: 0, total: 0, productId: '' }];
+    const updatedItems = [...(newInvoice.items || []), { description: '', quantity: 1, unitPrice: 0, total: 0, productId: 'custom' }];
     setNewInvoice({ ...newInvoice, items: updatedItems });
   };
 
@@ -261,7 +261,7 @@ export default function Invoices() {
       issueDate: format(new Date(), 'yyyy-MM-dd'),
       dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
       status: 'draft',
-      items: [{ description: '', quantity: 1, unitPrice: 0, total: 0, productId: '' }],
+      items: [{ description: '', quantity: 1, unitPrice: 0, total: 0, productId: 'custom' }],
       taxRate: 10,
       notes: '',
       paymentTerms: 'Net 30'
@@ -506,14 +506,14 @@ export default function Invoices() {
                       <div className="space-y-2">
                         <Label>Product/Service</Label>
                         <Select
-                          value={item.productId || ''}
+                          value={item.productId || 'custom'}
                           onValueChange={(value) => updateInvoiceItem(index, 'productId', value)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select item or custom" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Custom Item</SelectItem>
+                            <SelectItem value="custom">Custom Item</SelectItem>
                             {getAvailableItemsForCustomer().map(availableItem => (
                               <SelectItem key={availableItem.id} value={availableItem.id}>
                                 <div className="flex items-center gap-2">
@@ -529,7 +529,7 @@ export default function Invoices() {
                             ))}
                           </SelectContent>
                         </Select>
-                        {(!item.productId || item.productId === '') && (
+                        {(!item.productId || item.productId === 'custom') && (
                           <Input
                             value={item.description}
                             onChange={(e) => updateInvoiceItem(index, 'description', e.target.value)}
