@@ -50,7 +50,16 @@ export default function Sales() {
     id: string;
     customer: string;
     total: number;
-    items: Array<{product: string, quantity: number, price: number}>;
+    items: Array<{
+      product: string; 
+      quantity: number; 
+      price: number;
+      isRental?: boolean;
+      contractLength?: string;
+      paymentPeriod?: string;
+      startDate?: Date;
+      endDate?: Date;
+    }>;
     date: string;
     status: string;
   }>>('dashboard-sales', []);
@@ -115,7 +124,85 @@ export default function Sales() {
           <p className="text-muted-foreground">
             Log sales, track performance, and manage your deals.
           </p>
-        </div>
+      </div>
+
+      {/* Sales Statistics */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="dashboard-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{sales.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {sales.length === 0 ? "Start logging sales" : "Total recorded sales"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="dashboard-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-success" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-success">
+              ${sales.reduce((sum, sale) => sum + sale.total, 0).toFixed(2)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {sales.length === 0 ? "Revenue tracking ready" : "Total sales revenue"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="dashboard-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ongoing Contracts</CardTitle>
+            <FileText className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">
+              {sales.filter(sale => 
+                sale.items.some(item => {
+                  // Check if any item in the sale is a rental with active contract
+                  if (!item.isRental || !item.startDate || !item.endDate) return false;
+                  const now = new Date();
+                  const startDate = new Date(item.startDate);
+                  const endDate = new Date(item.endDate);
+                  return now >= startDate && now <= endDate;
+                })
+              ).length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {sales.length === 0 ? "Active rental agreements" : "Currently active"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="dashboard-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Previous Contracts</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {sales.filter(sale => 
+                sale.items.some(item => {
+                  // Check if any item in the sale is a completed rental contract
+                  if (!item.isRental || !item.endDate) return false;
+                  const now = new Date();
+                  const endDate = new Date(item.endDate);
+                  return now > endDate;
+                })
+              ).length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {sales.length === 0 ? "Completed contracts" : "Ended contracts"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
         <Button onClick={() => setShowForm(!showForm)}>
           <Plus className="h-4 w-4 mr-2" />
           {showForm ? "Cancel" : "Log New Sale"}
