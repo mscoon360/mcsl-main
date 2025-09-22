@@ -20,6 +20,8 @@ export default function Sales() {
     toast
   } = useToast();
   const [showForm, setShowForm] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState("");
+  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Get customers and products from localStorage
   const [customers] = useLocalStorage<Array<{
@@ -120,11 +122,36 @@ export default function Sales() {
   };
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Create the new sale object
+    const newSale = {
+      id: Date.now().toString(),
+      customer: customers.find(c => c.id === selectedCustomer)?.name || "Unknown Customer",
+      total: calculateGrandTotal(),
+      items: salesItems.map(item => ({
+        product: products.find(p => p.id === item.product)?.name || "Unknown Product",
+        quantity: item.quantity,
+        price: item.price,
+        isRental: item.isRental,
+        contractLength: item.contractLength,
+        paymentPeriod: item.paymentPeriod,
+        startDate: item.startDate,
+        endDate: item.endDate
+      })),
+      date: saleDate,
+      status: "completed"
+    };
+    
+    // Add to sales array
+    setSales([...sales, newSale]);
+    
     toast({
       title: "Sale Logged Successfully!",
       description: `Total sale amount: $${calculateGrandTotal().toFixed(2)}`
     });
     setShowForm(false);
+    setSelectedCustomer("");
+    setSaleDate(new Date().toISOString().split('T')[0]);
     setSalesItems([{
       product: "",
       quantity: 1,
@@ -221,7 +248,7 @@ export default function Sales() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="customer">Customer</Label>
-                  <Select required disabled={customers.length === 0}>
+                  <Select value={selectedCustomer} onValueChange={setSelectedCustomer} required disabled={customers.length === 0}>
                     <SelectTrigger>
                       <SelectValue placeholder={customers.length === 0 ? "Add customers first" : "Select customer"} />
                     </SelectTrigger>
@@ -239,7 +266,7 @@ export default function Sales() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="date">Sale Date</Label>
-                  <Input type="date" required defaultValue={new Date().toISOString().split('T')[0]} />
+                  <Input type="date" value={saleDate} onChange={e => setSaleDate(e.target.value)} required />
                 </div>
               </div>
 
@@ -267,7 +294,9 @@ export default function Sales() {
                         }
                       }}>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select product" />
+                                <SelectValue placeholder="Select product">
+                                  {item.product ? products.find(p => p.id === item.product)?.name || "Select product" : "Select product"}
+                                </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 {products.length === 0 ? <div className="p-2 text-center">
@@ -375,7 +404,15 @@ export default function Sales() {
                               </div>
                             </div>
                           </div>}
-                      </div>
+                </div>
+
+                {/* Add Another Item Button */}
+                <div className="flex justify-center pt-4">
+                  <Button type="button" variant="outline" onClick={addSalesItem} className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Another Item
+                  </Button>
+                </div>
                     </Card>)}
                 </div>
 
