@@ -168,9 +168,7 @@ export default function Sales() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Sales Management</h1>
-          <p className="text-muted-foreground">
-            Log sales, track performance, and manage your deals.
-          </p>
+          
       </div>
 
       {/* Sales Statistics */}
