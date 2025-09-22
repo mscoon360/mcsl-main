@@ -36,7 +36,7 @@ export default function Sales() {
     lastPurchase: string;
     status: string;
   }>>('dashboard-customers', []);
-  const [products] = useLocalStorage<Array<{
+  const [products, setProducts] = useLocalStorage<Array<{
     id: string;
     name: string;
     description: string;
@@ -127,6 +127,21 @@ export default function Sales() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Check stock availability for non-rental items
+    const stockErrors = salesItems.filter(item => {
+      const product = products.find(p => p.id === item.product);
+      return product && !item.isRental && product.stock < item.quantity;
+    });
+
+    if (stockErrors.length > 0) {
+      toast({
+        title: "Insufficient Stock",
+        description: "Some products don't have enough stock available.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Create the new sale object
     const newSale = {
       id: Date.now().toString(),
@@ -146,11 +161,26 @@ export default function Sales() {
       status: "completed"
     };
 
-    // Add to sales array
+    // Update product stock for non-rental sales
+    const updatedProducts = products.map(product => {
+      const soldItem = salesItems.find(item => item.product === product.id && !item.isRental);
+      if (soldItem) {
+        return {
+          ...product,
+          stock: product.stock - soldItem.quantity,
+          lastSold: saleDate
+        };
+      }
+      return product;
+    });
+
+    // Save updated products and sales
+    setProducts(updatedProducts);
     setSales(prev => [...prev, newSale]);
+    
     toast({
       title: "Sale Logged Successfully!",
-      description: `Total sale amount: $${calculateGrandTotal().toFixed(2)}`
+      description: `Total sale amount: $${calculateGrandTotal().toFixed(2)}. Stock updated.`
     });
     setShowForm(false);
     setSelectedCustomer("");
