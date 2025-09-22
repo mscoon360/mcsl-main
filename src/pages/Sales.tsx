@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package, CalendarIcon } from "lucide-react";
+import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package, CalendarIcon, Filter } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -22,6 +22,10 @@ export default function Sales() {
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateFrom, setDateFrom] = useState<Date>();
+  const [dateTo, setDateTo] = useState<Date>();
+  const [showFilters, setShowFilters] = useState(false);
 
   // Get customers and products from localStorage
   const [customers] = useLocalStorage<Array<{
@@ -198,21 +202,131 @@ export default function Sales() {
       endDate: undefined
     }]);
   };
+
+  const clearSalesLog = () => {
+    setSales([]);
+    toast({
+      title: "Sales Log Cleared",
+      description: "All sales records have been removed."
+    });
+  };
+
+  // Filter sales based on search and date period
+  const filteredSales = sales.filter(sale => {
+    const matchesSearch = searchTerm === "" || 
+      sale.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sale.items.some(item => item.product.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const saleDate = new Date(sale.date);
+    const matchesDateFrom = !dateFrom || saleDate >= dateFrom;
+    const matchesDateTo = !dateTo || saleDate <= dateTo;
+    
+    return matchesSearch && matchesDateFrom && matchesDateTo;
+  });
+
+  const setQuickDateRange = (days: number) => {
+    const today = new Date();
+    const fromDate = new Date();
+    fromDate.setDate(today.getDate() - days);
+    setDateFrom(fromDate);
+    setDateTo(today);
+  };
   return <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Sales Management</h1>
-          
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
+            <Filter className="h-4 w-4 mr-2" />
+            Filters
+          </Button>
+          <Button onClick={() => setShowForm(!showForm)}>
+            <Plus className="h-4 w-4 mr-2" />
+            {showForm ? "Cancel" : "Log New Sale"}
+          </Button>
+        </div>
       </div>
 
-      {/* Sales Statistics */}
-      
-        <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="h-4 w-4 mr-2" />
-          {showForm ? "Cancel" : "Log New Sale"}
-        </Button>
-      </div>
+      {/* Search and Filter Controls */}
+      {showFilters && (
+        <Card className="dashboard-card">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label>Search Sales</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by customer or product..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>From Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateFrom ? format(dateFrom, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={dateFrom}
+                      onSelect={setDateFrom}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>To Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateTo ? format(dateTo, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={dateTo}
+                      onSelect={setDateTo}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Quick Ranges</Label>
+                <div className="flex flex-col gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setQuickDateRange(7)}>
+                    Last 7 days
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setQuickDateRange(30)}>
+                    Last 30 days
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}>
+                    Clear
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* New Sale Form */}
       {showForm && <Card className="dashboard-card">
@@ -428,7 +542,7 @@ export default function Sales() {
           </div>
         </CardHeader>
         <CardContent>
-          {sales.length > 0 ? <Table>
+          {filteredSales.length > 0 ? <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Customer</TableHead>
@@ -439,7 +553,28 @@ export default function Sales() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sales.map(sale => {})}
+                {filteredSales.map(sale => (
+                  <TableRow key={sale.id}>
+                    <TableCell className="font-medium">{sale.customer}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {sale.items.map((item, idx) => (
+                          <div key={idx} className="text-sm">
+                            {item.quantity}x {item.product}
+                            {item.isRental && <Badge variant="secondary" className="ml-2">Rental</Badge>}
+                          </div>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{sale.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      ${sale.total.toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table> : <div className="text-center py-12">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
