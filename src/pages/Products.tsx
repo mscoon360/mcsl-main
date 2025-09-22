@@ -27,6 +27,7 @@ export default function Products() {
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isRentalProduct, setIsRentalProduct] = useState(false);
 
   const filteredProducts = mockProducts.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -67,6 +68,7 @@ export default function Products() {
       description: "New product has been added to your catalog.",
     });
     setShowForm(false);
+    setIsRentalProduct(false);
   };
 
   return (
@@ -133,25 +135,33 @@ export default function Products() {
 
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
-                  <input type="checkbox" id="isRental" className="h-4 w-4 rounded border-gray-300" />
+                  <input 
+                    type="checkbox" 
+                    id="isRental" 
+                    checked={isRentalProduct}
+                    onChange={(e) => setIsRentalProduct(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300" 
+                  />
                   <Label htmlFor="isRental">Rental Product</Label>
                 </div>
                 
-                <div id="rentalFields" className="grid grid-cols-2 gap-4 opacity-50">
-                  <div className="space-y-2">
-                    <Label htmlFor="rentalPrice">Rental Price *</Label>
-                    <Input id="rentalPrice" type="number" step="0.01" placeholder="50.00" />
+                {isRentalProduct && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="rentalPrice">Rental Price *</Label>
+                      <Input id="rentalPrice" type="number" step="0.01" placeholder="50.00" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="paymentPeriod">Payment Period</Label>
+                      <select id="paymentPeriod" className="w-full px-3 py-2 border border-input bg-background rounded-md">
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="biannually">Bi-annually</option>
+                        <option value="annually">Annually</option>
+                      </select>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="paymentPeriod">Payment Period</Label>
-                    <select id="paymentPeriod" className="w-full px-3 py-2 border border-input bg-background rounded-md">
-                      <option value="monthly">Monthly</option>
-                      <option value="quarterly">Quarterly</option>
-                      <option value="biannually">Bi-annually</option>
-                      <option value="annually">Annually</option>
-                    </select>
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className="space-y-2">
