@@ -152,7 +152,12 @@ export default function Admin() {
     }
 
     // Create user via edge function
+    const { data: { session } } = await supabase.auth.getSession();
+
     const { data, error } = await supabase.functions.invoke('create-user', {
+      headers: {
+        Authorization: `Bearer ${session?.access_token ?? ''}`,
+      },
       body: {
         email: validation.data.email,
         password: validation.data.password,
@@ -186,7 +191,12 @@ export default function Admin() {
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
 
+    const { data: { session } } = await supabase.auth.getSession();
+
     const { data, error } = await supabase.functions.invoke('delete-user', {
+      headers: {
+        Authorization: `Bearer ${session?.access_token ?? ''}`,
+      },
       body: { userId },
     });
 
