@@ -11,7 +11,10 @@ import {
   CreditCard,
   ChevronDown,
   DollarSign,
-  Receipt
+  Receipt,
+  ShoppingCart,
+  Shield,
+  LogOut,
 } from "lucide-react";
 import magicCareLogo from "@/assets/magic-care-logo.png";
 import {
@@ -27,15 +30,25 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   useSidebar,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const navigation = [
   {
-    title: "Sales Dashboard",
+    title: "Main",
     items: [
-      { name: "Overview", href: "/", icon: BarChart3 },
-      { name: "Sales Log", href: "/sales", icon: FileText },
+      { name: "Dashboard", href: "/", icon: BarChart3 },
+      { 
+        name: "Sales", 
+        icon: ShoppingCart,
+        subItems: [
+          { name: "Sales", href: "/sales" },
+          { name: "Invoices", href: "/invoices" }
+        ]
+      },
       { name: "Customers", href: "/customers", icon: Users },
       { name: "Products", href: "/products", icon: Package },
       { 
@@ -50,19 +63,11 @@ const navigation = [
     ]
   },
   {
-    title: "Future Departments",
+    title: "Finance",
     items: [
-      { 
-        name: "Finance", 
-        icon: BarChart3,
-        subItems: [
-          { name: "Overview", href: "/finance" },
-          { name: "Income", href: "/income" },
-          { name: "Expenditure", href: "/expenditure" },
-          { name: "Invoices", href: "/invoices" }
-        ]
-      },
-      { name: "Inventory", href: "/inventory", icon: Package, disabled: true },
+      { name: "Overview", href: "/finance", icon: BarChart3 },
+      { name: "Income", href: "/income", icon: DollarSign },
+      { name: "Expenditure", href: "/expenditure", icon: Receipt },
     ]
   }
 ];
@@ -72,6 +77,11 @@ export function DashboardSidebar() {
   const location = useLocation();
   const isCollapsed = state === "collapsed";
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
+  const { isAdmin, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   const isActive = (path: string) => {
     if (path === "/" && location.pathname === "/") return true;
@@ -172,10 +182,12 @@ export function DashboardSidebar() {
                                         <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
                                       ) : subItem.name === "Income" ? (
                                         <DollarSign className="h-3 w-3 md:h-4 md:w-4" />
-                                      ) : subItem.name === "Expenditure" ? (
+                                       ) : subItem.name === "Expenditure" ? (
                                         <FileText className="h-3 w-3 md:h-4 md:w-4" />
                                       ) : subItem.name === "Invoices" ? (
                                         <Receipt className="h-3 w-3 md:h-4 md:w-4" />
+                                      ) : subItem.name === "Sales" ? (
+                                        <ShoppingCart className="h-3 w-3 md:h-4 md:w-4" />
                                       ) : (
                                         <FileText className="h-3 w-3 md:h-4 md:w-4" />
                                       )}
@@ -189,15 +201,13 @@ export function DashboardSidebar() {
                         )}
                       </Collapsible>
                     ) : (
-                      <SidebarMenuButton asChild disabled={item.disabled}>
+                      <SidebarMenuButton asChild>
                         <NavLink
                           to={item.href}
                           className={({ isActive: navIsActive }) =>
                             `flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-lg transition-colors text-sm ${
                               isActive(item.href)
                                 ? "bg-primary text-primary-foreground"
-                                : item.disabled
-                                ? "text-sidebar-foreground/40 cursor-not-allowed"
                                 : "text-sidebar-foreground hover:bg-sidebar-accent"
                             }`
                           }
@@ -209,11 +219,40 @@ export function DashboardSidebar() {
                     )}
                   </SidebarMenuItem>
                 ))}
+                {isAdmin && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to="/admin"
+                        className={({ isActive: navIsActive }) =>
+                          `flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-lg transition-colors text-sm ${
+                            isActive("/admin")
+                              ? "bg-primary text-primary-foreground"
+                              : "text-sidebar-foreground hover:bg-sidebar-accent"
+                          }`
+                        }
+                      >
+                        <Shield className="h-4 w-4 md:h-5 md:w-5" />
+                        {!isCollapsed && <span className="font-medium">Admin</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
       </SidebarContent>
+      <SidebarFooter className="border-t border-sidebar-border p-2 md:p-4">
+        <Button 
+          variant="ghost" 
+          className="w-full justify-start" 
+          onClick={handleSignOut}
+        >
+          <LogOut className="h-4 w-4 md:h-5 md:w-5" />
+          {!isCollapsed && <span className="ml-2 md:ml-3">Sign Out</span>}
+        </Button>
+      </SidebarFooter>
     </Sidebar>
   );
 }
