@@ -52,10 +52,10 @@ const navigation = [
       { name: "Customers", href: "/customers", icon: Users },
       { name: "Products", href: "/products", icon: Package },
       { 
-        name: "Rental Agreements", 
+        name: "Contracts", 
         icon: FileText,
         subItems: [
-          { name: "All Agreements", href: "/rental-agreements" },
+          { name: "All Contracts", href: "/rental-agreements" },
           { name: "Collections", href: "/rental-payments" }
         ]
       },
