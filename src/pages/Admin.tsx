@@ -11,6 +11,38 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import { Trash2, Plus } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { z } from 'zod';
+
+const createUserSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email({ message: 'Please enter a valid email address' })
+    .max(255, { message: 'Email must be less than 255 characters' }),
+  password: z
+    .string()
+    .min(12, { message: 'Password must be at least 12 characters for security' })
+    .max(128, { message: 'Password must be less than 128 characters' })
+    .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
+    .regex(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
+    .regex(/[0-9]/, { message: 'Password must contain at least one number' }),
+  username: z
+    .string()
+    .trim()
+    .min(3, { message: 'Username must be at least 3 characters' })
+    .max(50, { message: 'Username must be less than 50 characters' })
+    .regex(/^[a-zA-Z0-9_-]+$/, { message: 'Username can only contain letters, numbers, hyphens, and underscores' }),
+  name: z
+    .string()
+    .trim()
+    .min(1, { message: 'Name is required' })
+    .max(100, { message: 'Name must be less than 100 characters' }),
+  department: z
+    .string()
+    .trim()
+    .min(1, { message: 'Department is required' })
+    .max(100, { message: 'Department must be less than 100 characters' })
+});
 
 interface Profile {
   id: string;
@@ -103,15 +135,31 @@ export default function Admin() {
     const name = formData.get('name') as string;
     const department = formData.get('department') as string;
 
+    // Validate input
+    const validation = createUserSchema.safeParse({ 
+      email, 
+      password, 
+      username, 
+      name, 
+      department 
+    });
+    
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast.error(firstError.message);
+      setSubmitting(false);
+      return;
+    }
+
     // Create user via Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
+      email: validation.data.email,
+      password: validation.data.password,
       email_confirm: true,
       user_metadata: {
-        username,
-        name,
-        department,
+        username: validation.data.username,
+        name: validation.data.name,
+        department: validation.data.department,
       },
     });
 

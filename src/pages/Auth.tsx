@@ -6,6 +6,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { z } from 'zod';
+
+const authSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email({ message: 'Please enter a valid email address' })
+    .max(255, { message: 'Email must be less than 255 characters' }),
+  password: z
+    .string()
+    .min(8, { message: 'Password must be at least 8 characters' })
+    .max(128, { message: 'Password must be less than 128 characters' })
+});
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -26,7 +39,16 @@ export default function Auth() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    const { error } = await signIn(email, password);
+    // Validate input
+    const validation = authSchema.safeParse({ email, password });
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast.error(firstError.message);
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await signIn(validation.data.email, validation.data.password);
 
     if (error) {
       toast.error(error.message);
