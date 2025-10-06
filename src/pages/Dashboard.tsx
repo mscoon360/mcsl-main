@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, DollarSign, ShoppingCart, Users, TrendingUp, Plus, Package, FileText } from "lucide-react";
+import { BarChart3, DollarSign, ShoppingCart, Users, Plus, Package, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 
@@ -58,13 +58,6 @@ export default function Dashboard() {
       change: totalSalesCount > 0 ? `Total transactions` : "Log your first sale",
       icon: ShoppingCart,
       positive: true
-    },
-    {
-      title: "Conversion Rate",
-      value: "0.0%",
-      change: "Track performance as you grow",
-      icon: TrendingUp,
-      positive: true
     }
   ];
 
@@ -100,7 +93,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => (
           <Card key={stat.title} className="dashboard-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
