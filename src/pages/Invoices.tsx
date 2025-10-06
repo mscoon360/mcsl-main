@@ -393,9 +393,14 @@ export default function Invoices() {
           lineColor: [200, 200, 200]
         },
         columnStyles: {
-          0: { cellWidth: 50, halign: 'left', fontSize: 7 },
+          0: { cellWidth: 50, halign: 'left', fontSize: 7, fontStyle: 'bold', cellPadding: { top: 1, bottom: 1, left: 2, right: 2 } },
           1: { cellWidth: 95, halign: 'left' },
           2: { cellWidth: 40, halign: 'right' }
+        },
+        didParseCell: (data: any) => {
+          if (data.column.index === 0) {
+            data.cell.styles.lineWidth = 0;
+          }
         },
         margin: { left: 15, right: 15 },
         styles: {
