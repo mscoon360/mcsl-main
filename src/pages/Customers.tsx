@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, User, Mail, Phone, Building, Users, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, User, Mail, Phone, Building, Users, Edit, Trash2, Lock, Clock, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 // Your customer database - ready for real data
 const mockCustomers: Array<{
@@ -26,10 +28,107 @@ const mockCustomers: Array<{
 }> = [];
 export default function Customers() {
   const { toast } = useToast();
+  const { userDepartment, user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [customers, setCustomers] = useLocalStorage<typeof mockCustomers>('dashboard-customers', []);
   const [editingCustomer, setEditingCustomer] = useState<string | null>(null);
+  const [accessStatus, setAccessStatus] = useState<{
+    hasAccess: boolean;
+    status: 'none' | 'pending' | 'approved' | 'expired';
+    expiresAt?: string;
+  }>({ hasAccess: false, status: 'none' });
+  const [requestingAccess, setRequestingAccess] = useState(false);
+
+  // Check access for sales users
+  useEffect(() => {
+    if (userDepartment === 'sales' && user) {
+      checkAccessStatus();
+    }
+  }, [userDepartment, user]);
+
+  const checkAccessStatus = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('access_requests')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('requested_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error('Failed to check access status:', error);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      setAccessStatus({ hasAccess: false, status: 'none' });
+      return;
+    }
+
+    const latestRequest = data[0];
+    
+    if (latestRequest.status === 'pending') {
+      setAccessStatus({ hasAccess: false, status: 'pending' });
+    } else if (latestRequest.status === 'approved') {
+      const expiresAt = new Date(latestRequest.expires_at);
+      const now = new Date();
+      
+      if (now < expiresAt) {
+        setAccessStatus({ 
+          hasAccess: true, 
+          status: 'approved',
+          expiresAt: latestRequest.expires_at 
+        });
+      } else {
+        setAccessStatus({ hasAccess: false, status: 'expired' });
+      }
+    } else {
+      setAccessStatus({ hasAccess: false, status: 'none' });
+    }
+  };
+
+  const handleRequestAccess = async () => {
+    if (!user) return;
+    
+    setRequestingAccess(true);
+
+    const { error } = await supabase
+      .from('access_requests')
+      .insert({
+        user_id: user.id,
+        status: 'pending'
+      });
+
+    if (error) {
+      toast({
+        title: "Request Failed",
+        description: "Failed to submit access request. Please try again.",
+        variant: "destructive"
+      });
+      console.error(error);
+    } else {
+      toast({
+        title: "Access Requested",
+        description: "Your request has been sent to an administrator for approval."
+      });
+      checkAccessStatus();
+    }
+
+    setRequestingAccess(false);
+  };
+
+  const logActivity = async (action: 'created' | 'updated' | 'deleted', customerId: string, changes?: any) => {
+    if (!user || userDepartment !== 'sales') return;
+
+    await supabase.from('customer_activity_log').insert({
+      user_id: user.id,
+      customer_id: customerId,
+      action,
+      changes
+    });
+  };
 
   // Get sales data to calculate customer totals
   const [sales] = useLocalStorage<Array<{
@@ -65,7 +164,7 @@ export default function Customers() {
     customer.company.toLowerCase().includes(searchTerm.toLowerCase()) || 
     customer.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const data = new FormData(form);
@@ -82,6 +181,12 @@ export default function Customers() {
       status: "active"
     };
     setCustomers(prev => [newCustomer, ...prev]);
+    
+    // Log activity for sales users
+    if (userDepartment === 'sales') {
+      await logActivity('created', newCustomer.id);
+    }
+    
     toast({
       title: "Customer Added Successfully!",
       description: "New customer has been added to your database."
@@ -133,7 +238,73 @@ export default function Customers() {
       });
     }
   };
+  // Show access control for sales users
+  if (userDepartment === 'sales' && !accessStatus.hasAccess) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5" />
+              Customer Database Access
+            </CardTitle>
+            <CardDescription>
+              You need administrator approval to access the customer database
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {accessStatus.status === 'none' && (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">
+                  Request temporary access to view and add customers. Access will be valid until 4 PM.
+                </p>
+                <Button onClick={handleRequestAccess} disabled={requestingAccess}>
+                  {requestingAccess ? 'Requesting...' : 'Request Access'}
+                </Button>
+              </div>
+            )}
+            {accessStatus.status === 'pending' && (
+              <div className="text-center py-8">
+                <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="font-medium mb-2">Access Request Pending</p>
+                <p className="text-sm text-muted-foreground">
+                  Your request is waiting for administrator approval. You'll be notified once it's processed.
+                </p>
+              </div>
+            )}
+            {accessStatus.status === 'expired' && (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">
+                  Your access has expired (valid until 4 PM). Request new access to continue.
+                </p>
+                <Button onClick={handleRequestAccess} disabled={requestingAccess}>
+                  {requestingAccess ? 'Requesting...' : 'Request New Access'}
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return <div className="space-y-6">
+      {/* Access Status Banner for Sales */}
+      {userDepartment === 'sales' && accessStatus.hasAccess && (
+        <Card className="border-green-500 bg-green-50 dark:bg-green-950">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <p className="text-sm font-medium">
+                  You have temporary access until {accessStatus.expiresAt ? new Date(accessStatus.expiresAt).toLocaleTimeString() : '4 PM'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

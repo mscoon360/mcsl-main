@@ -9,10 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { z } from 'zod';
+import { formatDistanceToNow } from 'date-fns';
 
 const createUserSchema = z.object({
   email: z
@@ -63,12 +65,33 @@ interface DepartmentVisibility {
   department: string;
 }
 
+interface AccessRequest {
+  id: string;
+  user_id: string;
+  requested_at: string;
+  status: 'pending' | 'approved' | 'denied';
+  approved_by: string | null;
+  approved_at: string | null;
+  expires_at: string | null;
+}
+
+interface ActivityLog {
+  id: string;
+  user_id: string;
+  customer_id: string | null;
+  action: 'created' | 'updated' | 'deleted';
+  changes: any;
+  created_at: string;
+}
+
 export default function Admin() {
   const { isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<Profile[]>([]);
   const [visibilities, setVisibilities] = useState<DepartmentVisibility[]>([]);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [grantAdmin, setGrantAdmin] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('');
@@ -84,6 +107,8 @@ export default function Admin() {
       loadUsers();
       loadVisibilities();
       loadUserRoles();
+      loadAccessRequests();
+      loadActivityLogs();
     }
   }, [isAdmin]);
 
@@ -258,6 +283,85 @@ export default function Admin() {
     }
   };
 
+  const loadAccessRequests = async () => {
+    const { data, error } = await supabase
+      .from('access_requests')
+      .select('*')
+      .order('requested_at', { ascending: false });
+
+    if (error) {
+      console.error('Failed to load access requests:', error);
+    } else {
+      setAccessRequests((data || []) as AccessRequest[]);
+    }
+  };
+
+  const loadActivityLogs = async () => {
+    const { data, error } = await supabase
+      .from('customer_activity_log')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error('Failed to load activity logs:', error);
+    } else {
+      setActivityLogs((data || []) as ActivityLog[]);
+    }
+  };
+
+  const handleApproveRequest = async (requestId: string, userId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Set expiration to 4 PM today
+    const today = new Date();
+    const expiresAt = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 16, 0, 0);
+    
+    // If it's already past 4 PM, set for tomorrow
+    if (new Date() > expiresAt) {
+      expiresAt.setDate(expiresAt.getDate() + 1);
+    }
+
+    const { error } = await supabase
+      .from('access_requests')
+      .update({
+        status: 'approved',
+        approved_by: user?.id,
+        approved_at: new Date().toISOString(),
+        expires_at: expiresAt.toISOString(),
+      })
+      .eq('id', requestId);
+
+    if (error) {
+      toast.error('Failed to approve request');
+      console.error(error);
+    } else {
+      toast.success('Access request approved until 4 PM');
+      loadAccessRequests();
+    }
+  };
+
+  const handleDenyRequest = async (requestId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { error } = await supabase
+      .from('access_requests')
+      .update({
+        status: 'denied',
+        approved_by: user?.id,
+        approved_at: new Date().toISOString(),
+      })
+      .eq('id', requestId);
+
+    if (error) {
+      toast.error('Failed to deny request');
+      console.error(error);
+    } else {
+      toast.success('Access request denied');
+      loadAccessRequests();
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -274,6 +378,7 @@ export default function Admin() {
         <TabsList>
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="visibility">Department Visibility</TabsTrigger>
+          <TabsTrigger value="access">Access Requests</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
@@ -458,6 +563,184 @@ export default function Admin() {
                   })}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="access" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Access Requests</CardTitle>
+              <CardDescription>Review and approve access requests from sales team</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {accessRequests.filter(req => req.status === 'pending').length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Requested</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {accessRequests
+                      .filter(req => req.status === 'pending')
+                      .map((request) => {
+                        const user = users.find((u) => u.id === request.user_id);
+                        return (
+                          <TableRow key={request.id}>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{user?.name || 'Unknown'}</p>
+                                <p className="text-sm text-muted-foreground">{user?.department}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {formatDistanceToNow(new Date(request.requested_at), { addSuffix: true })}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">
+                                <Clock className="w-3 h-3 mr-1" />
+                                Pending
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => handleApproveRequest(request.id, request.user_id)}
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleDenyRequest(request.id)}
+                                >
+                                  <XCircle className="w-4 h-4 mr-1" />
+                                  Deny
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-center text-muted-foreground py-4">No pending access requests</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Active & Past Access Grants</CardTitle>
+              <CardDescription>View all approved and expired access grants</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {accessRequests.filter(req => req.status === 'approved').length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Approved By</TableHead>
+                      <TableHead>Expires At</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {accessRequests
+                      .filter(req => req.status === 'approved')
+                      .map((request) => {
+                        const user = users.find((u) => u.id === request.user_id);
+                        const approver = users.find((u) => u.id === request.approved_by);
+                        const isExpired = request.expires_at && new Date(request.expires_at) < new Date();
+                        
+                        return (
+                          <TableRow key={request.id}>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{user?.name || 'Unknown'}</p>
+                                <p className="text-sm text-muted-foreground">{user?.department}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>{approver?.name || 'Unknown'}</TableCell>
+                            <TableCell>
+                              {request.expires_at 
+                                ? new Date(request.expires_at).toLocaleString()
+                                : 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={isExpired ? 'secondary' : 'default'}>
+                                {isExpired ? 'Expired' : 'Active'}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-center text-muted-foreground py-4">No approved access requests</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>Changes made by users with temporary access</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {activityLogs.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Details</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {activityLogs.slice(0, 20).map((log) => {
+                      const user = users.find((u) => u.id === log.user_id);
+                      return (
+                        <TableRow key={log.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{user?.name || 'Unknown'}</p>
+                              <p className="text-sm text-muted-foreground">{user?.department}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={
+                              log.action === 'created' ? 'default' :
+                              log.action === 'updated' ? 'secondary' :
+                              'destructive'
+                            }>
+                              {log.action}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            Customer ID: {log.customer_id?.slice(0, 8)}...
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-center text-muted-foreground py-4">No activity recorded yet</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
