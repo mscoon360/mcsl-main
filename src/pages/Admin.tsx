@@ -19,6 +19,11 @@ interface Profile {
   department: string;
 }
 
+interface UserRole {
+  user_id: string;
+  role: string;
+}
+
 interface DepartmentVisibility {
   id: string;
   user_id: string;
@@ -30,6 +35,7 @@ export default function Admin() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<Profile[]>([]);
   const [visibilities, setVisibilities] = useState<DepartmentVisibility[]>([]);
+  const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [grantAdmin, setGrantAdmin] = useState(false);
 
@@ -43,6 +49,7 @@ export default function Admin() {
     if (isAdmin) {
       loadUsers();
       loadVisibilities();
+      loadUserRoles();
     }
   }, [isAdmin]);
 
@@ -70,6 +77,18 @@ export default function Admin() {
       console.error(error);
     } else {
       setVisibilities(data || []);
+    }
+  };
+
+  const loadUserRoles = async () => {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('user_id, role');
+
+    if (error) {
+      console.error('Failed to load user roles:', error);
+    } else {
+      setUserRoles(data || []);
     }
   };
 
@@ -118,6 +137,7 @@ export default function Admin() {
     e.currentTarget.reset();
     setGrantAdmin(false);
     loadUsers();
+    loadUserRoles();
     setSubmitting(false);
   };
 
@@ -132,6 +152,7 @@ export default function Admin() {
     } else {
       toast.success('User deleted successfully');
       loadUsers();
+      loadUserRoles();
     }
   };
 
@@ -251,26 +272,41 @@ export default function Admin() {
                     <TableHead>Username</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Department</TableHead>
+                    <TableHead>Role</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.username}</TableCell>
-                      <TableCell>{user.name}</TableCell>
-                      <TableCell>{user.department}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteUser(user.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {users.map((user) => {
+                    const isUserAdmin = userRoles.some(
+                      (role) => role.user_id === user.id && role.role === 'admin'
+                    );
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.username}</TableCell>
+                        <TableCell>{user.name}</TableCell>
+                        <TableCell>{user.department}</TableCell>
+                        <TableCell>
+                          {isUserAdmin ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-primary-foreground">
+                              Admin
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">User</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteUser(user.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
