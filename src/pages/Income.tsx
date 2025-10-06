@@ -62,7 +62,39 @@ export default function Income() {
 
   const monthOptions = generateMonthOptions();
 
-  // Calculate income data for selected month
+  // Calculate monthly revenue based on contract amounts + spot purchases
+  const calculateMonthlyRevenue = (month: string) => {
+    const monthStart = startOfMonth(parseISO(`${month}-01`));
+    const monthEnd = endOfMonth(parseISO(`${month}-01`));
+
+    // Spot purchases (non-rental sales)
+    const spotPurchases = sales
+      .filter(sale => {
+        const saleDate = parseISO(sale.date);
+        return isWithinInterval(saleDate, { start: monthStart, end: monthEnd }) &&
+               !sale.items.some(item => item.isRental);
+      })
+      .reduce((sum, sale) => sum + sale.total, 0);
+
+    // Monthly rental revenue (active contracts during this month)
+    const monthlyRentalRevenue = sales
+      .flatMap(sale => 
+        sale.items
+          .filter(item => {
+            if (!item.isRental || !item.startDate || !item.endDate) return false;
+            const startDate = parseISO(item.startDate.toString());
+            const endDate = parseISO(item.endDate.toString());
+            // Check if contract is active during the selected month
+            return startDate <= monthEnd && endDate >= monthStart;
+          })
+          .map(item => item.price * item.quantity)
+      )
+      .reduce((sum, amount) => sum + amount, 0);
+
+    return spotPurchases + monthlyRentalRevenue;
+  };
+
+  // Calculate income data for selected month (for detailed views)
   const calculateIncomeData = (month: string) => {
     const monthStart = startOfMonth(parseISO(`${month}-01`));
     const monthEnd = endOfMonth(parseISO(`${month}-01`));
@@ -97,7 +129,9 @@ export default function Income() {
 
   const incomeData = calculateIncomeData(selectedMonth);
 
-  // Calculate previous month data for comparison
+  // Calculate monthly revenue for current and previous month
+  const currentMonthRevenue = calculateMonthlyRevenue(selectedMonth);
+  
   const getPreviousMonth = (month: string) => {
     const currentDate = parseISO(`${month}-01`);
     const previousDate = subMonths(currentDate, 1);
@@ -105,16 +139,16 @@ export default function Income() {
   };
 
   const previousMonth = getPreviousMonth(selectedMonth);
-  const previousIncomeData = calculateIncomeData(previousMonth);
+  const previousMonthRevenue = calculateMonthlyRevenue(previousMonth);
 
   // Calculate month-over-month change
   const calculateMonthlyChange = () => {
-    if (previousIncomeData.totalIncome === 0) {
-      return { percentage: 0, change: incomeData.totalIncome, isIncrease: true };
+    if (previousMonthRevenue === 0) {
+      return { percentage: 0, change: currentMonthRevenue, isIncrease: true };
     }
     
-    const change = incomeData.totalIncome - previousIncomeData.totalIncome;
-    const percentage = (change / previousIncomeData.totalIncome) * 100;
+    const change = currentMonthRevenue - previousMonthRevenue;
+    const percentage = (change / previousMonthRevenue) * 100;
     
     return {
       percentage: Math.abs(percentage),
@@ -306,9 +340,9 @@ export default function Income() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Current Month */}
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Current Month</div>
+              <div className="text-sm text-muted-foreground">Current Month Revenue</div>
               <div className="text-3xl font-bold text-foreground">
-                ${incomeData.totalIncome.toFixed(2)}
+                ${currentMonthRevenue.toFixed(2)}
               </div>
               <div className="text-xs text-muted-foreground">
                 {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
@@ -317,9 +351,9 @@ export default function Income() {
 
             {/* Previous Month */}
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Previous Month</div>
+              <div className="text-sm text-muted-foreground">Previous Month Revenue</div>
               <div className="text-2xl font-semibold text-muted-foreground">
-                ${previousIncomeData.totalIncome.toFixed(2)}
+                ${previousMonthRevenue.toFixed(2)}
               </div>
               <div className="text-xs text-muted-foreground">
                 {format(parseISO(`${previousMonth}-01`), 'MMMM yyyy')}
