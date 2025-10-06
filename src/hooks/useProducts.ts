@@ -54,6 +54,23 @@ export const useProducts = () => {
         .single();
 
       if (error) throw error;
+
+      // Generate barcodes for each unit of stock
+      if (data && product.stock > 0) {
+        const barcodeItems = Array.from({ length: product.stock }, (_, index) => ({
+          product_id: data.id,
+          barcode: `${data.sku}-${String(index + 1).padStart(6, '0')}`,
+          status: 'available',
+        }));
+
+        const { error: barcodeError } = await supabase
+          .from('product_items')
+          .insert(barcodeItems);
+
+        if (barcodeError) {
+          console.error('Error generating barcodes:', barcodeError);
+        }
+      }
       
       setProducts(prev => [data, ...prev]);
       toast({
