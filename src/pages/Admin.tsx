@@ -529,7 +529,7 @@ export default function Admin() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="sales">Sales</SelectItem>
-                        <SelectItem value="accounting">Accounting</SelectItem>
+                        <SelectItem value="finance department">Finance Department</SelectItem>
                         <SelectItem value="operations">Operations</SelectItem>
                         <SelectItem value="management">Management</SelectItem>
                       </SelectContent>
