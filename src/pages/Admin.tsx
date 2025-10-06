@@ -152,31 +152,25 @@ export default function Admin() {
     }
 
     // Create user via edge function
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({
-          email: validation.data.email,
-          password: validation.data.password,
-          username: validation.data.username,
-          name: validation.data.name,
-          department: validation.data.department,
-          grantAdmin,
-        }),
-      }
-    );
+    const { data, error } = await supabase.functions.invoke('create-user', {
+      body: {
+        email: validation.data.email,
+        password: validation.data.password,
+        username: validation.data.username,
+        name: validation.data.name,
+        department: validation.data.department,
+        grantAdmin,
+      },
+    });
 
-    const result = await response.json();
+    if (error) {
+      toast.error(error.message || 'Failed to create user');
+      setSubmitting(false);
+      return;
+    }
 
-    if (!response.ok) {
-      toast.error(result.error || 'Failed to create user');
+    if (data?.error) {
+      toast.error(data.error);
       setSubmitting(false);
       return;
     }
@@ -192,25 +186,19 @@ export default function Admin() {
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
 
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ userId }),
-      }
-    );
+    const { data, error } = await supabase.functions.invoke('delete-user', {
+      body: { userId },
+    });
 
-    const result = await response.json();
+    if (error) {
+      toast.error(error.message || 'Failed to delete user');
+      console.error(error);
+      return;
+    }
 
-    if (!response.ok) {
-      toast.error(result.error || 'Failed to delete user');
-      console.error(result.error);
+    if (data?.error) {
+      toast.error(data.error);
+      console.error(data.error);
     } else {
       toast.success('User deleted successfully');
       loadUsers();
