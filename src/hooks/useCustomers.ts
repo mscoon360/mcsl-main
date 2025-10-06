@@ -124,6 +124,26 @@ export const useCustomers = () => {
 
   useEffect(() => {
     fetchCustomers();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('customers-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'customers'
+        },
+        () => {
+          fetchCustomers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return {
