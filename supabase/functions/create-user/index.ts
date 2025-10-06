@@ -98,9 +98,9 @@ serve(async (req) => {
       );
     }
     
-    if (!password || typeof password !== 'string' || password.length < 12) {
+    if (!password || typeof password !== 'string' || password.length < 8) {
       return new Response(
-        JSON.stringify({ error: 'Password must be at least 12 characters long' }),
+        JSON.stringify({ error: 'Password must be at least 8 characters long' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
