@@ -235,6 +235,60 @@ export default function Income() {
 
   const filteredData = getFilteredData();
 
+  const handleExportMonthlyRevenue = () => {
+    // Generate last 6 months of data
+    const currentDate = new Date();
+    const months = eachMonthOfInterval({
+      start: subMonths(currentDate, 5),
+      end: currentDate
+    });
+
+    const monthlyData = months.map(date => {
+      const monthStr = format(date, 'yyyy-MM');
+      const revenue = calculateMonthlyRevenue(monthStr);
+      
+      return {
+        Month: format(date, 'MMMM yyyy'),
+        Revenue: revenue,
+        'Change from Previous': ''
+      };
+    });
+
+    // Calculate month-over-month changes
+    for (let i = 1; i < monthlyData.length; i++) {
+      const current = monthlyData[i].Revenue;
+      const previous = monthlyData[i - 1].Revenue;
+      const change = current - previous;
+      const percentage = previous !== 0 ? (change / previous) * 100 : 0;
+      monthlyData[i]['Change from Previous'] = `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${percentage.toFixed(1)}%)`;
+    }
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(monthlyData);
+
+    // Set column widths
+    ws['!cols'] = [
+      { width: 20 }, // Month
+      { width: 15 }, // Revenue
+      { width: 25 }  // Change from Previous
+    ];
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Monthly Revenue');
+
+    // Generate filename
+    const filename = `Monthly_Revenue_${format(new Date(), 'yyyy_MM')}.xlsx`;
+
+    // Save file
+    XLSX.writeFile(wb, filename);
+
+    toast({
+      title: "Monthly Revenue Exported",
+      description: `Monthly revenue report downloaded as ${filename}`
+    });
+  };
+
   const handleExportIncomeReport = () => {
     // Prepare income transactions for Excel
     const transactionExport = filteredData.items.map(item => ({
@@ -276,7 +330,7 @@ export default function Income() {
     XLSX.utils.book_append_sheet(wb, ws, 'Income Report');
 
     // Generate filename
-    const filename = `Income_Report_${format(parseISO(`${selectedMonth}-01`), 'yyyy_MM')}.xlsx`;
+    const filename = `Income_Details_${format(parseISO(`${selectedMonth}-01`), 'yyyy_MM')}.xlsx`;
 
     // Save file
     XLSX.writeFile(wb, filename);
@@ -320,7 +374,7 @@ export default function Income() {
             </Select>
             <Button variant="outline" onClick={handleExportIncomeReport}>
               <Download className="h-4 w-4 mr-2" />
-              Export Excel
+              Export Income Details
             </Button>
           </div>
       </div>
@@ -328,13 +382,21 @@ export default function Income() {
       {/* Monthly Revenue Tracker */}
       <Card className="dashboard-card border-2">
         <CardHeader>
-          <CardTitle className="text-card-foreground flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Monthly Revenue Tracker
-          </CardTitle>
-          <CardDescription>
-            Compare monthly revenue performance
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-card-foreground flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Monthly Revenue Tracker
+              </CardTitle>
+              <CardDescription>
+                Compare monthly revenue performance
+              </CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleExportMonthlyRevenue}>
+              <Download className="h-4 w-4 mr-2" />
+              Export Revenue Tracker
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
