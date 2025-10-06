@@ -7,6 +7,7 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   userDepartment: string | null;
+  needsPasswordChange: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, username: string, name: string, department: string) => Promise<{ error: any }>;
@@ -20,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userDepartment, setUserDepartment] = useState<string | null>(null);
+  const [needsPasswordChange, setNeedsPasswordChange] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,6 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setIsAdmin(false);
           setUserDepartment(null);
+          setNeedsPasswordChange(false);
           setLoading(false);
         }
       }
@@ -84,18 +87,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('department')
+        .select('department, needs_password_change')
         .eq('id', userId)
         .maybeSingle();
       
       if (!error && data) {
         setUserDepartment(data.department);
+        setNeedsPasswordChange(data.needs_password_change || false);
       } else {
         setUserDepartment(null);
+        setNeedsPasswordChange(false);
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
       setUserDepartment(null);
+      setNeedsPasswordChange(false);
     }
   };
 
@@ -128,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, userDepartment, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, userDepartment, needsPasswordChange, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

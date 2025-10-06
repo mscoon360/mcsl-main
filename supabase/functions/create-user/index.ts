@@ -136,6 +136,18 @@ serve(async (req) => {
 
     console.log('User created successfully:', newUser.user?.id);
 
+    // Mark user as needing password change
+    if (newUser.user) {
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .update({ needs_password_change: true })
+        .eq('id', newUser.user.id);
+      
+      if (profileError) {
+        console.error('Failed to set password change flag:', profileError);
+      }
+    }
+
     // Grant admin role if requested
     if (grantAdmin && newUser.user) {
       console.log('Granting admin role');

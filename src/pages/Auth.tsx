@@ -25,10 +25,15 @@ const authSchema = z.object({
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
+  const { signIn, user, needsPasswordChange } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  // Redirect if already logged in
+  // Redirect based on user state
+  if (user && needsPasswordChange) {
+    navigate('/change-password');
+    return null;
+  }
+  
   if (user) {
     navigate('/');
     return null;

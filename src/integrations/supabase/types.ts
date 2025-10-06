@@ -435,6 +435,7 @@ export type Database = {
           department: string
           id: string
           name: string
+          needs_password_change: boolean | null
           updated_at: string
           username: string
         }
@@ -443,6 +444,7 @@ export type Database = {
           department: string
           id: string
           name: string
+          needs_password_change?: boolean | null
           updated_at?: string
           username: string
         }
@@ -451,6 +453,7 @@ export type Database = {
           department?: string
           id?: string
           name?: string
+          needs_password_change?: boolean | null
           updated_at?: string
           username?: string
         }

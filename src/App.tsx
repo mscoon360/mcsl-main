@@ -18,6 +18,7 @@ import Income from "./pages/Income";
 import Expenditure from "./pages/Expenditure";
 import Invoices from "./pages/Invoices";
 import Auth from "./pages/Auth";
+import ChangePassword from "./pages/ChangePassword";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
@@ -32,6 +33,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
               <Route index element={<Dashboard />} />
               <Route path="sales" element={<Sales />} />
