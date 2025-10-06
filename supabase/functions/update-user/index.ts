@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    // Create Supabase clients
+    // Create Supabase admin client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -35,8 +35,11 @@ serve(async (req) => {
       );
     }
 
+    // Extract JWT token
     const jwt = authHeader.replace('Bearer ', '');
-    const supabase = createClient(
+    
+    // Create a Supabase client for checking user permissions
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
@@ -47,8 +50,8 @@ serve(async (req) => {
       }
     );
 
-    // Verify the authenticated user by passing JWT directly
-    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
+    // Verify the authenticated user using the JWT
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
     if (authError || !user) {
       console.error('Authentication error:', authError);
       return new Response(
@@ -57,8 +60,8 @@ serve(async (req) => {
       );
     }
 
-    // Check if user is admin
-    const { data: adminRole, error: roleError } = await supabase
+    // Check if user is admin using admin client to bypass RLS
+    const { data: adminRole, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
