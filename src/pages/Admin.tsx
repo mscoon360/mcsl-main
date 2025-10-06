@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Trash2, Plus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Profile {
   id: string;
@@ -30,6 +31,7 @@ export default function Admin() {
   const [users, setUsers] = useState<Profile[]>([]);
   const [visibilities, setVisibilities] = useState<DepartmentVisibility[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [grantAdmin, setGrantAdmin] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -100,8 +102,21 @@ export default function Admin() {
       return;
     }
 
+    // Grant admin role if checkbox was checked
+    if (grantAdmin && authData.user) {
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: authData.user.id, role: 'admin' });
+      
+      if (roleError) {
+        toast.error('User created but failed to grant admin privileges');
+        console.error(roleError);
+      }
+    }
+
     toast.success('User created successfully');
     e.currentTarget.reset();
+    setGrantAdmin(false);
     loadUsers();
     setSubmitting(false);
   };
@@ -206,6 +221,16 @@ export default function Admin() {
                     <Label htmlFor="department">Department</Label>
                     <Input id="department" name="department" type="text" required />
                   </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="grantAdmin" 
+                    checked={grantAdmin}
+                    onCheckedChange={(checked) => setGrantAdmin(checked === true)}
+                  />
+                  <Label htmlFor="grantAdmin" className="cursor-pointer">
+                    Grant admin privileges
+                  </Label>
                 </div>
                 <Button type="submit" disabled={submitting}>
                   <Plus className="w-4 h-4 mr-2" />
