@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -458,9 +459,8 @@ export default function Admin() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-password">New Password (optional)</Label>
-              <Input
+              <PasswordInput
                 id="edit-password"
-                type="password"
                 value={editPassword}
                 onChange={(e) => setEditPassword(e.target.value)}
                 placeholder="Leave blank to keep current password"
@@ -511,7 +511,7 @@ export default function Admin() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" name="password" type="password" required />
+                    <PasswordInput id="password" name="password" required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="username">Username</Label>
