@@ -606,7 +606,7 @@ export default function Admin() {
                       <TableRow key={user.id}>
                         <TableCell>{user.username}</TableCell>
                         <TableCell>{user.name}</TableCell>
-                        <TableCell>{user.department}</TableCell>
+                        <TableCell className="capitalize">{user.department}</TableCell>
                         <TableCell>
                           {isUserAdmin ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-primary-foreground">
