@@ -10,206 +10,20 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
-      profiles: {
-        Row: {
-          created_at: string
-          email: string
-          full_name: string | null
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          full_name?: string | null
-          id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          full_name?: string | null
-          id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      "Requested Quotes": {
-        Row: {
-          cif_value: string | null
-          clearance_urgency: string | null
-          comments: string | null
-          commercial_value: string | null
-          company: string | null
-          container_type: string | null
-          country_of_manufacture: string | null
-          created_at: string
-          currency: string | null
-          customer_name: string | null
-          customs_brokerage: boolean | null
-          delivery_address: string | null
-          destination: string | null
-          email: string | null
-          final_dimensions: string | null
-          final_weight: string | null
-          goods: string | null
-          height: string | null
-          hs_code: string | null
-          id: string
-          import_export_type: string | null
-          insurance: boolean | null
-          length: string | null
-          needs_transportation: boolean | null
-          origin: string | null
-          package_type: string | null
-          permit_license: string | null
-          phone: string | null
-          pieces: string | null
-          purpose_of_import: string | null
-          service_type: string | null
-          shipment_type: string | null
-          shipping_terms: string | null
-          shipping_type: string | null
-          tax_exemption_details: string | null
-          tax_exemption_eligible: string | null
-          unit_system: string | null
-          user_id: string
-          value: string | null
-          weight: string | null
-          width: string | null
-        }
-        Insert: {
-          cif_value?: string | null
-          clearance_urgency?: string | null
-          comments?: string | null
-          commercial_value?: string | null
-          company?: string | null
-          container_type?: string | null
-          country_of_manufacture?: string | null
-          created_at?: string
-          currency?: string | null
-          customer_name?: string | null
-          customs_brokerage?: boolean | null
-          delivery_address?: string | null
-          destination?: string | null
-          email?: string | null
-          final_dimensions?: string | null
-          final_weight?: string | null
-          goods?: string | null
-          height?: string | null
-          hs_code?: string | null
-          id?: string
-          import_export_type?: string | null
-          insurance?: boolean | null
-          length?: string | null
-          needs_transportation?: boolean | null
-          origin?: string | null
-          package_type?: string | null
-          permit_license?: string | null
-          phone?: string | null
-          pieces?: string | null
-          purpose_of_import?: string | null
-          service_type?: string | null
-          shipment_type?: string | null
-          shipping_terms?: string | null
-          shipping_type?: string | null
-          tax_exemption_details?: string | null
-          tax_exemption_eligible?: string | null
-          unit_system?: string | null
-          user_id: string
-          value?: string | null
-          weight?: string | null
-          width?: string | null
-        }
-        Update: {
-          cif_value?: string | null
-          clearance_urgency?: string | null
-          comments?: string | null
-          commercial_value?: string | null
-          company?: string | null
-          container_type?: string | null
-          country_of_manufacture?: string | null
-          created_at?: string
-          currency?: string | null
-          customer_name?: string | null
-          customs_brokerage?: boolean | null
-          delivery_address?: string | null
-          destination?: string | null
-          email?: string | null
-          final_dimensions?: string | null
-          final_weight?: string | null
-          goods?: string | null
-          height?: string | null
-          hs_code?: string | null
-          id?: string
-          import_export_type?: string | null
-          insurance?: boolean | null
-          length?: string | null
-          needs_transportation?: boolean | null
-          origin?: string | null
-          package_type?: string | null
-          permit_license?: string | null
-          phone?: string | null
-          pieces?: string | null
-          purpose_of_import?: string | null
-          service_type?: string | null
-          shipment_type?: string | null
-          shipping_terms?: string | null
-          shipping_type?: string | null
-          tax_exemption_details?: string | null
-          tax_exemption_eligible?: string | null
-          unit_system?: string | null
-          user_id?: string
-          value?: string | null
-          weight?: string | null
-          width?: string | null
-        }
-        Relationships: []
-      }
-      user_roles: {
-        Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: Database["public"]["Enums"]["app_role"]
-      }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      app_role: "admin" | "user"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -336,8 +150,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: ["admin", "user"],
-    },
+    Enums: {},
   },
 } as const
