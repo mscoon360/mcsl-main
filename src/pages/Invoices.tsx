@@ -267,152 +267,146 @@ export default function Invoices() {
     try {
       const doc = new jsPDF();
       
-      // Company Header
-      doc.setFontSize(24);
-      doc.setTextColor(40, 40, 40);
-      doc.text('INVOICE', 20, 25);
+      // Company Header - Logo
+      const logoImg = new Image();
+      logoImg.src = '/src/assets/magic-care-logo.png';
+      
+      // Company Name
+      doc.setFontSize(18);
+      doc.setTextColor(0, 102, 204);
+      doc.setFont(undefined, 'bold');
+      doc.text('MAGIC-CARE SOLUTIONS LIMITED', 105, 20, { align: 'center' });
+      
+      // TAX INVOICE
+      doc.setFontSize(16);
+      doc.setTextColor(0, 0, 0);
+      doc.text('TAX INVOICE', 105, 30, { align: 'center' });
+      
+      // Tagline
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'italic');
+      doc.text('"Caring for your Health"', 105, 37, { align: 'center' });
+      
+      // VAT Registration
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.text('VAT REG. No. 317089', 105, 43, { align: 'center' });
       
       // Invoice details - right side
       doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Invoice #: ${invoice.invoiceNumber}`, 130, 25);
-      doc.text(`Issue Date: ${format(parseISO(invoice.issueDate), 'MMM dd, yyyy')}`, 130, 32);
-      doc.text(`Due Date: ${format(parseISO(invoice.dueDate), 'MMM dd, yyyy')}`, 130, 39);
-      doc.text(`Status: ${invoice.status.toUpperCase()}`, 130, 46);
-      
-      // Company info (left side)
-      doc.setFontSize(12);
       doc.setTextColor(40, 40, 40);
-      doc.text('Your Company Name', 20, 45);
-      doc.setFontSize(9);
-      doc.setTextColor(100, 100, 100);
-      doc.text('123 Business Street', 20, 52);
-      doc.text('City, State 12345', 20, 58);
-      doc.text('Phone: (555) 123-4567', 20, 64);
-      doc.text('Email: info@company.com', 20, 70);
+      doc.text(`Invoice Date: ${format(parseISO(invoice.issueDate), 'MM/dd/yyyy')}`, 140, 55);
+      doc.text(`Invoice Number: ${invoice.invoiceNumber}`, 140, 62);
       
-      // Bill to section
-      doc.setFontSize(11);
-      doc.setTextColor(40, 40, 40);
-      doc.text('BILL TO:', 20, 85);
-      doc.setFontSize(10);
-      doc.text(invoice.customerName, 20, 93);
-      
-      // Get customer details for full address
+      // Customer details - left side
       const customer = customers.find(c => c.id === invoice.customerId);
+      let yPos = 55;
+      doc.setFontSize(10);
+      doc.setTextColor(40, 40, 40);
+      doc.text(invoice.customerName, 20, yPos);
+      
       if (customer) {
-        let yPos = 100;
-        if (customer.company) {
-          doc.text(customer.company, 20, yPos);
-          yPos += 6;
-        }
+        yPos += 7;
         if (customer.address) {
           doc.text(customer.address, 20, yPos);
-          yPos += 6;
+          yPos += 7;
         }
         if (customer.city) {
           doc.text(customer.city, 20, yPos);
-          yPos += 6;
-        }
-        if (customer.email) {
-          doc.text(customer.email, 20, yPos);
-          yPos += 6;
-        }
-        if (customer.phone) {
-          doc.text(customer.phone, 20, yPos);
+          yPos += 7;
         }
       }
       
-      // Items table - start higher up
-      const tableStartY = 130;
+      // Items table
+      const tableStartY = 85;
       const tableData = invoice.items.map(item => [
         item.description,
-        item.quantity.toString(),
-        `$${item.unitPrice.toFixed(2)}`,
-        `$${item.total.toFixed(2)}`
+        `TTD$ ${item.total.toFixed(2)}`
       ]);
       
       autoTable(doc, {
         startY: tableStartY,
-        head: [['Description', 'Qty', 'Unit Price', 'Total']],
+        head: [['DESCRIPTION', 'AMOUNT']],
         body: tableData,
-        theme: 'striped',
+        theme: 'plain',
         headStyles: {
-          fillColor: [51, 122, 183],
-          textColor: 255,
+          fillColor: [255, 255, 255],
+          textColor: 0,
           fontSize: 10,
           fontStyle: 'bold',
-          halign: 'left'
+          halign: 'left',
+          lineWidth: 0.5,
+          lineColor: [0, 0, 0]
         },
         bodyStyles: {
           fontSize: 9,
           textColor: 60,
-          cellPadding: 3
+          cellPadding: 3,
+          lineWidth: 0.1,
+          lineColor: [200, 200, 200]
         },
         columnStyles: {
-          0: { cellWidth: 90, halign: 'left' },
-          1: { cellWidth: 20, halign: 'center' },
-          2: { cellWidth: 30, halign: 'right' },
-          3: { cellWidth: 35, halign: 'right' }
+          0: { cellWidth: 140, halign: 'left' },
+          1: { cellWidth: 45, halign: 'right' }
         },
         margin: { left: 20, right: 20 },
         styles: {
-          lineColor: [220, 220, 220],
+          lineColor: [0, 0, 0],
           lineWidth: 0.1
         }
       });
       
-      // Calculate totals position - closer to table
-      const finalY = (doc as any).lastAutoTable.finalY + 10;
+      // Calculate totals position
+      const finalY = (doc as any).lastAutoTable.finalY + 15;
+      
+      // Company Name Footer
+      doc.setFontSize(10);
+      doc.setTextColor(0, 102, 204);
+      doc.setFont(undefined, 'bold');
+      doc.text('MAGIC-CARE SOLUTIONS LIMITED', 20, finalY);
+      
+      // Thank You
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Thank You!', 20, finalY + 10);
       
       // Totals section - right aligned
-      const totalsX = 130;
-      const valuesX = 175;
+      const totalsX = 140;
+      const valuesX = 190;
       
-      doc.setFontSize(9);
-      doc.setTextColor(100, 100, 100);
-      doc.text('Subtotal:', totalsX, finalY);
-      doc.text(`$${invoice.subtotal.toFixed(2)}`, valuesX, finalY, { align: 'right' });
-      
-      doc.text(`Tax (${invoice.taxRate}%):`, totalsX, finalY + 7);
-      doc.text(`$${invoice.taxAmount.toFixed(2)}`, valuesX, finalY + 7, { align: 'right' });
-      
-      // Draw line above total
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(100, 100, 100);
-      doc.line(totalsX, finalY + 12, valuesX, finalY + 12);
-      
-      // Total line
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.setTextColor(40, 40, 40);
+      doc.text('SUB-TOTAL:', totalsX, finalY);
+      doc.text(`TTD$ ${invoice.subtotal.toFixed(2)}`, valuesX, finalY, { align: 'right' });
+      
+      doc.text('VAT:', totalsX, finalY + 7);
+      doc.text(`TTD$ ${invoice.taxAmount.toFixed(2)}`, valuesX, finalY + 7, { align: 'right' });
+      
       doc.setFont(undefined, 'bold');
-      doc.text('TOTAL:', totalsX, finalY + 18);
-      doc.text(`$${invoice.total.toFixed(2)}`, valuesX, finalY + 18, { align: 'right' });
+      doc.text('TOTAL TTD$:', totalsX, finalY + 14);
+      doc.text(`${invoice.total.toFixed(2)}`, valuesX, finalY + 14, { align: 'right' });
       
-      // Payment terms and notes - more compact
-      let notesY = finalY + 35;
+      // Authorized Signature
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      doc.text('AUTHORIZED SIGNATURE', totalsX, finalY + 25);
+      doc.line(totalsX, finalY + 28, valuesX, finalY + 28);
       
-      if (invoice.paymentTerms) {
-        doc.setFont(undefined, 'normal');
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Payment Terms: ${invoice.paymentTerms}`, 20, notesY);
-        notesY += 10;
-      }
-      
-      if (invoice.notes) {
-        doc.setFontSize(8);
-        doc.text('Notes:', 20, notesY);
-        const splitNotes = doc.splitTextToSize(invoice.notes, 160);
-        doc.text(splitNotes, 20, notesY + 6);
-        notesY += (splitNotes.length * 4) + 10;
-      }
-      
-      // Footer
+      // Footer section
       const pageHeight = doc.internal.pageSize.height;
       doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
-      doc.text('Thank you for your business!', 20, pageHeight - 15);
+      doc.setTextColor(100, 100, 100);
+      doc.text('A member of GROUP of Companies', 105, pageHeight - 45, { align: 'center' });
+      
+      doc.setFontSize(8);
+      doc.text('Please make cheques payable to: MAGIC-CARE SOLUTIONS LIMITED', 20, pageHeight - 35);
+      doc.text('Corner Stone & Duke Streets, West, Port of Spain,', 20, pageHeight - 30);
+      doc.text('Tel: (868) 627-7717, 623-9863', 20, pageHeight - 25);
+      doc.text('Fax: (868)627-3897', 20, pageHeight - 20);
+      doc.text('Mobile: (868)342-3386', 20, pageHeight - 15);
+      doc.text('Email: magiccaresolutions@mmsl.co', 20, pageHeight - 10);
+      doc.text('Email: magiccaresolutions@gmail.com', 100, pageHeight - 10);
       
       // Save the PDF
       doc.save(`Invoice_${invoice.invoiceNumber}.pdf`);
