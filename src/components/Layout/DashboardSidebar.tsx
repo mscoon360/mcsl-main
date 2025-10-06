@@ -213,31 +213,29 @@ export function DashboardSidebar() {
                     )}
                   </SidebarMenuItem>
                 ))}
-                {isAdmin && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to="/admin"
-                        className={({ isActive: navIsActive }) =>
-                          `flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-lg transition-colors text-sm ${
-                            isActive("/admin")
-                              ? "bg-primary text-primary-foreground"
-                              : "text-sidebar-foreground hover:bg-sidebar-accent"
-                          }`
-                        }
-                      >
-                        <Shield className="h-4 w-4 md:h-5 md:w-5" />
-                        {!isCollapsed && <span className="font-medium">Admin</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-2 md:p-4">
+        {isAdmin && (
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start mb-2" 
+            asChild
+          >
+            <NavLink
+              to="/admin"
+              className={({ isActive: navIsActive }) =>
+                `${isActive("/admin") ? "bg-primary text-primary-foreground" : ""}`
+              }
+            >
+              <Shield className="h-4 w-4 md:h-5 md:w-5" />
+              {!isCollapsed && <span className="ml-2 md:ml-3">Admin</span>}
+            </NavLink>
+          </Button>
+        )}
         <Button 
           variant="ghost" 
           className="w-full justify-start" 
