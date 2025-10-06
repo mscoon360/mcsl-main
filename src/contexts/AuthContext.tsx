@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAdmin: boolean;
+  userDepartment: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, username: string, name: string, department: string) => Promise<{ error: any }>;
@@ -18,6 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userDepartment, setUserDepartment] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,9 +33,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           setTimeout(() => {
             checkAdminStatus(session.user.id);
+            fetchUserProfile(session.user.id);
           }, 0);
         } else {
           setIsAdmin(false);
+          setUserDepartment(null);
           setLoading(false);
         }
       }
@@ -45,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkAdminStatus(session.user.id);
+        fetchUserProfile(session.user.id);
       } else {
         setLoading(false);
       }
@@ -72,6 +77,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAdmin(false);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('department')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (!error && data) {
+        setUserDepartment(data.department);
+      } else {
+        setUserDepartment(null);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      setUserDepartment(null);
     }
   };
 
@@ -104,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, userDepartment, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

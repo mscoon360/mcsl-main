@@ -14,9 +14,11 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Sales() {
   const { toast } = useToast();
+  const { userDepartment } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
@@ -474,7 +476,7 @@ export default function Sales() {
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              {sales.length > 0 && (
+              {sales.length > 0 && userDepartment !== 'sales' && (
                 <Button variant="destructive" onClick={clearSalesLog}>
                   Clear All Sales
                 </Button>
