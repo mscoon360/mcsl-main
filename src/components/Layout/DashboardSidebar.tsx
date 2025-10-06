@@ -71,7 +71,15 @@ export function DashboardSidebar() {
   const location = useLocation();
   const isCollapsed = state === "collapsed";
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
-  const { isAdmin, signOut } = useAuth();
+  const { isAdmin, userDepartment, signOut } = useAuth();
+
+  // Filter navigation based on department
+  const filteredNavigation = navigation.filter(section => {
+    if (section.title === "Finance" && userDepartment === 'sales') {
+      return false;
+    }
+    return true;
+  });
 
   const handleSignOut = async () => {
     await signOut();
@@ -120,7 +128,7 @@ export function DashboardSidebar() {
           </div>
         </div>
 
-        {navigation.map((section) => (
+        {filteredNavigation.map((section) => (
           <SidebarGroup key={section.title}>
             {!isCollapsed && (
               <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs">

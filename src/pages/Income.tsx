@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -12,9 +14,18 @@ import * as XLSX from 'xlsx';
 
 export default function Income() {
   const { toast } = useToast();
+  const { userDepartment } = useAuth();
+  const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [viewType, setViewType] = useState<'summary' | 'detailed' | 'breakdown'>('summary');
   const [incomeSource, setIncomeSource] = useState<'all' | 'sales' | 'collections'>('all');
+
+  // Restrict access for sales department
+  useEffect(() => {
+    if (userDepartment === 'sales') {
+      navigate('/');
+    }
+  }, [userDepartment, navigate]);
 
   // Get data from localStorage
   const [sales] = useLocalStorage<Array<{

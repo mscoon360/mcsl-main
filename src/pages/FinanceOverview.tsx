@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, TrendingDown, DollarSign, Receipt, Calendar, BarChart3, PieChart, Download } from "lucide-react";
@@ -22,7 +24,16 @@ interface MonthlyFinancials {
 
 export default function FinanceOverview() {
   const { toast } = useToast();
+  const { userDepartment } = useAuth();
+  const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState('12-months');
+
+  // Restrict access for sales department
+  useEffect(() => {
+    if (userDepartment === 'sales') {
+      navigate('/');
+    }
+  }, [userDepartment, navigate]);
 
   // Get data from localStorage
   const [sales] = useLocalStorage<Array<{

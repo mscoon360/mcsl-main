@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,10 +26,19 @@ interface Expenditure {
 
 export default function Expenditure() {
   const { toast } = useToast();
+  const { userDepartment } = useAuth();
+  const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'working-capital' | 'fixed-capital' | 'payroll' | 'tax'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'category'>('date');
+
+  // Restrict access for sales department
+  useEffect(() => {
+    if (userDepartment === 'sales') {
+      navigate('/');
+    }
+  }, [userDepartment, navigate]);
   const [newExpense, setNewExpense] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
     description: '',
