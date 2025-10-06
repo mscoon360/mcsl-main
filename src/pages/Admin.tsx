@@ -100,6 +100,7 @@ export default function Admin() {
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
+  const [editDepartment, setEditDepartment] = useState('');
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -373,7 +374,7 @@ export default function Admin() {
     
     setSubmitting(true);
 
-    const updates: { username?: string; password?: string } = {};
+    const updates: { username?: string; password?: string; department?: string } = {};
     
     if (editUsername && editUsername !== editingUser.username) {
       updates.username = editUsername;
@@ -381,6 +382,10 @@ export default function Admin() {
     
     if (editPassword) {
       updates.password = editPassword;
+    }
+
+    if (editDepartment && editDepartment !== editingUser.department) {
+      updates.department = editDepartment;
     }
 
     if (Object.keys(updates).length === 0) {
@@ -417,6 +422,7 @@ export default function Admin() {
     setEditingUser(null);
     setEditUsername('');
     setEditPassword('');
+    setEditDepartment('');
     loadUsers();
     setSubmitting(false);
   };
@@ -438,13 +444,14 @@ export default function Admin() {
           setEditingUser(null);
           setEditUsername('');
           setEditPassword('');
+          setEditDepartment('');
         }
       }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
-              Update username and/or password for {editingUser?.name}
+              Update username, department, and/or password for {editingUser?.name}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditUser} className="space-y-4">
@@ -455,6 +462,15 @@ export default function Admin() {
                 value={editUsername}
                 onChange={(e) => setEditUsername(e.target.value)}
                 placeholder="Enter new username"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-department">Department</Label>
+              <Input
+                id="edit-department"
+                value={editDepartment}
+                onChange={(e) => setEditDepartment(e.target.value)}
+                placeholder="Enter new department"
               />
             </div>
             <div className="space-y-2">
@@ -477,6 +493,7 @@ export default function Admin() {
                   setEditingUser(null);
                   setEditUsername('');
                   setEditPassword('');
+                  setEditDepartment('');
                 }}
               >
                 Cancel
@@ -597,6 +614,7 @@ export default function Admin() {
                                 setEditingUser(user);
                                 setEditUsername(user.username);
                                 setEditPassword('');
+                                setEditDepartment(user.department);
                               }}
                             >
                               <Pencil className="w-4 h-4" />

@@ -75,7 +75,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { userId, username, password } = await req.json();
+    const { userId, username, password, department } = await req.json();
 
     if (!userId) {
       return new Response(
@@ -172,6 +172,38 @@ serve(async (req) => {
       }
 
       console.log('Username updated successfully');
+    }
+
+    // Update department if provided
+    if (department) {
+      // Validate department
+      if (department.length < 1) {
+        return new Response(
+          JSON.stringify({ error: 'Department cannot be empty' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (department.length > 100) {
+        return new Response(
+          JSON.stringify({ error: 'Department must be less than 100 characters' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { error: departmentError } = await supabaseAdmin
+        .from('profiles')
+        .update({ department })
+        .eq('id', userId);
+
+      if (departmentError) {
+        console.error('Error updating department:', departmentError);
+        return new Response(
+          JSON.stringify({ error: departmentError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Department updated successfully');
     }
 
     return new Response(
