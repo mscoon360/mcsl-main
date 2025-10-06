@@ -15,10 +15,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSales } from "@/hooks/useSales";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Sales() {
   const { toast } = useToast();
-  const { userDepartment } = useAuth();
+  const { userDepartment, user } = useAuth();
+  const { sales, loading, refetch } = useSales();
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
@@ -55,18 +58,8 @@ export default function Sales() {
     isRentalOnly?: boolean;
   }>>('dashboard-products', []);
 
-  const [sales, setSales] = useLocalStorage<Array<{
-    id: string;
-    customer: string;
-    total: number;
-    items: Array<{
-      product: string;
-      quantity: number;
-      price: number;
-    }>;
-    date: string;
-    status: string;
-  }>>('dashboard-sales', []);
+  // Remove the localStorage sales state as we now use Supabase
+  // const [sales, setSales] = useLocalStorage(...)
 
   const [salesItems, setSalesItems] = useState([{
     product: "",
@@ -106,8 +99,17 @@ export default function Sales() {
     return salesItems.reduce((sum, item) => sum + item.total, 0);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to log sales.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     // Check stock availability for all items, aggregated per product
     const qtyByProduct = salesItems.reduce((acc, item) => {
@@ -130,64 +132,87 @@ export default function Sales() {
       return;
     }
 
-    // Create the new sale object
-    const newSale = {
-      id: Date.now().toString(),
-      customer: customers.find(c => c.id === selectedCustomer)?.name || "Unknown Customer",
-      total: calculateGrandTotal(),
-      items: salesItems.map(item => ({
-        product: products.find(p => p.id === item.product)?.name || "Unknown Product",
+    try {
+      const customerName = customers.find(c => c.id === selectedCustomer)?.name || "Unknown Customer";
+      const total = calculateGrandTotal();
+
+      // Insert the sale
+      const { data: saleData, error: saleError } = await supabase
+        .from('sales')
+        .insert({
+          user_id: user.id,
+          customer_name: customerName,
+          total: total,
+          date: saleDate,
+          status: 'completed'
+        })
+        .select()
+        .single();
+
+      if (saleError) throw saleError;
+
+      // Insert sale items
+      const saleItemsData = salesItems.map(item => ({
+        sale_id: saleData.id,
+        product_name: products.find(p => p.id === item.product)?.name || "Unknown Product",
         quantity: item.quantity,
         price: item.price
-      })),
-      date: saleDate,
-      status: "completed"
-    };
+      }));
 
-    // Update product stock for all items
-    const updatedProducts = products.map(product => {
-      const totalQtySold = salesItems.filter(item => item.product === product.id).reduce((sum, i) => sum + i.quantity, 0);
-      if (totalQtySold > 0) {
-        return {
-          ...product,
-          stock: product.stock - totalQtySold,
-          lastSold: saleDate
-        };
-      }
-      return product;
-    });
+      const { error: itemsError } = await supabase
+        .from('sale_items')
+        .insert(saleItemsData);
 
-    // Save updated products and sales
-    setProducts(updatedProducts);
-    setSales(prev => [...prev, newSale]);
-    toast({
-      title: "Sale Logged Successfully!",
-      description: `Total sale amount: $${calculateGrandTotal().toFixed(2)}. Stock updated.`
-    });
-    setShowForm(false);
-    setSelectedCustomer("");
-    setSaleDate(new Date().toISOString().split('T')[0]);
-    setSalesItems([{
-      product: "",
-      quantity: 1,
-      price: 0,
-      total: 0
-    }]);
-  };
+      if (itemsError) throw itemsError;
 
-  const clearSalesLog = () => {
-    setSales([]);
-    toast({
-      title: "Sales Log Cleared",
-      description: "All sales records have been removed."
-    });
+      // Update product stock for all items (localStorage)
+      const updatedProducts = products.map(product => {
+        const totalQtySold = salesItems.filter(item => item.product === product.id).reduce((sum, i) => sum + i.quantity, 0);
+        if (totalQtySold > 0) {
+          return {
+            ...product,
+            stock: product.stock - totalQtySold,
+            lastSold: saleDate
+          };
+        }
+        return product;
+      });
+
+      setProducts(updatedProducts);
+      
+      toast({
+        title: "Sale Logged Successfully!",
+        description: `Total sale amount: $${total.toFixed(2)}. Stock updated.`
+      });
+      
+      // Reset form
+      setShowForm(false);
+      setSelectedCustomer("");
+      setSaleDate(new Date().toISOString().split('T')[0]);
+      setSalesItems([{
+        product: "",
+        quantity: 1,
+        price: 0,
+        total: 0
+      }]);
+
+      // Refetch sales
+      refetch();
+    } catch (error) {
+      console.error('Error logging sale:', error);
+      toast({
+        title: "Error",
+        description: "Failed to log sale. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Filter sales based on search and date period
   const filteredSales = sales.filter(sale => {
     const matchesSearch = searchTerm === "" || 
-      sale.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sale.items.some(item => item.product.toLowerCase().includes(searchTerm.toLowerCase()));
+      sale.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sale.items.some(item => item.product_name.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const saleDate = new Date(sale.date);
     const matchesDateFrom = !dateFrom || saleDate >= dateFrom;
@@ -475,13 +500,6 @@ export default function Sales() {
                 Recent sales transactions and order history
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              {sales.length > 0 && userDepartment !== 'sales' && (
-                <Button variant="destructive" onClick={clearSalesLog}>
-                  Clear All Sales
-                </Button>
-              )}
-            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -491,6 +509,7 @@ export default function Sales() {
                 <TableRow>
                   <TableHead>Customer</TableHead>
                   <TableHead>Items</TableHead>
+                  <TableHead>Sales Rep</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Total</TableHead>
@@ -499,16 +518,17 @@ export default function Sales() {
               <TableBody>
                 {filteredSales.map(sale => (
                   <TableRow key={sale.id}>
-                    <TableCell className="font-medium">{sale.customer}</TableCell>
+                    <TableCell className="font-medium">{sale.customer_name}</TableCell>
                     <TableCell>
                       <div className="space-y-1">
                         {sale.items.map((item, idx) => (
                           <div key={idx} className="text-sm">
-                            {item.quantity}x {item.product}
+                            {item.quantity}x {item.product_name}
                           </div>
                         ))}
                       </div>
                     </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{sale.rep_name}</TableCell>
                     <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{sale.status}</Badge>
