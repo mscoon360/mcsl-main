@@ -51,6 +51,7 @@ const createUserSchema = z.object({
 
 interface Profile {
   id: string;
+  email: string;
   username: string;
   name: string;
   department: string;
@@ -119,16 +120,24 @@ export default function Admin() {
   }, [isAdmin]);
 
   const loadUsers = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      toast.error('Not authenticated');
+      return;
+    }
+
+    const { data, error } = await supabase.functions.invoke('list-users', {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
 
     if (error) {
       toast.error('Failed to load users');
       console.error(error);
     } else {
-      setUsers(data || []);
+      setUsers(data?.users || []);
     }
   };
 
@@ -591,6 +600,7 @@ export default function Admin() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Username</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Role</TableHead>
@@ -605,6 +615,7 @@ export default function Admin() {
                     return (
                       <TableRow key={user.id}>
                         <TableCell>{user.username}</TableCell>
+                        <TableCell>{user.email}</TableCell>
                         <TableCell>{user.name}</TableCell>
                         <TableCell className="capitalize">{user.department}</TableCell>
                         <TableCell>
