@@ -98,7 +98,7 @@ export default function Admin() {
   const [submitting, setSubmitting] = useState(false);
   const [grantAdmin, setGrantAdmin] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [selectedNavSection, setSelectedNavSection] = useState('');
+  const [selectedNavSections, setSelectedNavSections] = useState<string[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [editUsername, setEditUsername] = useState('');
@@ -271,27 +271,41 @@ export default function Admin() {
       return;
     }
 
-    if (!selectedNavSection) {
-      toast.error('Please select a navigation section');
+    if (selectedNavSections.length === 0) {
+      toast.error('Please select at least one navigation section');
       setSubmitting(false);
       return;
     }
 
+    // Insert multiple records for each selected section
+    const records = selectedNavSections.map(section => ({
+      user_id: selectedUserId,
+      department: section
+    }));
+
     const { error } = await supabase
       .from('department_visibility')
-      .insert({ user_id: selectedUserId, department: selectedNavSection });
+      .insert(records);
 
     if (error) {
       toast.error('Failed to add navigation access');
       console.error(error);
     } else {
-      toast.success('Navigation access granted');
+      toast.success(`Navigation access granted to ${selectedNavSections.length} section(s)`);
       setSelectedUserId('');
-      setSelectedNavSection('');
+      setSelectedNavSections([]);
       loadVisibilities();
     }
 
     setSubmitting(false);
+  };
+
+  const toggleNavSection = (section: string) => {
+    setSelectedNavSections(prev => 
+      prev.includes(section) 
+        ? prev.filter(s => s !== section)
+        : [...prev, section]
+    );
   };
 
   const handleRemoveVisibility = async (id: string) => {
@@ -678,7 +692,7 @@ export default function Admin() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleAddVisibility} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="user_id">User</Label>
                     <Select value={selectedUserId} onValueChange={setSelectedUserId} required>
@@ -694,29 +708,139 @@ export default function Admin() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="nav-section">Navigation Section</Label>
-                    <Select value={selectedNavSection} onValueChange={setSelectedNavSection} required>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select navigation section" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border border-border z-50">
-                        <SelectItem value="Dashboard">Dashboard</SelectItem>
-                        <SelectItem value="Sales">Sales</SelectItem>
-                        <SelectItem value="Customers">Customers</SelectItem>
-                        <SelectItem value="Products">Products</SelectItem>
-                        <SelectItem value="Contracts">Contracts</SelectItem>
-                        <SelectItem value="Fulfillment">Fulfillment</SelectItem>
-                        <SelectItem value="Finance">Finance (All)</SelectItem>
-                        <SelectItem value="Finance-Overview">Finance - Overview</SelectItem>
-                        <SelectItem value="Finance-Income">Finance - Income</SelectItem>
-                        <SelectItem value="Finance-Expenditure">Finance - Expenditure</SelectItem>
-                        <SelectItem value="Finance-Invoices">Finance - Invoices</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  
+                  <div className="space-y-3">
+                    <Label>Navigation Sections (Select all that apply)</Label>
+                    <div className="grid grid-cols-2 gap-3 p-4 border rounded-md bg-muted/50">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="nav-dashboard"
+                          checked={selectedNavSections.includes('Dashboard')}
+                          onCheckedChange={() => toggleNavSection('Dashboard')}
+                        />
+                        <label htmlFor="nav-dashboard" className="text-sm font-medium cursor-pointer">
+                          Dashboard
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="nav-sales"
+                          checked={selectedNavSections.includes('Sales')}
+                          onCheckedChange={() => toggleNavSection('Sales')}
+                        />
+                        <label htmlFor="nav-sales" className="text-sm font-medium cursor-pointer">
+                          Sales
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="nav-customers"
+                          checked={selectedNavSections.includes('Customers')}
+                          onCheckedChange={() => toggleNavSection('Customers')}
+                        />
+                        <label htmlFor="nav-customers" className="text-sm font-medium cursor-pointer">
+                          Customers
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="nav-products"
+                          checked={selectedNavSections.includes('Products')}
+                          onCheckedChange={() => toggleNavSection('Products')}
+                        />
+                        <label htmlFor="nav-products" className="text-sm font-medium cursor-pointer">
+                          Products
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="nav-contracts"
+                          checked={selectedNavSections.includes('Contracts')}
+                          onCheckedChange={() => toggleNavSection('Contracts')}
+                        />
+                        <label htmlFor="nav-contracts" className="text-sm font-medium cursor-pointer">
+                          Contracts
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="nav-fulfillment"
+                          checked={selectedNavSections.includes('Fulfillment')}
+                          onCheckedChange={() => toggleNavSection('Fulfillment')}
+                        />
+                        <label htmlFor="nav-fulfillment" className="text-sm font-medium cursor-pointer">
+                          Fulfillment
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 col-span-2 pt-2 border-t">
+                        <Checkbox 
+                          id="nav-finance-all"
+                          checked={selectedNavSections.includes('Finance')}
+                          onCheckedChange={() => toggleNavSection('Finance')}
+                        />
+                        <label htmlFor="nav-finance-all" className="text-sm font-medium cursor-pointer">
+                          Finance (All)
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 pl-6">
+                        <Checkbox 
+                          id="nav-finance-overview"
+                          checked={selectedNavSections.includes('Finance-Overview')}
+                          onCheckedChange={() => toggleNavSection('Finance-Overview')}
+                        />
+                        <label htmlFor="nav-finance-overview" className="text-sm cursor-pointer">
+                          Overview
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 pl-6">
+                        <Checkbox 
+                          id="nav-finance-income"
+                          checked={selectedNavSections.includes('Finance-Income')}
+                          onCheckedChange={() => toggleNavSection('Finance-Income')}
+                        />
+                        <label htmlFor="nav-finance-income" className="text-sm cursor-pointer">
+                          Income
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 pl-6">
+                        <Checkbox 
+                          id="nav-finance-expenditure"
+                          checked={selectedNavSections.includes('Finance-Expenditure')}
+                          onCheckedChange={() => toggleNavSection('Finance-Expenditure')}
+                        />
+                        <label htmlFor="nav-finance-expenditure" className="text-sm cursor-pointer">
+                          Expenditure
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 pl-6">
+                        <Checkbox 
+                          id="nav-finance-invoices"
+                          checked={selectedNavSections.includes('Finance-Invoices')}
+                          onCheckedChange={() => toggleNavSection('Finance-Invoices')}
+                        />
+                        <label htmlFor="nav-finance-invoices" className="text-sm cursor-pointer">
+                          Invoices
+                        </label>
+                      </div>
+                    </div>
+                    {selectedNavSections.length > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        {selectedNavSections.length} section(s) selected
+                      </p>
+                    )}
                   </div>
                 </div>
-                <Button type="submit" disabled={submitting}>
+                <Button type="submit" disabled={submitting || !selectedUserId || selectedNavSections.length === 0}>
                   <Plus className="w-4 h-4 mr-2" />
                   {submitting ? 'Adding...' : 'Grant Access'}
                 </Button>
