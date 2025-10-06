@@ -41,14 +41,7 @@ const navigation = [
     title: "Main",
     items: [
       { name: "Dashboard", href: "/", icon: BarChart3 },
-      { 
-        name: "Sales", 
-        icon: ShoppingCart,
-        subItems: [
-          { name: "Sales", href: "/sales" },
-          { name: "Invoices", href: "/invoices" }
-        ]
-      },
+      { name: "Sales", href: "/sales", icon: ShoppingCart },
       { name: "Customers", href: "/customers", icon: Users },
       { name: "Products", href: "/products", icon: Package },
       { 
@@ -68,6 +61,7 @@ const navigation = [
       { name: "Overview", href: "/finance", icon: BarChart3 },
       { name: "Income", href: "/income", icon: DollarSign },
       { name: "Expenditure", href: "/expenditure", icon: Receipt },
+      { name: "Invoices", href: "/invoices", icon: FileText },
     ]
   }
 ];
