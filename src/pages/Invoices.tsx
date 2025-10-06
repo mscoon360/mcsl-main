@@ -267,9 +267,12 @@ export default function Invoices() {
     try {
       const doc = new jsPDF();
       
-      // Company Header - Logo
+      // Add logo at top left
       const logoImg = new Image();
       logoImg.src = '/src/assets/magic-care-logo.png';
+      logoImg.onload = () => {
+        doc.addImage(logoImg, 'PNG', 15, 10, 30, 30);
+      };
       
       // Company Name
       doc.setFontSize(18);
@@ -318,16 +321,59 @@ export default function Invoices() {
         }
       }
       
-      // Items table
+      // Services Division Menu (Column 1 - Fixed content)
+      const servicesMenu = [
+        'SOLUTIONS Division - I',
+        'i-giene care SOLUTIONS',
+        'Fem-Care Units',
+        'Nappy-Care Units',
+        'washroom care SOLUTIONS',
+        'Magic AeroWest Units',
+        'Hand-Care Units',
+        'Air-Care Units',
+        'Toilet Seat Sani-Care Units',
+        'Urinal Care',
+        'Paper Dispensers',
+        'Infant Care',
+        'healthcare SOLUTIONS',
+        'Clinical Waste Units',
+        'Medical Waste Units',
+        'Dental Waste Units',
+        'ACE PEST MANAGEMENT',
+        'SOLUTIONS Division - II',
+        'Rodent Control',
+        'Insect Control',
+        'Bird Control',
+        'Bed Bugs',
+        'Pest Prevention & Management',
+        'Wildlife Management',
+        'Global Eco-Products SOLUTIONS',
+        'Division - III',
+        'Eco-Paper Products',
+        'SCENT: LINQ:',
+        'Corporate Scenting System',
+        'Ambient Scenting System',
+        'Microfiber Cleaning System',
+        'Janitorial Products',
+        'Dust Control Mats'
+      ];
+      
+      // Create table data with 3 columns
       const tableStartY = 85;
-      const tableData = invoice.items.map(item => [
-        item.description,
-        `TTD$ ${item.total.toFixed(2)}`
-      ]);
+      const maxRows = Math.max(servicesMenu.length, invoice.items.length);
+      const tableData = [];
+      
+      for (let i = 0; i < maxRows; i++) {
+        tableData.push([
+          servicesMenu[i] || '',
+          invoice.items[i]?.description || '',
+          invoice.items[i] ? `TTD$ ${invoice.items[i].total.toFixed(2)}` : ''
+        ]);
+      }
       
       autoTable(doc, {
         startY: tableStartY,
-        head: [['DESCRIPTION', 'AMOUNT']],
+        head: [['', 'DESCRIPTION', 'AMOUNT']],
         body: tableData,
         theme: 'plain',
         headStyles: {
@@ -340,17 +386,18 @@ export default function Invoices() {
           lineColor: [0, 0, 0]
         },
         bodyStyles: {
-          fontSize: 9,
+          fontSize: 8,
           textColor: 60,
-          cellPadding: 3,
+          cellPadding: 2,
           lineWidth: 0.1,
           lineColor: [200, 200, 200]
         },
         columnStyles: {
-          0: { cellWidth: 140, halign: 'left' },
-          1: { cellWidth: 45, halign: 'right' }
+          0: { cellWidth: 50, halign: 'left', fontSize: 7 },
+          1: { cellWidth: 95, halign: 'left' },
+          2: { cellWidth: 40, halign: 'right' }
         },
-        margin: { left: 20, right: 20 },
+        margin: { left: 15, right: 15 },
         styles: {
           lineColor: [0, 0, 0],
           lineWidth: 0.1
@@ -385,7 +432,7 @@ export default function Invoices() {
       
       doc.setFont(undefined, 'bold');
       doc.text('TOTAL TTD$:', totalsX, finalY + 14);
-      doc.text(`${invoice.total.toFixed(2)}`, valuesX, finalY + 14, { align: 'right' });
+      doc.text(`TTD$ ${invoice.total.toFixed(2)}`, valuesX, finalY + 14, { align: 'right' });
       
       // Authorized Signature
       doc.setFont(undefined, 'normal');
