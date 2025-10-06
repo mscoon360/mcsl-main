@@ -12,7 +12,7 @@ import { z } from 'zod';
 const passwordSchema = z.object({
   password: z
     .string()
-    .min(12, { message: 'Password must be at least 12 characters' })
+    .min(8, { message: 'Password must be at least 8 characters' })
     .max(128, { message: 'Password must be less than 128 characters' })
     .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
     .regex(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
@@ -97,7 +97,7 @@ export default function ChangePassword() {
                 placeholder="••••••••"
               />
               <p className="text-xs text-muted-foreground">
-                Must be at least 12 characters with uppercase, lowercase, and number
+                Must be at least 8 characters with uppercase, lowercase, and number
               </p>
             </div>
             <div className="space-y-2">

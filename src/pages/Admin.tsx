@@ -9,9 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Trash2, Plus, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Trash2, Plus, CheckCircle, XCircle, Clock, Pencil } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { z } from 'zod';
 import { formatDistanceToNow } from 'date-fns';
@@ -24,7 +25,7 @@ const createUserSchema = z.object({
     .max(255, { message: 'Email must be less than 255 characters' }),
   password: z
     .string()
-    .min(12, { message: 'Password must be at least 12 characters for security' })
+    .min(8, { message: 'Password must be at least 8 characters for security' })
     .max(128, { message: 'Password must be less than 128 characters' })
     .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
     .regex(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
@@ -95,6 +96,9 @@ export default function Admin() {
   const [submitting, setSubmitting] = useState(false);
   const [grantAdmin, setGrantAdmin] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [editingUser, setEditingUser] = useState<Profile | null>(null);
+  const [editUsername, setEditUsername] = useState('');
+  const [editPassword, setEditPassword] = useState('');
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -362,6 +366,60 @@ export default function Admin() {
     }
   };
 
+  const handleEditUser = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    
+    setSubmitting(true);
+
+    const updates: { username?: string; password?: string } = {};
+    
+    if (editUsername && editUsername !== editingUser.username) {
+      updates.username = editUsername;
+    }
+    
+    if (editPassword) {
+      updates.password = editPassword;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      toast.error('No changes to save');
+      setSubmitting(false);
+      return;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+
+    const { data, error } = await supabase.functions.invoke('update-user', {
+      headers: {
+        Authorization: `Bearer ${session?.access_token ?? ''}`,
+      },
+      body: {
+        userId: editingUser.id,
+        ...updates,
+      },
+    });
+
+    if (error) {
+      toast.error(error.message || 'Failed to update user');
+      setSubmitting(false);
+      return;
+    }
+
+    if (data?.error) {
+      toast.error(data.error);
+      setSubmitting(false);
+      return;
+    }
+
+    toast.success('User updated successfully');
+    setEditingUser(null);
+    setEditUsername('');
+    setEditPassword('');
+    loadUsers();
+    setSubmitting(false);
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -373,6 +431,63 @@ export default function Admin() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+
+      <Dialog open={!!editingUser} onOpenChange={(open) => {
+        if (!open) {
+          setEditingUser(null);
+          setEditUsername('');
+          setEditPassword('');
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update username and/or password for {editingUser?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditUser} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-username">Username</Label>
+              <Input
+                id="edit-username"
+                value={editUsername}
+                onChange={(e) => setEditUsername(e.target.value)}
+                placeholder="Enter new username"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-password">New Password (optional)</Label>
+              <Input
+                id="edit-password"
+                type="password"
+                value={editPassword}
+                onChange={(e) => setEditPassword(e.target.value)}
+                placeholder="Leave blank to keep current password"
+              />
+              <p className="text-xs text-muted-foreground">
+                Must be at least 8 characters with uppercase, lowercase, and number
+              </p>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setEditingUser(null);
+                  setEditUsername('');
+                  setEditPassword('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Tabs defaultValue="users">
         <TabsList>
@@ -474,13 +589,26 @@ export default function Admin() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteUser(user.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingUser(user);
+                                setEditUsername(user.username);
+                                setEditPassword('');
+                              }}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteUser(user.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
