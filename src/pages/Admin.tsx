@@ -310,6 +310,8 @@ export default function Admin() {
                       <SelectContent>
                         <SelectItem value="sales">Sales</SelectItem>
                         <SelectItem value="accounts">Accounts</SelectItem>
+                        <SelectItem value="operations">Operations</SelectItem>
+                        <SelectItem value="management">Management</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
