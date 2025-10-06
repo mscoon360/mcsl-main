@@ -10,8 +10,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export function DashboardHeader() {
+  const { user } = useAuth();
+  const [userName, setUserName] = useState<string>("");
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setUserName(data.name);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
   return (
     <header className="border-b border-border bg-header-bg px-3 md:px-6 py-3 md:py-4">
       <div className="flex items-center justify-between">
@@ -44,7 +67,7 @@ export function DashboardHeader() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Sales Rep Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{userName || user?.email || 'User Account'}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Profile Settings</DropdownMenuItem>
               <DropdownMenuItem>Team Management</DropdownMenuItem>
