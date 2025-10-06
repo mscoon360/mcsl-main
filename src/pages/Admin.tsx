@@ -466,12 +466,20 @@ export default function Admin() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-department">Department</Label>
-              <Input
-                id="edit-department"
-                value={editDepartment}
-                onChange={(e) => setEditDepartment(e.target.value)}
-                placeholder="Enter new department"
-              />
+              <Select value={editDepartment} onValueChange={setEditDepartment}>
+                <SelectTrigger id="edit-department">
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sales">Sales</SelectItem>
+                  <SelectItem value="finance department">Finance Department</SelectItem>
+                  <SelectItem value="executive department">Executive Department</SelectItem>
+                  <SelectItem value="procurement & logistics department">Procurement & Logistics Department</SelectItem>
+                  <SelectItem value="divisional">Divisional</SelectItem>
+                  <SelectItem value="operational divisions">Operational Divisions</SelectItem>
+                  <SelectItem value="contract department">Contract Department</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-password">New Password (optional)</Label>
