@@ -151,34 +151,34 @@ export default function Admin() {
       return;
     }
 
-    // Create user via Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: validation.data.email,
-      password: validation.data.password,
-      email_confirm: true,
-      user_metadata: {
-        username: validation.data.username,
-        name: validation.data.name,
-        department: validation.data.department,
-      },
-    });
+    // Create user via edge function
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          email: validation.data.email,
+          password: validation.data.password,
+          username: validation.data.username,
+          name: validation.data.name,
+          department: validation.data.department,
+          grantAdmin,
+        }),
+      }
+    );
 
-    if (authError) {
-      toast.error(authError.message);
+    const result = await response.json();
+
+    if (!response.ok) {
+      toast.error(result.error || 'Failed to create user');
       setSubmitting(false);
       return;
-    }
-
-    // Grant admin role if checkbox was checked
-    if (grantAdmin && authData.user) {
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({ user_id: authData.user.id, role: 'admin' });
-      
-      if (roleError) {
-        toast.error('User created but failed to grant admin privileges');
-        console.error(roleError);
-      }
     }
 
     toast.success('User created successfully');
@@ -192,11 +192,25 @@ export default function Admin() {
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
 
-    const { error } = await supabase.auth.admin.deleteUser(userId);
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ userId }),
+      }
+    );
 
-    if (error) {
-      toast.error('Failed to delete user');
-      console.error(error);
+    const result = await response.json();
+
+    if (!response.ok) {
+      toast.error(result.error || 'Failed to delete user');
+      console.error(result.error);
     } else {
       toast.success('User deleted successfully');
       loadUsers();
