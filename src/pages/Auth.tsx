@@ -16,8 +16,11 @@ const authSchema = z.object({
     .max(255, { message: 'Email must be less than 255 characters' }),
   password: z
     .string()
-    .min(8, { message: 'Password must be at least 8 characters' })
+    .min(12, { message: 'Password must be at least 12 characters' })
     .max(128, { message: 'Password must be less than 128 characters' })
+    .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
+    .regex(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
+    .regex(/[0-9]/, { message: 'Password must contain at least one number' })
 });
 
 export default function Auth() {

@@ -42,7 +42,7 @@ serve(async (req) => {
     console.log('Creating Supabase client with user JWT');
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_PUBLISHABLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
           headers: { Authorization: authHeader },
@@ -89,6 +89,29 @@ serve(async (req) => {
 
     // Get request body
     const { email, password, username, name, department, grantAdmin } = await req.json();
+    
+    // Input validation
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid email address' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+    
+    if (!password || typeof password !== 'string' || password.length < 12) {
+      return new Response(
+        JSON.stringify({ error: 'Password must be at least 12 characters long' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+    
+    if (!username || typeof username !== 'string' || username.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Username is required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+    
     console.log('Creating user:', email);
 
     // Create the user
@@ -134,7 +157,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Unexpected error in create-user function:', error);
     return new Response(
-      JSON.stringify({ error: error.message, stack: error.stack }),
+      JSON.stringify({ error: 'An internal error occurred. Please try again.' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

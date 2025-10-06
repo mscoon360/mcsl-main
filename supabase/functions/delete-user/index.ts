@@ -42,7 +42,7 @@ serve(async (req) => {
     console.log('Creating Supabase client with user JWT');
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_PUBLISHABLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
           headers: { Authorization: authHeader },
@@ -89,15 +89,24 @@ serve(async (req) => {
 
     // Get request body
     const { userId } = await req.json();
-    console.log('Deleting user:', userId);
-
-    if (!userId) {
-      console.error('User ID is required');
+    
+    // Input validation
+    if (!userId || typeof userId !== 'string') {
       return new Response(
-        JSON.stringify({ error: 'User ID is required' }),
+        JSON.stringify({ error: 'Valid user ID is required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
+    
+    // Prevent self-deletion
+    if (userId === user.id) {
+      return new Response(
+        JSON.stringify({ error: 'You cannot delete your own account' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+    
+    console.log('Deleting user:', userId);
 
     // Delete the user
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
@@ -119,7 +128,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Unexpected error in delete-user function:', error);
     return new Response(
-      JSON.stringify({ error: error.message, stack: error.stack }),
+      JSON.stringify({ error: 'An internal error occurred. Please try again.' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
