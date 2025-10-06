@@ -221,16 +221,16 @@ export default function Admin() {
                     <Label htmlFor="department">Department</Label>
                     <Input id="department" name="department" type="text" required />
                   </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="grantAdmin" 
-                    checked={grantAdmin}
-                    onCheckedChange={(checked) => setGrantAdmin(checked === true)}
-                  />
-                  <Label htmlFor="grantAdmin" className="cursor-pointer">
-                    Grant admin privileges
-                  </Label>
+                  <div className="flex items-center space-x-2 pt-8">
+                    <Checkbox 
+                      id="grantAdmin" 
+                      checked={grantAdmin}
+                      onCheckedChange={(checked) => setGrantAdmin(checked === true)}
+                    />
+                    <Label htmlFor="grantAdmin" className="cursor-pointer">
+                      Grant admin privileges
+                    </Label>
+                  </div>
                 </div>
                 <Button type="submit" disabled={submitting}>
                   <Plus className="w-4 h-4 mr-2" />
