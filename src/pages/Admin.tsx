@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import { Trash2, Plus } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { z } from 'zod';
 
 const createUserSchema = z.object({
@@ -70,6 +71,7 @@ export default function Admin() {
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [grantAdmin, setGrantAdmin] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState('');
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -133,7 +135,7 @@ export default function Admin() {
     const password = formData.get('password') as string;
     const username = formData.get('username') as string;
     const name = formData.get('name') as string;
-    const department = formData.get('department') as string;
+    const department = selectedDepartment;
 
     // Validate input
     const validation = createUserSchema.safeParse({ 
@@ -183,6 +185,7 @@ export default function Admin() {
     toast.success('User created successfully');
     e.currentTarget.reset();
     setGrantAdmin(false);
+    setSelectedDepartment('');
     loadUsers();
     loadUserRoles();
     setSubmitting(false);
@@ -300,7 +303,15 @@ export default function Admin() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="department">Department</Label>
-                    <Input id="department" name="department" type="text" required />
+                    <Select value={selectedDepartment} onValueChange={setSelectedDepartment} required>
+                      <SelectTrigger id="department">
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sales">Sales</SelectItem>
+                        <SelectItem value="accounts">Accounts</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex items-center space-x-2 pt-8">
                     <Checkbox 
