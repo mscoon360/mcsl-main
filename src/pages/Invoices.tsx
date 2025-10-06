@@ -267,57 +267,57 @@ export default function Invoices() {
     try {
       const doc = new jsPDF();
       
-      // Add logo at top left
+      // Add logo at top left (smaller)
       const logoImg = new Image();
       logoImg.src = '/src/assets/magic-care-logo.png';
       logoImg.onload = () => {
-        doc.addImage(logoImg, 'PNG', 15, 10, 30, 30);
+        doc.addImage(logoImg, 'PNG', 15, 8, 20, 20);
       };
       
       // Company Name
-      doc.setFontSize(18);
+      doc.setFontSize(14);
       doc.setTextColor(0, 102, 204);
       doc.setFont(undefined, 'bold');
-      doc.text('MAGIC-CARE SOLUTIONS LIMITED', 105, 20, { align: 'center' });
+      doc.text('MAGIC-CARE SOLUTIONS LIMITED', 105, 15, { align: 'center' });
       
       // TAX INVOICE
-      doc.setFontSize(16);
+      doc.setFontSize(12);
       doc.setTextColor(0, 0, 0);
-      doc.text('TAX INVOICE', 105, 30, { align: 'center' });
+      doc.text('TAX INVOICE', 105, 22, { align: 'center' });
       
       // Tagline
-      doc.setFontSize(10);
+      doc.setFontSize(8);
       doc.setTextColor(100, 100, 100);
       doc.setFont(undefined, 'italic');
-      doc.text('"Caring for your Health"', 105, 37, { align: 'center' });
+      doc.text('"Caring for your Health"', 105, 28, { align: 'center' });
       
       // VAT Registration
-      doc.setFontSize(9);
+      doc.setFontSize(8);
       doc.setFont(undefined, 'normal');
-      doc.text('VAT REG. No. 317089', 105, 43, { align: 'center' });
+      doc.text('VAT REG. No. 317089', 105, 33, { align: 'center' });
       
       // Invoice details - right side
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setTextColor(40, 40, 40);
-      doc.text(`Invoice Date: ${format(parseISO(invoice.issueDate), 'MM/dd/yyyy')}`, 140, 55);
-      doc.text(`Invoice Number: ${invoice.invoiceNumber}`, 140, 62);
+      doc.text(`Invoice Date: ${format(parseISO(invoice.issueDate), 'MM/dd/yyyy')}`, 140, 42);
+      doc.text(`Invoice Number: ${invoice.invoiceNumber}`, 140, 48);
       
       // Customer details - left side
       const customer = customers.find(c => c.id === invoice.customerId);
-      let yPos = 55;
-      doc.setFontSize(10);
+      let yPos = 42;
+      doc.setFontSize(9);
       doc.setTextColor(40, 40, 40);
       doc.text(invoice.customerName, 20, yPos);
       
       if (customer) {
-        yPos += 7;
+        yPos += 6;
         if (customer.address) {
           doc.text(customer.address, 20, yPos);
-          yPos += 7;
+          yPos += 6;
         }
         if (customer.city) {
           doc.text(customer.city, 20, yPos);
-          yPos += 7;
+          yPos += 6;
         }
       }
       
@@ -359,7 +359,7 @@ export default function Invoices() {
       ];
       
       // Create table data with 3 columns
-      const tableStartY = 85;
+      const tableStartY = 60;
       const maxRows = Math.max(servicesMenu.length, invoice.items.length);
       const tableData = [];
       
@@ -379,23 +379,24 @@ export default function Invoices() {
         headStyles: {
           fillColor: [255, 255, 255],
           textColor: 0,
-          fontSize: 10,
+          fontSize: 8,
           fontStyle: 'bold',
           halign: 'left',
           lineWidth: 0.5,
-          lineColor: [0, 0, 0]
+          lineColor: [0, 0, 0],
+          cellPadding: 1
         },
         bodyStyles: {
-          fontSize: 8,
+          fontSize: 6.5,
           textColor: 60,
-          cellPadding: 2,
+          cellPadding: 0.8,
           lineWidth: 0.1,
           lineColor: [200, 200, 200]
         },
         columnStyles: {
-          0: { cellWidth: 50, halign: 'left', fontSize: 7, fontStyle: 'bold', cellPadding: { top: 1, bottom: 1, left: 2, right: 2 } },
-          1: { cellWidth: 95, halign: 'left' },
-          2: { cellWidth: 40, halign: 'right' }
+          0: { cellWidth: 50, halign: 'left', fontSize: 6, fontStyle: 'bold', cellPadding: { top: 0.5, bottom: 0.5, left: 1, right: 1 } },
+          1: { cellWidth: 95, halign: 'left', fontSize: 7 },
+          2: { cellWidth: 40, halign: 'right', fontSize: 7 }
         },
         didParseCell: (data: any) => {
           if (data.column.index === 0) {
@@ -410,40 +411,40 @@ export default function Invoices() {
       });
       
       // Calculate totals position
-      const finalY = (doc as any).lastAutoTable.finalY + 15;
+      const finalY = (doc as any).lastAutoTable.finalY + 5;
       
       // Company Name Footer
-      doc.setFontSize(10);
+      doc.setFontSize(8);
       doc.setTextColor(0, 102, 204);
       doc.setFont(undefined, 'bold');
       doc.text('MAGIC-CARE SOLUTIONS LIMITED', 20, finalY);
       
       // Thank You
-      doc.setFontSize(12);
+      doc.setFontSize(9);
       doc.setTextColor(0, 0, 0);
-      doc.text('Thank You!', 20, finalY + 10);
+      doc.text('Thank You!', 20, finalY + 6);
       
       // Totals section - right aligned
       const totalsX = 140;
       const valuesX = 190;
       
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setTextColor(40, 40, 40);
       doc.text('SUB-TOTAL:', totalsX, finalY);
       doc.text(`TTD$ ${invoice.subtotal.toFixed(2)}`, valuesX, finalY, { align: 'right' });
       
-      doc.text('VAT:', totalsX, finalY + 7);
-      doc.text(`TTD$ ${invoice.taxAmount.toFixed(2)}`, valuesX, finalY + 7, { align: 'right' });
+      doc.text('VAT:', totalsX, finalY + 5);
+      doc.text(`TTD$ ${invoice.taxAmount.toFixed(2)}`, valuesX, finalY + 5, { align: 'right' });
       
       doc.setFont(undefined, 'bold');
-      doc.text('TOTAL TTD$:', totalsX, finalY + 14);
-      doc.text(`TTD$ ${invoice.total.toFixed(2)}`, valuesX, finalY + 14, { align: 'right' });
+      doc.text('TOTAL TTD$:', totalsX, finalY + 10);
+      doc.text(`TTD$ ${invoice.total.toFixed(2)}`, valuesX, finalY + 10, { align: 'right' });
       
       // Authorized Signature
       doc.setFont(undefined, 'normal');
-      doc.setFontSize(9);
-      doc.text('AUTHORIZED SIGNATURE', totalsX, finalY + 25);
-      doc.line(totalsX, finalY + 28, valuesX, finalY + 28);
+      doc.setFontSize(8);
+      doc.text('AUTHORIZED SIGNATURE', totalsX, finalY + 18);
+      doc.line(totalsX, finalY + 20, valuesX, finalY + 20);
       
       // Footer section
       const pageHeight = doc.internal.pageSize.height;
