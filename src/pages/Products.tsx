@@ -227,23 +227,6 @@ export default function Products() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                {productType === 'sale_only' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Unit Price *</Label>
-                    <Input id="price" name="price" type="number" step="0.01" placeholder="299.99" required />
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Input id="category" name="category" placeholder="Medical Supplies" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stock">Initial Stock</Label>
-                  <Input id="stock" name="stock" type="number" placeholder="50" />
-                </div>
-              </div>
-
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Product Availability</Label>
@@ -265,6 +248,23 @@ export default function Products() {
                     <Input id="rentalPrice" name="rentalPrice" type="number" step="0.01" placeholder="50.00" required />
                   </div>
                 )}
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                {productType === 'sale_only' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Unit Price *</Label>
+                    <Input id="price" name="price" type="number" step="0.01" placeholder="299.99" required />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Input id="category" name="category" placeholder="Medical Supplies" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="stock">Initial Stock</Label>
+                  <Input id="stock" name="stock" type="number" placeholder="50" />
+                </div>
               </div>
 
               <div className="space-y-2">
