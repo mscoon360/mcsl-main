@@ -40,7 +40,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
-        global: { headers: { Authorization: `Bearer ${jwt}` } },
         auth: {
           autoRefreshToken: false,
           persistSession: false,
@@ -48,8 +47,8 @@ serve(async (req) => {
       }
     );
 
-    // Verify the authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Verify the authenticated user by passing JWT directly
+    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
     if (authError || !user) {
       console.error('Authentication error:', authError);
       return new Response(
