@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Receipt, Calendar, DollarSign, User, Package, Filter, TrendingUp, FileText, Download } from "lucide-react";
+import { Receipt, Calendar, DollarSign, User, Package, Filter, TrendingUp, FileText, Download, TrendingDown, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isWithinInterval, parseISO, differenceInMonths } from "date-fns";
@@ -96,6 +96,34 @@ export default function Income() {
   };
 
   const incomeData = calculateIncomeData(selectedMonth);
+
+  // Calculate previous month data for comparison
+  const getPreviousMonth = (month: string) => {
+    const currentDate = parseISO(`${month}-01`);
+    const previousDate = subMonths(currentDate, 1);
+    return format(previousDate, 'yyyy-MM');
+  };
+
+  const previousMonth = getPreviousMonth(selectedMonth);
+  const previousIncomeData = calculateIncomeData(previousMonth);
+
+  // Calculate month-over-month change
+  const calculateMonthlyChange = () => {
+    if (previousIncomeData.totalIncome === 0) {
+      return { percentage: 0, change: incomeData.totalIncome, isIncrease: true };
+    }
+    
+    const change = incomeData.totalIncome - previousIncomeData.totalIncome;
+    const percentage = (change / previousIncomeData.totalIncome) * 100;
+    
+    return {
+      percentage: Math.abs(percentage),
+      change: Math.abs(change),
+      isIncrease: change >= 0
+    };
+  };
+
+  const monthlyChange = calculateMonthlyChange();
 
   // Calculate total contract value from all rental agreements
   const calculateTotalContractValue = () => {
@@ -262,6 +290,62 @@ export default function Income() {
             </Button>
           </div>
       </div>
+
+      {/* Monthly Revenue Tracker */}
+      <Card className="dashboard-card border-2">
+        <CardHeader>
+          <CardTitle className="text-card-foreground flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Monthly Revenue Tracker
+          </CardTitle>
+          <CardDescription>
+            Compare monthly revenue performance
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Current Month */}
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Current Month</div>
+              <div className="text-3xl font-bold text-foreground">
+                ${incomeData.totalIncome.toFixed(2)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
+              </div>
+            </div>
+
+            {/* Previous Month */}
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Previous Month</div>
+              <div className="text-2xl font-semibold text-muted-foreground">
+                ${previousIncomeData.totalIncome.toFixed(2)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {format(parseISO(`${previousMonth}-01`), 'MMMM yyyy')}
+              </div>
+            </div>
+
+            {/* Change Indicator */}
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Month-over-Month</div>
+              <div className={`flex items-center gap-2 ${monthlyChange.isIncrease ? 'text-success' : 'text-destructive'}`}>
+                {monthlyChange.isIncrease ? (
+                  <ArrowUpRight className="h-6 w-6" />
+                ) : (
+                  <ArrowDownRight className="h-6 w-6" />
+                )}
+                <span className="text-2xl font-bold">
+                  {monthlyChange.percentage.toFixed(1)}%
+                </span>
+              </div>
+              <div className={`text-sm ${monthlyChange.isIncrease ? 'text-success' : 'text-destructive'}`}>
+                {monthlyChange.isIncrease ? '+' : '-'}${monthlyChange.change.toFixed(2)} from last month
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Filters */}
       <Card className="dashboard-card">
