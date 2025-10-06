@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   BarChart3, 
   Users, 
@@ -35,6 +35,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 const navigation = [
   {
@@ -71,15 +72,57 @@ export function DashboardSidebar() {
   const location = useLocation();
   const isCollapsed = state === "collapsed";
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
-  const { isAdmin, userDepartment, signOut } = useAuth();
+  const { isAdmin, user, signOut } = useAuth();
+  const [allowedSections, setAllowedSections] = useState<string[]>([]);
 
-  // Filter navigation based on department
-  const filteredNavigation = navigation.filter(section => {
-    if (section.title === "Finance" && userDepartment === 'sales') {
-      return false;
+  // Load user's navigation permissions
+  useEffect(() => {
+    const loadPermissions = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('department_visibility')
+        .select('department')
+        .eq('user_id', user.id);
+      
+      if (data) {
+        setAllowedSections(data.map(d => d.department));
+      }
+    };
+    loadPermissions();
+  }, [user]);
+
+  // Check if user has access to a section
+  const hasAccess = (sectionName: string, itemName?: string) => {
+    if (isAdmin) return true;
+    if (allowedSections.length === 0) return true; // No restrictions set
+    
+    // Check for specific item access
+    if (itemName) {
+      if (allowedSections.includes(itemName)) return true;
+      if (allowedSections.includes(`${sectionName}-${itemName}`)) return true;
     }
-    return true;
-  });
+    
+    // Check for section access
+    if (allowedSections.includes(sectionName)) return true;
+    
+    return false;
+  };
+
+  // Filter navigation based on permissions
+  const filteredNavigation = navigation
+    .map(section => {
+      // Filter items within each section
+      const filteredItems = section.items.filter(item => 
+        hasAccess(section.title, item.name)
+      );
+      
+      return {
+        ...section,
+        items: filteredItems
+      };
+    })
+    .filter(section => section.items.length > 0); // Only show sections with visible items
 
   const handleSignOut = async () => {
     await signOut();

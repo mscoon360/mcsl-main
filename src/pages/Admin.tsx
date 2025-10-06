@@ -98,6 +98,8 @@ export default function Admin() {
   const [submitting, setSubmitting] = useState(false);
   const [grantAdmin, setGrantAdmin] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedNavSection, setSelectedNavSection] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState('');
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
@@ -263,20 +265,29 @@ export default function Admin() {
     e.preventDefault();
     setSubmitting(true);
 
-    const formData = new FormData(e.currentTarget);
-    const userId = formData.get('user_id') as string;
-    const department = formData.get('department') as string;
+    if (!selectedUserId) {
+      toast.error('Please select a user');
+      setSubmitting(false);
+      return;
+    }
+
+    if (!selectedNavSection) {
+      toast.error('Please select a navigation section');
+      setSubmitting(false);
+      return;
+    }
 
     const { error } = await supabase
       .from('department_visibility')
-      .insert({ user_id: userId, department });
+      .insert({ user_id: selectedUserId, department: selectedNavSection });
 
     if (error) {
-      toast.error('Failed to add department visibility');
+      toast.error('Failed to add navigation access');
       console.error(error);
     } else {
-      toast.success('Department visibility added');
-      e.currentTarget.reset();
+      toast.success('Navigation access granted');
+      setSelectedUserId('');
+      setSelectedNavSection('');
       loadVisibilities();
     }
 
@@ -662,36 +673,52 @@ export default function Admin() {
         <TabsContent value="visibility" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Add Department Visibility</CardTitle>
-              <CardDescription>Control which departments users can access</CardDescription>
+              <CardTitle>Navigation Access Control</CardTitle>
+              <CardDescription>Control which navigation sections users can access</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleAddVisibility} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="user_id">User</Label>
-                    <select
-                      id="user_id"
-                      name="user_id"
-                      required
-                      className="w-full px-3 py-2 border rounded-md"
-                    >
-                      <option value="">Select a user</option>
-                      {users.map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {user.name} ({user.username})
-                        </option>
-                      ))}
-                    </select>
+                    <Select value={selectedUserId} onValueChange={setSelectedUserId} required>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a user" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border border-border z-50">
+                        {users.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.name} ({user.username})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="vis-department">Department</Label>
-                    <Input id="vis-department" name="department" type="text" required />
+                    <Label htmlFor="nav-section">Navigation Section</Label>
+                    <Select value={selectedNavSection} onValueChange={setSelectedNavSection} required>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select navigation section" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border border-border z-50">
+                        <SelectItem value="Dashboard">Dashboard</SelectItem>
+                        <SelectItem value="Sales">Sales</SelectItem>
+                        <SelectItem value="Customers">Customers</SelectItem>
+                        <SelectItem value="Products">Products</SelectItem>
+                        <SelectItem value="Contracts">Contracts</SelectItem>
+                        <SelectItem value="Fulfillment">Fulfillment</SelectItem>
+                        <SelectItem value="Finance">Finance (All)</SelectItem>
+                        <SelectItem value="Finance-Overview">Finance - Overview</SelectItem>
+                        <SelectItem value="Finance-Income">Finance - Income</SelectItem>
+                        <SelectItem value="Finance-Expenditure">Finance - Expenditure</SelectItem>
+                        <SelectItem value="Finance-Invoices">Finance - Invoices</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <Button type="submit" disabled={submitting}>
                   <Plus className="w-4 h-4 mr-2" />
-                  {submitting ? 'Adding...' : 'Add Visibility'}
+                  {submitting ? 'Adding...' : 'Grant Access'}
                 </Button>
               </form>
             </CardContent>
@@ -699,14 +726,14 @@ export default function Admin() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Department Visibilities</CardTitle>
+              <CardTitle>User Navigation Access</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>User</TableHead>
-                    <TableHead>Department</TableHead>
+                    <TableHead>Navigation Section</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -716,7 +743,9 @@ export default function Admin() {
                     return (
                       <TableRow key={vis.id}>
                         <TableCell>{user?.name || 'Unknown'}</TableCell>
-                        <TableCell>{vis.department}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{vis.department}</Badge>
+                        </TableCell>
                         <TableCell>
                           <Button
                             variant="destructive"
