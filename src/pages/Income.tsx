@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isWithinInterval, parseISO, differenceInMonths } from "date-fns";
 import * as XLSX from 'xlsx';
 import { useSales } from "@/hooks/useSales";
+import { usePaymentSchedules } from "@/hooks/usePaymentSchedules";
 
 export default function Income() {
   const { toast } = useToast();
@@ -21,6 +22,7 @@ export default function Income() {
   const [viewType, setViewType] = useState<'summary' | 'detailed' | 'breakdown'>('summary');
   const [incomeSource, setIncomeSource] = useState<'all' | 'sales' | 'collections'>('all');
   const { sales: supabaseSales } = useSales();
+  const { paymentSchedules: supabasePaymentSchedules } = usePaymentSchedules();
 
   // Restrict access for sales department
   useEffect(() => {
@@ -48,16 +50,19 @@ export default function Income() {
     status: sale.status
   }));
 
-  const [paidPayments] = useLocalStorage<Array<{
-    id: string;
-    customer: string;
-    product: string;
-    amount: number;
-    dueDate: string;
-    paidDate: string;
-    paymentMethod: string;
-    status: 'paid';
-  }>>('paid-rental-payments', []);
+  // Map Supabase payment schedules to expected format
+  const paidPayments = supabasePaymentSchedules
+    .filter(p => p.status === 'paid' && p.paid_date)
+    .map(p => ({
+      id: p.id,
+      customer: p.customer,
+      product: p.product,
+      amount: p.amount,
+      dueDate: p.due_date,
+      paidDate: p.paid_date!,
+      paymentMethod: p.payment_method || 'cash',
+      status: 'paid' as const
+    }));
 
   // Generate month options
   const generateMonthOptions = () => {

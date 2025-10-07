@@ -7,78 +7,48 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Search, CreditCard, Calendar, DollarSign, User, CheckCircle, AlertCircle, Clock } from "lucide-react";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import { format, addMonths, addDays, differenceInDays, parseISO, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
-
-interface PaymentSchedule {
-  id: string;
-  agreementId: string;
-  customer: string;
-  product: string;
-  amount: number;
-  dueDate: string;
-  status: 'paid' | 'due' | 'overdue';
-  paidDate?: string;
-  paymentMethod?: string;
-  notes?: string;
-}
+import { useSales } from "@/hooks/useSales";
+import { usePaymentSchedules } from "@/hooks/usePaymentSchedules";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function RentalPayments() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<'date' | 'month' | 'year'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // Get sales data to extract rental agreements
-  const [sales] = useLocalStorage<Array<{
-    id: string;
-    customer: string;
-    total: number;
-    items: Array<{
-      product: string;
-      quantity: number;
-      price: number;
-      isRental?: boolean;
-      contractLength?: string;
-      paymentPeriod?: string;
-      startDate?: Date;
-      endDate?: Date;
-    }>;
-    date: string;
-    status: string;
-  }>>('dashboard-sales', []);
-
-  // Payment schedules storage
-  const [paymentSchedules, setPaymentSchedules] = useLocalStorage<PaymentSchedule[]>('dashboard-payment-schedules', []);
+  const { sales: supabaseSales } = useSales();
+  const { paymentSchedules: supabasePaymentSchedules, addPaymentSchedule, updatePaymentSchedule } = usePaymentSchedules();
 
 
   // Generate payment schedules from rental agreements
   useEffect(() => {
-    const existingScheduleAgreements = new Set(paymentSchedules.map(p => p.agreementId));
-    const newSchedules: PaymentSchedule[] = [];
+    if (!user) return;
+    
+    const existingScheduleSaleIds = new Set(supabasePaymentSchedules.map(p => p.sale_id).filter(Boolean));
 
-    sales.forEach(sale => {
+    supabaseSales.forEach(sale => {
       sale.items
-        .filter(item => item.isRental && item.startDate && item.endDate && item.paymentPeriod)
-        .forEach((item, index) => {
-          const agreementId = `${sale.id}-${index}`;
+        .filter(item => item.is_rental && item.start_date && item.end_date && item.payment_period)
+        .forEach(async (item) => {
           
-          if (!existingScheduleAgreements.has(agreementId)) {
-            const startDate = new Date(item.startDate!);
-            const endDate = new Date(item.endDate!);
+          if (!existingScheduleSaleIds.has(sale.id)) {
+            const startDate = new Date(item.start_date!);
+            const endDate = new Date(item.end_date!);
             const monthlyAmount = item.price;
             
             // Generate payment schedule based on payment period
             let currentDate = new Date(startDate);
-            let paymentIndex = 0;
             
-            while (currentDate < endDate) { // Changed from <= to < to exclude end date
+            while (currentDate < endDate) {
               let nextPaymentDate: Date;
               let periodMultiplier: number;
               
-              switch (item.paymentPeriod) {
+              switch (item.payment_period) {
                 case 'monthly':
                   nextPaymentDate = addMonths(currentDate, 1);
                   periodMultiplier = 1;
@@ -101,41 +71,37 @@ export default function RentalPayments() {
               }
               
               const paymentAmount = monthlyAmount * periodMultiplier;
-              console.log(`Payment schedule: Contract ${format(startDate, 'MMM dd')} to ${format(endDate, 'MMM dd')}, Payment ${paymentIndex + 1} on ${format(currentDate, 'MMM dd')} for ${item.paymentPeriod} (${paymentAmount})`);
               
               const daysFromNow = differenceInDays(currentDate, new Date());
-              let status: PaymentSchedule['status'] = 'due';
+              let status: 'paid' | 'pending' | 'overdue' = 'pending';
               
               if (daysFromNow < 0) {
                 status = 'overdue';
-              } else if (daysFromNow > 7) {
-                status = 'due';
               }
               
-              newSchedules.push({
-                id: `${agreementId}-payment-${paymentIndex}`,
-                agreementId,
-                customer: sale.customer,
-                product: item.product,
-                amount: paymentAmount,
-                dueDate: currentDate.toISOString().split('T')[0],
-                status
-              });
+              try {
+                await addPaymentSchedule({
+                  sale_id: sale.id,
+                  customer: sale.customer_name,
+                  product: item.product_name,
+                  amount: paymentAmount,
+                  due_date: currentDate.toISOString().split('T')[0],
+                  status,
+                  user_id: user.id
+                });
+              } catch (error) {
+                console.error('Error adding payment schedule:', error);
+              }
               
               currentDate = nextPaymentDate;
-              paymentIndex++;
             }
           }
         });
     });
-
-    if (newSchedules.length > 0) {
-      setPaymentSchedules(prev => [...prev, ...newSchedules]);
-    }
-  }, [sales, paymentSchedules, setPaymentSchedules]);
+  }, [supabaseSales, supabasePaymentSchedules, user]);
 
   // Filter and sort payment schedules
-  const filteredPayments = paymentSchedules
+  const filteredPayments = supabasePaymentSchedules
     .filter(payment => {
       const matchesSearch = searchTerm === "" || 
         payment.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -146,8 +112,8 @@ export default function RentalPayments() {
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
-      const dateA = new Date(a.dueDate);
-      const dateB = new Date(b.dueDate);
+      const dateA = new Date(a.due_date);
+      const dateB = new Date(b.due_date);
       
       let comparison = 0;
       
@@ -194,67 +160,33 @@ export default function RentalPayments() {
     }
   };
 
-  const markPayment = (paymentId: string, status: PaymentSchedule['status'], paymentMethod?: string) => {
-    setPaymentSchedules(prev => prev.map(payment => {
-      if (payment.id === paymentId) {
-        const updatedPayment = { 
-          ...payment, 
-          status,
-          paidDate: status === 'paid' ? new Date().toISOString().split('T')[0] : undefined,
-          paymentMethod: status === 'paid' ? (paymentMethod || 'cash') : undefined
-        };
-        
-        // Save to localStorage for finance page calculations when marked as paid
-        if (status === 'paid') {
-          const existingPaidPayments = JSON.parse(localStorage.getItem('paid-rental-payments') || '[]');
-          const paidPaymentRecord = {
-            id: payment.id,
-            customer: payment.customer,  
-            product: payment.product,
-            amount: payment.amount,
-            dueDate: payment.dueDate,
-            paidDate: updatedPayment.paidDate,
-            paymentMethod: updatedPayment.paymentMethod,
-            status: 'paid'
-          };
-          
-          // Check if already exists to prevent duplicates
-          const existingIndex = existingPaidPayments.findIndex((p: any) => p.id === payment.id);
-          if (existingIndex >= 0) {
-            existingPaidPayments[existingIndex] = paidPaymentRecord;
-          } else {
-            existingPaidPayments.push(paidPaymentRecord);
-          }
-          
-          localStorage.setItem('paid-rental-payments', JSON.stringify(existingPaidPayments));
-        } else {
-          // Remove from paid payments if unmarked
-          const existingPaidPayments = JSON.parse(localStorage.getItem('paid-rental-payments') || '[]');
-          const filteredPayments = existingPaidPayments.filter((p: any) => p.id !== payment.id);
-          localStorage.setItem('paid-rental-payments', JSON.stringify(filteredPayments));
-        }
-        
-        return updatedPayment;
-      }
-      return payment;
-    }));
+  const markPayment = async (paymentId: string, status: 'paid' | 'pending' | 'overdue', paymentMethod?: string) => {
+    try {
+      await updatePaymentSchedule(paymentId, {
+        status,
+        paid_date: status === 'paid' ? new Date().toISOString().split('T')[0] : undefined,
+        payment_method: status === 'paid' ? (paymentMethod || 'cash') : undefined
+      });
 
-    toast({
-      title: status === 'paid' ? "Payment Recorded" : "Status Updated",
-      description: status === 'paid' 
-        ? `Payment has been recorded and will appear in finance calculations.`
-        : `Payment status updated to ${status}.`
-    });
+      toast({
+        title: status === 'paid' ? "Payment Recorded" : "Status Updated",
+        description: status === 'paid' 
+          ? `Payment has been recorded and will appear in finance calculations.`
+          : `Payment status updated to ${status}.`
+      });
+    } catch (error) {
+      console.error('Error marking payment:', error);
+    }
   };
 
   // Calculate statistics
-  const totalPayments = paymentSchedules.length;
-  const paidPayments = paymentSchedules.filter(p => p.status === 'paid').length;
-  const overduePayments = paymentSchedules.filter(p => p.status === 'overdue').length;
-  const monthlyRevenue = paymentSchedules
-    .filter(p => p.status === 'paid' && p.paidDate)
+  const totalPayments = supabasePaymentSchedules.length;
+  const paidPayments = supabasePaymentSchedules.filter(p => p.status === 'paid').length;
+  const overduePayments = supabasePaymentSchedules.filter(p => p.status === 'overdue').length;
+  const monthlyRevenue = supabasePaymentSchedules
+    .filter(p => p.status === 'paid' && p.paid_date)
     .filter(p => {
-      const paidDate = new Date(p.paidDate!);
+      const paidDate = new Date(p.paid_date!);
       const now = new Date();
       return paidDate.getMonth() === now.getMonth() && paidDate.getFullYear() === now.getFullYear();
     })
@@ -269,7 +201,7 @@ export default function RentalPayments() {
       const monthDate = addMonths(currentDate, i);
       const monthKey = format(monthDate, 'yyyy-MM');
       const monthPayments = filteredPayments.filter(payment => {
-        const paymentDate = new Date(payment.dueDate);
+        const paymentDate = new Date(payment.due_date);
         return isSameMonth(paymentDate, monthDate);
       });
       
@@ -281,7 +213,7 @@ export default function RentalPayments() {
         totalAmount: monthPayments.reduce((sum, p) => sum + p.amount, 0),
         paidAmount: monthPayments.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0),
         overdueCount: monthPayments.filter(p => p.status === 'overdue').length,
-        dueCount: monthPayments.filter(p => p.status === 'due').length,
+        dueCount: monthPayments.filter(p => p.status === 'pending').length,
         paidCount: monthPayments.filter(p => p.status === 'paid').length
       });
     }
@@ -479,12 +411,12 @@ export default function RentalPayments() {
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4 text-red-600 dark:text-red-400" />
-                        <span className="text-red-700 dark:text-red-300">Due {format(new Date(payment.dueDate), 'MMM dd, yyyy')}</span>
+                        <span className="text-red-700 dark:text-red-300">Due {format(new Date(payment.due_date), 'MMM dd, yyyy')}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
                         <span className="text-red-700 dark:text-red-300 font-medium">
-                          {Math.abs(differenceInDays(new Date(payment.dueDate), new Date()))} days overdue
+                          {Math.abs(differenceInDays(new Date(payment.due_date), new Date()))} days overdue
                         </span>
                       </div>
                     </div>
@@ -522,7 +454,7 @@ export default function RentalPayments() {
                 <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">No Payments Found</h3>
                 <p className="text-muted-foreground mb-4">
-                  {paymentSchedules.length === 0 
+                  {supabasePaymentSchedules.length === 0
                     ? "Payment schedules will be generated from rental agreements." 
                     : "No payments match your search criteria."
                   }
@@ -619,7 +551,7 @@ export default function RentalPayments() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => markPayment(payment.id, 'due')}
+                              onClick={() => markPayment(payment.id, 'pending')}
                             >
                               Mark Unpaid
                             </Button>

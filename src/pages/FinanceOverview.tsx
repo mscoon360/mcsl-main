@@ -11,6 +11,7 @@ import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMo
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell, LineChart, Line, Pie } from "recharts";
 import * as XLSX from 'xlsx';
 import { useSales } from "@/hooks/useSales";
+import { usePaymentSchedules } from "@/hooks/usePaymentSchedules";
 
 interface MonthlyFinancials {
   month: string;
@@ -29,6 +30,7 @@ export default function FinanceOverview() {
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState('12-months');
   const { sales: supabaseSales } = useSales();
+  const { paymentSchedules: supabasePaymentSchedules } = usePaymentSchedules();
 
   // Restrict access for sales department
   useEffect(() => {
@@ -52,16 +54,19 @@ export default function FinanceOverview() {
     status: sale.status
   }));
 
-  const [paidPayments] = useLocalStorage<Array<{
-    id: string;
-    customer: string;
-    product: string;
-    amount: number;
-    dueDate: string;
-    paidDate: string;
-    paymentMethod: string;
-    status: 'paid';
-  }>>('paid-rental-payments', []);
+  // Map Supabase payment schedules to expected format
+  const paidPayments = supabasePaymentSchedules
+    .filter(p => p.status === 'paid' && p.paid_date)
+    .map(p => ({
+      id: p.id,
+      customer: p.customer,
+      product: p.product,
+      amount: p.amount,
+      dueDate: p.due_date,
+      paidDate: p.paid_date!,
+      paymentMethod: p.payment_method || 'cash',
+      status: 'paid' as const
+    }));
 
   const [expenditures] = useLocalStorage<Array<{
     id: string;
