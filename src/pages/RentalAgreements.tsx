@@ -11,6 +11,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { format, differenceInMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import { useProducts } from "@/hooks/useProducts";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ interface RentalAgreement {
 
 export default function RentalAgreements() {
   const { toast } = useToast();
+  const { products: supabaseProducts, updateProduct } = useProducts();
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState("");
@@ -55,19 +57,8 @@ export default function RentalAgreements() {
     status: string;
   }>>('dashboard-customers', []);
 
-  const [products, setProducts] = useLocalStorage<Array<{
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-    sku: string;
-    category: string;
-    stock: number;
-    status: string;
-    lastSold: string;
-    isRental?: boolean;
-    isRentalOnly?: boolean;
-  }>>('dashboard-products', []);
+  // Use products from Supabase
+  const products = supabaseProducts;
 
   // Get sales data and filter for rental agreements
   const [sales, setSales] = useLocalStorage<Array<{
@@ -115,7 +106,7 @@ export default function RentalAgreements() {
   );
 
   // Filter products for rental (rental products or rental-only products)
-  const rentalProducts = products.filter(p => p.isRental || p.isRentalOnly);
+  const rentalProducts = products.filter(p => p.is_rental || p.is_rental_only);
 
   // Filter agreements based on search term
   const filteredAgreements = rentalAgreements.filter(agreement =>
@@ -177,7 +168,7 @@ export default function RentalAgreements() {
     return undefined;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!selectedCustomer || !selectedProduct || !contractLength || !startDate) {
@@ -242,14 +233,12 @@ export default function RentalAgreements() {
       status: "completed"
     };
 
-    // Update product stock
-    const updatedProducts = products.map(p => 
-      p.id === selectedProduct 
-        ? { ...p, stock: p.stock - quantity, lastSold: new Date().toISOString().split('T')[0] }
-        : p
-    );
+    // Update product stock in Supabase
+    await updateProduct(selectedProduct, {
+      stock: product.stock - quantity,
+      last_sold: new Date().toISOString().split('T')[0]
+    });
 
-    setProducts(updatedProducts);
     setSales(prev => [...prev, newSale]);
 
     toast({
