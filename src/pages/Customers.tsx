@@ -12,6 +12,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useCustomers } from "@/hooks/useCustomers";
 
 // Your customer database - ready for real data
 const mockCustomers: Array<{
@@ -29,9 +30,9 @@ const mockCustomers: Array<{
 export default function Customers() {
   const { toast } = useToast();
   const { userDepartment, user } = useAuth();
+  const { customers, loading, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [customers, setCustomers] = useLocalStorage<typeof mockCustomers>('dashboard-customers', []);
   const [editingCustomer, setEditingCustomer] = useState<string | null>(null);
   const [accessStatus, setAccessStatus] = useState<{
     hasAccess: boolean;
@@ -150,12 +151,12 @@ export default function Customers() {
     const totalSales = customerSales.reduce((sum, sale) => sum + sale.total, 0);
     const lastPurchase = customerSales.length > 0 
       ? customerSales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date
-      : customer.lastPurchase;
+      : customer.last_purchase;
     
     return {
       ...customer,
-      totalSales,
-      lastPurchase
+      totalSales: customer.total_sales || totalSales,
+      lastPurchase: customer.last_purchase || lastPurchase
     };
   });
 
@@ -168,74 +169,64 @@ export default function Customers() {
     e.preventDefault();
     const form = e.currentTarget;
     const data = new FormData(form);
-    const newCustomer = {
-      id: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Date.now().toString(),
-      name: String(data.get("name") || ""),
-      email: String(data.get("email") || ""),
-      phone: String(data.get("phone") || ""),
-      company: String(data.get("company") || ""),
-      address: String(data.get("address") || ""),
-      city: String(data.get("city") || ""),
-      totalSales: 0,
-      lastPurchase: new Date().toISOString(),
-      status: "active"
-    };
-    setCustomers(prev => [newCustomer, ...prev]);
     
-    // Log activity for sales users
-    if (userDepartment === 'sales') {
-      await logActivity('created', newCustomer.id);
+    try {
+      const customerData = await addCustomer({
+        name: String(data.get("name") || ""),
+        email: String(data.get("email") || ""),
+        phone: String(data.get("phone") || ""),
+        company: String(data.get("company") || ""),
+        address: String(data.get("address") || ""),
+        city: String(data.get("city") || ""),
+        status: "active"
+      });
+      
+      // Log activity for sales users
+      if (userDepartment === 'sales' && customerData) {
+        await logActivity('created', customerData.id);
+      }
+      
+      form.reset();
+      setShowForm(false);
+    } catch (error) {
+      console.error('Failed to add customer:', error);
     }
-    
-    toast({
-      title: "Customer Added Successfully!",
-      description: "New customer has been added to your database."
-    });
-    form.reset();
-    setShowForm(false);
   };
 
-  const handleEdit = (customer: typeof mockCustomers[0]) => {
+  const handleEdit = (customer: { id: string }) => {
     setEditingCustomer(customer.id);
   };
 
-  const handleEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const data = new FormData(form);
     
-    const updatedCustomer = {
-      id: editingCustomer!,
-      name: String(data.get("name") || ""),
-      email: String(data.get("email") || ""),
-      phone: String(data.get("phone") || ""),
-      company: String(data.get("company") || ""),
-      address: String(data.get("address") || ""),
-      city: String(data.get("city") || ""),
-      totalSales: customers.find(c => c.id === editingCustomer)?.totalSales || 0, // Keep existing sales total
-      lastPurchase: customers.find(c => c.id === editingCustomer)?.lastPurchase || new Date().toISOString(),
-      status: "active"
-    };
+    if (!editingCustomer) return;
+    
+    try {
+      await updateCustomer(editingCustomer, {
+        name: String(data.get("name") || ""),
+        email: String(data.get("email") || ""),
+        phone: String(data.get("phone") || ""),
+        company: String(data.get("company") || ""),
+        address: String(data.get("address") || ""),
+        city: String(data.get("city") || "")
+      });
 
-    setCustomers(prev => prev.map(customer => 
-      customer.id === editingCustomer ? { ...customer, ...updatedCustomer } : customer
-    ));
-
-    toast({
-      title: "Customer Updated Successfully!",
-      description: "Customer information has been updated."
-    });
-
-    setEditingCustomer(null);
+      setEditingCustomer(null);
+    } catch (error) {
+      console.error('Failed to update customer:', error);
+    }
   };
 
-  const handleDelete = (customerId: string) => {
+  const handleDelete = async (customerId: string) => {
     if (window.confirm("Are you sure you want to delete this customer?")) {
-      setCustomers(prev => prev.filter(customer => customer.id !== customerId));
-      toast({
-        title: "Customer Deleted",
-        description: "Customer has been removed from your database."
-      });
+      try {
+        await deleteCustomer(customerId);
+      } catch (error) {
+        console.error('Failed to delete customer:', error);
+      }
     }
   };
   // Show access control for sales users
