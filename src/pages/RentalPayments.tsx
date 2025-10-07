@@ -201,8 +201,9 @@ export default function RentalPayments() {
       const monthDate = addMonths(currentDate, i);
       const monthKey = format(monthDate, 'yyyy-MM');
       const monthPayments = filteredPayments.filter(payment => {
+        if (!payment.due_date) return false;
         const paymentDate = new Date(payment.due_date);
-        return isSameMonth(paymentDate, monthDate);
+        return !isNaN(paymentDate.getTime()) && isSameMonth(paymentDate, monthDate);
       });
       
       months.push({
@@ -411,12 +412,14 @@ export default function RentalPayments() {
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4 text-red-600 dark:text-red-400" />
-                        <span className="text-red-700 dark:text-red-300">Due {format(new Date(payment.due_date), 'MMM dd, yyyy')}</span>
+                        <span className="text-red-700 dark:text-red-300">
+                          Due {payment.due_date ? format(new Date(payment.due_date), 'MMM dd, yyyy') : 'N/A'}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
                         <span className="text-red-700 dark:text-red-300 font-medium">
-                          {Math.abs(differenceInDays(new Date(payment.due_date), new Date()))} days overdue
+                          {payment.due_date ? Math.abs(differenceInDays(new Date(payment.due_date), new Date())) : 0} days overdue
                         </span>
                       </div>
                     </div>
@@ -518,16 +521,20 @@ export default function RentalPayments() {
                             </div>
                             <div className="flex items-center gap-1">
                               <Calendar className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">Due {format(new Date(payment.dueDate), 'MMM dd')}</span>
+                              <span className="text-muted-foreground">
+                                Due {payment.due_date ? format(new Date(payment.due_date), 'MMM dd') : 'N/A'}
+                              </span>
                             </div>
-                            {payment.paidDate && (
+                            {payment.paid_date && (
                               <div className="flex items-center gap-1">
                                 <CheckCircle className="h-4 w-4 text-green-600" />
-                                <span className="text-muted-foreground">Paid {format(new Date(payment.paidDate), 'MMM dd')}</span>
+                                <span className="text-muted-foreground">
+                                  Paid {format(new Date(payment.paid_date), 'MMM dd')}
+                                </span>
                               </div>
                             )}
-                            {payment.paymentMethod && (
-                              <Badge variant="outline" className="text-xs">{payment.paymentMethod}</Badge>
+                            {payment.payment_method && (
+                              <Badge variant="outline" className="text-xs">{payment.payment_method}</Badge>
                             )}
                           </div>
                         </div>
