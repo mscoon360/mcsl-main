@@ -16,12 +16,14 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSales } from "@/hooks/useSales";
+import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Sales() {
   const { toast } = useToast();
   const { userDepartment, user } = useAuth();
   const { sales, loading, refetch } = useSales();
+  const { products: supabaseProducts, updateProduct } = useProducts();
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
@@ -44,19 +46,8 @@ export default function Sales() {
     status: string;
   }>>('dashboard-customers', []);
 
-  const [products, setProducts] = useLocalStorage<Array<{
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-    sku: string;
-    category: string;
-    stock: number;
-    status: string;
-    lastSold: string;
-    isRental?: boolean;
-    isRentalOnly?: boolean;
-  }>>('dashboard-products', []);
+  // Use products from Supabase instead of localStorage
+  const products = supabaseProducts;
 
   // Remove the localStorage sales state as we now use Supabase
   // const [sales, setSales] = useLocalStorage(...)
@@ -165,20 +156,17 @@ export default function Sales() {
 
       if (itemsError) throw itemsError;
 
-      // Update product stock for all items (localStorage)
-      const updatedProducts = products.map(product => {
-        const totalQtySold = salesItems.filter(item => item.product === product.id).reduce((sum, i) => sum + i.quantity, 0);
-        if (totalQtySold > 0) {
-          return {
-            ...product,
+      // Update product stock for all items in Supabase
+      for (const item of salesItems) {
+        const product = products.find(p => p.id === item.product);
+        if (product) {
+          const totalQtySold = salesItems.filter(i => i.product === product.id).reduce((sum, i) => sum + i.quantity, 0);
+          await updateProduct(product.id, {
             stock: product.stock - totalQtySold,
-            lastSold: saleDate
-          };
+            last_sold: saleDate
+          });
         }
-        return product;
-      });
-
-      setProducts(updatedProducts);
+      }
       
       toast({
         title: "Sale Logged Successfully!",
@@ -230,7 +218,7 @@ export default function Sales() {
   };
 
   // Filter products to exclude rental-only products for sales
-  const availableProducts = products.filter(p => p.isRentalOnly !== true);
+  const availableProducts = products.filter(p => p.is_rental_only !== true);
 
   return (
     <div className="space-y-6">
