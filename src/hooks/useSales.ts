@@ -16,6 +16,11 @@ export interface SaleWithRep {
     product_name: string;
     quantity: number;
     price: number;
+    is_rental?: boolean;
+    contract_length?: string;
+    payment_period?: string;
+    start_date?: string;
+    end_date?: string;
   }>;
 }
 
@@ -47,7 +52,7 @@ export function useSales() {
       // Fetch all sale items
       const { data: itemsData, error: itemsError } = await supabase
         .from('sale_items')
-        .select('*');
+        .select('id, sale_id, product_name, quantity, price, is_rental, contract_length, payment_period, start_date, end_date');
 
       if (itemsError) throw itemsError;
 
@@ -74,7 +79,12 @@ export function useSales() {
               id: item.id,
               product_name: item.product_name,
               quantity: item.quantity,
-              price: Number(item.price)
+              price: Number(item.price),
+              is_rental: item.is_rental,
+              contract_length: item.contract_length,
+              payment_period: item.payment_period,
+              start_date: item.start_date,
+              end_date: item.end_date
             }))
         };
       });

@@ -12,6 +12,9 @@ import { format, differenceInMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { useProducts } from "@/hooks/useProducts";
+import { useSales } from "@/hooks/useSales";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -33,7 +36,9 @@ interface RentalAgreement {
 
 export default function RentalAgreements() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { products: supabaseProducts, updateProduct } = useProducts();
+  const { sales: supabaseSales, refetch } = useSales();
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState("");
@@ -60,40 +65,24 @@ export default function RentalAgreements() {
   // Use products from Supabase
   const products = supabaseProducts;
 
-  // Get sales data and filter for rental agreements
-  const [sales, setSales] = useLocalStorage<Array<{
-    id: string;
-    customer: string;
-    total: number;
-    items: Array<{
-      product: string;
-      quantity: number;
-      price: number;
-      isRental?: boolean;
-      contractLength?: string;
-      paymentPeriod?: string;
-      startDate?: Date;
-      endDate?: Date;
-    }>;
-    date: string;
-    status: string;
-  }>>('dashboard-sales', []);
+  // Get sales from Supabase instead of localStorage
+  const sales = supabaseSales;
 
   // Extract rental agreements from sales data
   const rentalAgreements: RentalAgreement[] = sales.flatMap(sale => 
     sale.items
-      .filter(item => item.isRental && item.startDate && item.endDate)
+      .filter(item => item.is_rental && item.start_date && item.end_date)
       .map(item => {
-        const startDate = new Date(item.startDate!);
-        const endDate = new Date(item.endDate!);
+        const startDate = new Date(item.start_date!);
+        const endDate = new Date(item.end_date!);
         const monthsInContract = differenceInMonths(endDate, startDate);
         
         return {
-          id: `${sale.id}-${item.product}`,
-          customer: sale.customer,
-          product: item.product,
-          contractLength: item.contractLength || '',
-          paymentPeriod: item.paymentPeriod || 'monthly',
+          id: `${sale.id}-${item.product_name}`,
+          customer: sale.customer_name,
+          product: item.product_name,
+          contractLength: item.contract_length || '',
+          paymentPeriod: item.payment_period || 'monthly',
           startDate,
           endDate,
           monthlyAmount: item.price,
@@ -171,6 +160,15 @@ export default function RentalAgreements() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to create rental agreements.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!selectedCustomer || !selectedProduct || !contractLength || !startDate) {
       toast({
         title: "Missing Information",
@@ -210,50 +208,73 @@ export default function RentalAgreements() {
       return;
     }
 
-    const customer = customers.find(c => c.id === selectedCustomer);
-    const monthsInContract = differenceInMonths(endDate, startDate);
-    const totalValue = product.price * monthsInContract * quantity;
+    try {
+      const customer = customers.find(c => c.id === selectedCustomer);
+      const monthsInContract = differenceInMonths(endDate, startDate);
+      const totalValue = product.price * monthsInContract * quantity;
 
-    // Create new rental agreement as a sale entry
-    const newSale = {
-      id: Date.now().toString(),
-      customer: customer?.name || "Unknown Customer",
-      total: totalValue,
-      items: [{
-        product: product.name,
-        quantity: quantity,
-        price: product.price,
-        isRental: true,
-        contractLength: contractLength,
-        paymentPeriod: paymentPeriod,
-        startDate: startDate,
-        endDate: endDate
-      }],
-      date: new Date().toISOString().split('T')[0],
-      status: "completed"
-    };
+      // Insert the sale into Supabase
+      const { data: saleData, error: saleError } = await supabase
+        .from('sales')
+        .insert({
+          user_id: user.id,
+          customer_name: customer?.name || "Unknown Customer",
+          total: totalValue,
+          date: new Date().toISOString(),
+          status: 'completed'
+        })
+        .select()
+        .single();
 
-    // Update product stock in Supabase
-    await updateProduct(selectedProduct, {
-      stock: product.stock - quantity,
-      last_sold: new Date().toISOString().split('T')[0]
-    });
+      if (saleError) throw saleError;
 
-    setSales(prev => [...prev, newSale]);
+      // Insert sale items with rental information
+      const { error: itemsError } = await supabase
+        .from('sale_items')
+        .insert({
+          sale_id: saleData.id,
+          product_name: product.name,
+          quantity: quantity,
+          price: product.price,
+          is_rental: true,
+          contract_length: contractLength,
+          payment_period: paymentPeriod,
+          start_date: startDate.toISOString(),
+          end_date: endDate.toISOString()
+        });
 
-    toast({
-      title: "Rental Agreement Created!",
-      description: `Rental agreement for ${product.name} has been created successfully.`
-    });
+      if (itemsError) throw itemsError;
 
-    // Reset form
-    setShowForm(false);
-    setSelectedCustomer("");
-    setSelectedProduct("");
-    setContractLength("");
-    setPaymentPeriod("monthly");
-    setStartDate(undefined);
-    setQuantity(1);
+      // Update product stock in Supabase
+      await updateProduct(selectedProduct, {
+        stock: product.stock - quantity,
+        last_sold: new Date().toISOString().split('T')[0]
+      });
+
+      toast({
+        title: "Rental Agreement Created!",
+        description: `Rental agreement for ${product.name} has been created successfully.`
+      });
+
+      // Reset form
+      setShowForm(false);
+      setSelectedCustomer("");
+      setSelectedProduct("");
+      setContractLength("");
+      setPaymentPeriod("monthly");
+      setStartDate(undefined);
+      setQuantity(1);
+
+      // Refetch sales to update the list
+      refetch();
+    } catch (error) {
+      console.error('Error creating rental agreement:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create rental agreement. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
