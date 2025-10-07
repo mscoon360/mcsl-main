@@ -89,10 +89,15 @@ export default function Income() {
     const spotPurchases = sales
       .filter(sale => {
         const saleDate = parseISO(sale.date);
-        return isWithinInterval(saleDate, { start: monthStart, end: monthEnd }) &&
-               !sale.items.some(item => item.isRental);
+        return isWithinInterval(saleDate, { start: monthStart, end: monthEnd });
       })
-      .reduce((sum, sale) => sum + sale.total, 0);
+      .reduce((sum, sale) => {
+        // Sum ONLY non-rental items, even for mixed sales
+        const nonRentalTotal = sale.items
+          .filter(item => !item.isRental)
+          .reduce((itemSum, item) => itemSum + item.price * item.quantity, 0);
+        return sum + nonRentalTotal;
+      }, 0);
 
     // Total monthly amount from ALL active rental contracts
     const monthlyContractAmount = sales
@@ -100,8 +105,9 @@ export default function Income() {
         sale.items
           .filter(item => {
             if (!item.isRental || !item.startDate || !item.endDate) return false;
-            const startDate = parseISO(item.startDate.toString());
-            const endDate = parseISO(item.endDate.toString());
+            // startDate/endDate are Date objects already; compare directly
+            const startDate = item.startDate as Date;
+            const endDate = item.endDate as Date;
             // Include contract if it's active during the selected month
             return startDate <= monthEnd && endDate >= monthStart;
           })
@@ -112,7 +118,7 @@ export default function Income() {
       )
       .reduce((sum, amount) => sum + amount, 0);
 
-    // Current month revenue = Sales + Monthly contract amounts
+    // Current month revenue = Sales (non-rental items sold this month) + Monthly contract amounts
     return spotPurchases + monthlyContractAmount;
   };
 
