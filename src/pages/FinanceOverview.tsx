@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, parseISO } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell, LineChart, Line, Pie } from "recharts";
 import * as XLSX from 'xlsx';
+import { useSales } from "@/hooks/useSales";
 
 interface MonthlyFinancials {
   month: string;
@@ -27,6 +28,7 @@ export default function FinanceOverview() {
   const { userDepartment } = useAuth();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState('12-months');
+  const { sales: supabaseSales } = useSales();
 
   // Restrict access for sales department
   useEffect(() => {
@@ -35,20 +37,20 @@ export default function FinanceOverview() {
     }
   }, [userDepartment, navigate]);
 
-  // Get data from localStorage
-  const [sales] = useLocalStorage<Array<{
-    id: string;
-    customer: string;
-    total: number;
-    items: Array<{
-      product: string;
-      quantity: number;
-      price: number;
-      isRental?: boolean;
-    }>;
-    date: string;
-    status: string;
-  }>>('dashboard-sales', []);
+  // Map Supabase sales to expected format
+  const sales = supabaseSales.map(sale => ({
+    id: sale.id,
+    customer: sale.customer_name,
+    total: sale.total,
+    items: sale.items.map(item => ({
+      product: item.product_name,
+      quantity: item.quantity,
+      price: item.price,
+      isRental: item.is_rental
+    })),
+    date: sale.date,
+    status: sale.status
+  }));
 
   const [paidPayments] = useLocalStorage<Array<{
     id: string;

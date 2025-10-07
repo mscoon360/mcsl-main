@@ -11,6 +11,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isWithinInterval, parseISO, differenceInMonths } from "date-fns";
 import * as XLSX from 'xlsx';
+import { useSales } from "@/hooks/useSales";
 
 export default function Income() {
   const { toast } = useToast();
@@ -19,6 +20,7 @@ export default function Income() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [viewType, setViewType] = useState<'summary' | 'detailed' | 'breakdown'>('summary');
   const [incomeSource, setIncomeSource] = useState<'all' | 'sales' | 'collections'>('all');
+  const { sales: supabaseSales } = useSales();
 
   // Restrict access for sales department
   useEffect(() => {
@@ -27,24 +29,24 @@ export default function Income() {
     }
   }, [userDepartment, navigate]);
 
-  // Get data from localStorage
-  const [sales] = useLocalStorage<Array<{
-    id: string;
-    customer: string;
-    total: number;
-    items: Array<{
-      product: string;
-      quantity: number;
-      price: number;
-      isRental?: boolean;
-      contractLength?: string;
-      paymentPeriod?: string;
-      startDate?: Date;
-      endDate?: Date;
-    }>;
-    date: string;
-    status: string;
-  }>>('dashboard-sales', []);
+  // Map Supabase sales to expected format
+  const sales = supabaseSales.map(sale => ({
+    id: sale.id,
+    customer: sale.customer_name,
+    total: sale.total,
+    items: sale.items.map(item => ({
+      product: item.product_name,
+      quantity: item.quantity,
+      price: item.price,
+      isRental: item.is_rental,
+      contractLength: item.contract_length,
+      paymentPeriod: item.payment_period,
+      startDate: item.start_date ? new Date(item.start_date) : undefined,
+      endDate: item.end_date ? new Date(item.end_date) : undefined
+    })),
+    date: sale.date,
+    status: sale.status
+  }));
 
   const [paidPayments] = useLocalStorage<Array<{
     id: string;

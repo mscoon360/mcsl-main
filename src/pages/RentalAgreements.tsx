@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useCustomers } from "@/hooks/useCustomers";
 
 interface RentalAgreement {
   id: string;
@@ -39,6 +40,7 @@ export default function RentalAgreements() {
   const { user } = useAuth();
   const { products: supabaseProducts, updateProduct } = useProducts();
   const { sales: supabaseSales, refetch } = useSales();
+  const { customers } = useCustomers();
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState("");
@@ -47,20 +49,6 @@ export default function RentalAgreements() {
   const [paymentPeriod, setPaymentPeriod] = useState("monthly");
   const [startDate, setStartDate] = useState<Date>();
   const [quantity, setQuantity] = useState(1);
-  
-  // Get customers and products from localStorage
-  const [customers] = useLocalStorage<Array<{
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-    company: string;
-    address: string;
-    city: string;
-    totalSales: number;
-    lastPurchase: string;
-    status: string;
-  }>>('dashboard-customers', []);
 
   // Use products from Supabase
   const products = supabaseProducts;

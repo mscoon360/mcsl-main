@@ -18,12 +18,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSales } from "@/hooks/useSales";
 import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
+import { useCustomers } from "@/hooks/useCustomers";
 
 export default function Sales() {
   const { toast } = useToast();
   const { userDepartment, user } = useAuth();
   const { sales, loading, refetch } = useSales();
   const { products: supabaseProducts, updateProduct } = useProducts();
+  const { customers } = useCustomers();
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
@@ -31,20 +33,6 @@ export default function Sales() {
   const [dateFrom, setDateFrom] = useState<Date>();
   const [dateTo, setDateTo] = useState<Date>();
   const [showFilters, setShowFilters] = useState(false);
-
-  // Get customers and products from localStorage
-  const [customers] = useLocalStorage<Array<{
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-    company: string;
-    address: string;
-    city: string;
-    totalSales: number;
-    lastPurchase: string;
-    status: string;
-  }>>('dashboard-customers', []);
 
   // Use products from Supabase instead of localStorage
   const products = supabaseProducts;
