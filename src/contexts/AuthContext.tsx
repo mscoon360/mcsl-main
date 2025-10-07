@@ -31,11 +31,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer admin check to avoid blocking auth state change
+        // CRITICAL: Defer all Supabase calls to prevent auth deadlock
         if (session?.user) {
+          const userId = session.user.id;
           setTimeout(() => {
-            checkAdminStatus(session.user.id);
-            fetchUserProfile(session.user.id);
+            checkAdminStatus(userId);
+            fetchUserProfile(userId);
           }, 0);
         } else {
           setIsAdmin(false);

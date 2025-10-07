@@ -32,16 +32,17 @@ export function useSales() {
       // Fetch sales with profile information
       const { data: salesData, error: salesError } = await supabase
         .from('sales')
-        .select(`
-          *,
-          profiles:user_id (
-            name,
-            username
-          )
-        `)
+        .select('*')
         .order('date', { ascending: false });
 
       if (salesError) throw salesError;
+
+      // Fetch profiles separately to avoid foreign key issues
+      const userIds = [...new Set((salesData || []).map(sale => sale.user_id))];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, name, username')
+        .in('id', userIds);
 
       // Fetch all sale items
       const { data: itemsData, error: itemsError } = await supabase
@@ -50,25 +51,33 @@ export function useSales() {
 
       if (itemsError) throw itemsError;
 
+      // Create profile lookup map
+      const profileMap = new Map(
+        (profilesData || []).map(profile => [profile.id, profile])
+      );
+
       // Combine sales with items and profile info
-      const salesWithItems: SaleWithRep[] = (salesData || []).map(sale => ({
-        id: sale.id,
-        customer_name: sale.customer_name,
-        total: Number(sale.total),
-        date: sale.date,
-        status: sale.status || 'completed',
-        user_id: sale.user_id,
-        rep_name: (sale.profiles as any)?.name || 'Unknown',
-        rep_username: (sale.profiles as any)?.username || 'Unknown',
-        items: (itemsData || [])
-          .filter(item => item.sale_id === sale.id)
-          .map(item => ({
-            id: item.id,
-            product_name: item.product_name,
-            quantity: item.quantity,
-            price: Number(item.price)
-          }))
-      }));
+      const salesWithItems: SaleWithRep[] = (salesData || []).map(sale => {
+        const profile = profileMap.get(sale.user_id);
+        return {
+          id: sale.id,
+          customer_name: sale.customer_name,
+          total: Number(sale.total),
+          date: sale.date,
+          status: sale.status || 'completed',
+          user_id: sale.user_id,
+          rep_name: profile?.name || 'Unknown',
+          rep_username: profile?.username || 'Unknown',
+          items: (itemsData || [])
+            .filter(item => item.sale_id === sale.id)
+            .map(item => ({
+              id: item.id,
+              product_name: item.product_name,
+              quantity: item.quantity,
+              price: Number(item.price)
+            }))
+        };
+      });
 
       setSales(salesWithItems);
     } catch (error) {
