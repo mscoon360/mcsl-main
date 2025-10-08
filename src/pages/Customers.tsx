@@ -131,23 +131,43 @@ export default function Customers() {
     });
   };
 
-  // Get sales data to calculate customer totals
-  const [sales] = useLocalStorage<Array<{
-    id: string;
-    customer: string;
+  // Get sales data from Supabase to calculate customer totals
+  const [salesData, setSalesData] = useState<Array<{
+    customer_name: string;
     total: number;
-    items: Array<{
-      product: string;
-      quantity: number;
-      price: number;
-    }>;
     date: string;
-    status: string;
-  }>>('dashboard-sales', []);
+  }>>([]);
+
+  useEffect(() => {
+    const fetchSales = async () => {
+      const { data, error } = await supabase
+        .from('sales')
+        .select('customer_name, total, date');
+      
+      if (!error && data) {
+        setSalesData(data);
+      }
+    };
+
+    fetchSales();
+
+    // Subscribe to sales changes
+    const channel = supabase
+      .channel('customer-sales-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'sales' },
+        () => fetchSales()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Calculate actual customer sales totals
   const customersWithSales = customers.map(customer => {
-    const customerSales = sales.filter(sale => sale.customer === customer.name);
+    const customerSales = salesData.filter(sale => sale.customer_name === customer.name);
     const totalSales = customerSales.reduce((sum, sale) => sum + sale.total, 0);
     const lastPurchase = customerSales.length > 0 
       ? customerSales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date
@@ -155,8 +175,8 @@ export default function Customers() {
     
     return {
       ...customer,
-      totalSales: customer.total_sales || totalSales,
-      lastPurchase: customer.last_purchase || lastPurchase
+      totalSales: totalSales || 0,
+      lastPurchase: lastPurchase || customer.last_purchase || new Date().toISOString()
     };
   });
 
