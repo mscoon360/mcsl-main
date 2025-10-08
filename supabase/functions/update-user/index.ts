@@ -90,34 +90,16 @@ serve(async (req) => {
 
     // Update password if provided
     if (password) {
-      // Validate password
-      if (password.length < 8) {
+      // Validate password (admins can set simple passwords, users will be required to change)
+      if (password.length < 6) {
         return new Response(
-          JSON.stringify({ error: 'Password must be at least 8 characters' }),
+          JSON.stringify({ error: 'Password must be at least 6 characters' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       if (password.length > 128) {
         return new Response(
           JSON.stringify({ error: 'Password must be less than 128 characters' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (!/[A-Z]/.test(password)) {
-        return new Response(
-          JSON.stringify({ error: 'Password must contain at least one uppercase letter' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (!/[a-z]/.test(password)) {
-        return new Response(
-          JSON.stringify({ error: 'Password must contain at least one lowercase letter' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (!/[0-9]/.test(password)) {
-        return new Response(
-          JSON.stringify({ error: 'Password must contain at least one number' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
