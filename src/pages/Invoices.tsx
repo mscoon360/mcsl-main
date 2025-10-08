@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +16,7 @@ import { format, parseISO, addDays } from "date-fns";
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { supabase } from "@/integrations/supabase/client";
 
 interface InvoiceItem {
   description: string;
@@ -42,10 +45,32 @@ interface Invoice {
 
 export default function Invoices() {
   const { toast } = useToast();
+  const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'sent' | 'paid' | 'overdue'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Check access permissions
+  useEffect(() => {
+    const checkAccess = async () => {
+      if (!user || isAdmin) return;
+      
+      const { data } = await supabase
+        .from('department_visibility')
+        .select('department')
+        .eq('user_id', user.id);
+      
+      const allowedSections = data?.map(d => d.department) || [];
+      const hasAccess = allowedSections.includes('Finance-Invoices') || allowedSections.includes('Finance');
+      
+      if (!hasAccess && allowedSections.length > 0) {
+        navigate('/');
+      }
+    };
+    checkAccess();
+  }, [user, isAdmin, navigate]);
 
   // Get customers from localStorage
   const [customers] = useLocalStorage<Array<{

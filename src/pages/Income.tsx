@@ -13,10 +13,11 @@ import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isWit
 import * as XLSX from 'xlsx';
 import { useSales } from "@/hooks/useSales";
 import { usePaymentSchedules } from "@/hooks/usePaymentSchedules";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Income() {
   const { toast } = useToast();
-  const { userDepartment } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [viewType, setViewType] = useState<'summary' | 'detailed' | 'breakdown'>('summary');
@@ -24,12 +25,25 @@ export default function Income() {
   const { sales: supabaseSales } = useSales();
   const { paymentSchedules: supabasePaymentSchedules } = usePaymentSchedules();
 
-  // Restrict access for sales department
+  // Check access permissions
   useEffect(() => {
-    if (userDepartment === 'sales') {
-      navigate('/');
-    }
-  }, [userDepartment, navigate]);
+    const checkAccess = async () => {
+      if (!user || isAdmin) return;
+      
+      const { data } = await supabase
+        .from('department_visibility')
+        .select('department')
+        .eq('user_id', user.id);
+      
+      const allowedSections = data?.map(d => d.department) || [];
+      const hasAccess = allowedSections.includes('Finance-Income') || allowedSections.includes('Finance');
+      
+      if (!hasAccess && allowedSections.length > 0) {
+        navigate('/');
+      }
+    };
+    checkAccess();
+  }, [user, isAdmin, navigate]);
 
   // Map Supabase sales to expected format
   const sales = supabaseSales.map(sale => ({

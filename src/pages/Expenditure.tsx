@@ -14,6 +14,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isWithinInterval, parseISO } from "date-fns";
 import * as XLSX from 'xlsx';
+import { supabase } from "@/integrations/supabase/client";
 
 interface Expenditure {
   id: string;
@@ -26,19 +27,32 @@ interface Expenditure {
 
 export default function Expenditure() {
   const { toast } = useToast();
-  const { userDepartment } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'working-capital' | 'fixed-capital' | 'payroll' | 'tax'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'category'>('date');
 
-  // Restrict access for sales department
+  // Check access permissions
   useEffect(() => {
-    if (userDepartment === 'sales') {
-      navigate('/');
-    }
-  }, [userDepartment, navigate]);
+    const checkAccess = async () => {
+      if (!user || isAdmin) return;
+      
+      const { data } = await supabase
+        .from('department_visibility')
+        .select('department')
+        .eq('user_id', user.id);
+      
+      const allowedSections = data?.map(d => d.department) || [];
+      const hasAccess = allowedSections.includes('Finance-Expenditure') || allowedSections.includes('Finance');
+      
+      if (!hasAccess && allowedSections.length > 0) {
+        navigate('/');
+      }
+    };
+    checkAccess();
+  }, [user, isAdmin, navigate]);
   const [newExpense, setNewExpense] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
     description: '',
