@@ -227,21 +227,24 @@ export default function Income() {
       }).map(item => item.price * item.quantity)).reduce((sum, amount) => sum + amount, 0);
     } else {
       // For other periods, calculate total rental payments received in that period
-      const monthsInPeriod = differenceInMonths(periodEnd, periodStart) + 1;
-      rentalRevenue = sales.flatMap(sale => sale.items.filter(item => {
-        if (!item.isRental || !item.startDate || !item.endDate) return false;
-        const startDate = item.startDate as Date;
-        const endDate = item.endDate as Date;
-        return startDate <= periodEnd && endDate >= periodStart;
-      }).map(item => {
-        // Calculate how many months of the contract fall within the period
-        const itemStartDate = item.startDate as Date;
-        const itemEndDate = item.endDate as Date;
-        const contractStart = itemStartDate > periodStart ? itemStartDate : periodStart;
-        const contractEnd = itemEndDate < periodEnd ? itemEndDate : periodEnd;
-        const activeMonths = Math.max(0, differenceInMonths(contractEnd, contractStart) + 1);
-        return item.price * item.quantity * activeMonths;
-      })).reduce((sum, amount) => sum + amount, 0);
+      rentalRevenue = sales.flatMap(sale => 
+        sale.items
+          .filter(item => {
+            if (!item.isRental || !item.startDate || !item.endDate) return false;
+            const startDate = item.startDate as Date;
+            const endDate = item.endDate as Date;
+            return startDate <= periodEnd && endDate >= periodStart;
+          })
+          .map(item => {
+            // Calculate how many months of the contract fall within the period
+            const itemStartDate = item.startDate as Date;
+            const itemEndDate = item.endDate as Date;
+            const contractStart = itemStartDate > periodStart ? itemStartDate : periodStart;
+            const contractEnd = itemEndDate < periodEnd ? itemEndDate : periodEnd;
+            const activeMonths = Math.max(0, differenceInMonths(contractEnd, contractStart) + 1);
+            return item.price * item.quantity * activeMonths;
+          })
+      ).reduce((sum, amount) => sum + amount, 0);
     }
 
     return {
