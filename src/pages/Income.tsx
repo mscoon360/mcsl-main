@@ -219,12 +219,26 @@ export default function Income() {
     
     if (periodType === 'monthly') {
       // For monthly view, show monthly contract amounts
-      rentalRevenue = sales.flatMap(sale => sale.items.filter(item => {
+      const rentalItems = sales.flatMap(sale => sale.items.filter(item => {
         if (!item.isRental || !item.startDate || !item.endDate) return false;
         const startDate = item.startDate as Date;
         const endDate = item.endDate as Date;
         return startDate <= periodEnd && endDate >= periodStart;
-      }).map(item => item.price * item.quantity)).reduce((sum, amount) => sum + amount, 0);
+      }));
+      
+      console.log('=== Monthly Rental Revenue Calculation ===');
+      console.log('Period:', { periodStart, periodEnd });
+      console.log('Active rental items:', rentalItems.map(item => ({
+        product: item.product,
+        price: item.price,
+        quantity: item.quantity,
+        revenue: item.price * item.quantity,
+        startDate: item.startDate,
+        endDate: item.endDate
+      })));
+      
+      rentalRevenue = rentalItems.map(item => item.price * item.quantity).reduce((sum, amount) => sum + amount, 0);
+      console.log('Total rental revenue:', rentalRevenue);
     } else {
       // For other periods, calculate total rental payments received in that period
       rentalRevenue = sales.flatMap(sale => 
