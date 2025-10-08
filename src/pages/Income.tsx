@@ -1112,16 +1112,58 @@ export default function Income() {
                       <TableCell className="text-muted-foreground">{sale.rep_name}</TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          {sale.items.map((item, idx) => <div key={idx} className="text-sm">
-                              {item.product_name} x{item.quantity}
-                              {item.is_rental && <Badge variant="outline" className="ml-2 text-xs">Rental</Badge>}
-                            </div>)}
+                          {sale.items.map((item, idx) => {
+                            const today = new Date();
+                            const startDate = item.start_date ? new Date(item.start_date) : undefined;
+                            const endDate = item.end_date ? new Date(item.end_date) : undefined;
+                            
+                            let contractStatus: 'ongoing' | 'completed' | 'not_rental' = 'not_rental';
+                            if (item.is_rental && startDate && endDate) {
+                              if (today > endDate) {
+                                contractStatus = 'completed';
+                              } else if (today >= startDate && today <= endDate) {
+                                contractStatus = 'ongoing';
+                              }
+                            }
+                            
+                            return (
+                              <div key={idx} className="text-sm">
+                                {item.product_name} x{item.quantity}
+                                {item.is_rental && <Badge variant="outline" className="ml-2 text-xs">Rental</Badge>}
+                              </div>
+                            );
+                          })}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={sale.status === 'completed' ? 'default' : 'secondary'}>
-                          {sale.status}
-                        </Badge>
+                        <div className="space-y-1">
+                          {sale.items.map((item, idx) => {
+                            const today = new Date();
+                            const startDate = item.start_date ? new Date(item.start_date) : undefined;
+                            const endDate = item.end_date ? new Date(item.end_date) : undefined;
+                            
+                            let contractStatus: 'ongoing' | 'completed' | 'not_rental' = 'not_rental';
+                            if (item.is_rental && startDate && endDate) {
+                              if (today > endDate) {
+                                contractStatus = 'completed';
+                              } else if (today >= startDate && today <= endDate) {
+                                contractStatus = 'ongoing';
+                              }
+                            }
+                            
+                            return (
+                              <div key={idx}>
+                                {item.is_rental ? (
+                                  <Badge variant={contractStatus === 'ongoing' ? 'default' : 'secondary'} className="text-xs">
+                                    {contractStatus === 'ongoing' ? 'Ongoing' : contractStatus === 'completed' ? 'Completed' : 'N/A'}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="default" className="text-xs">Sale</Badge>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right font-semibold text-foreground">
                         ${sale.total.toFixed(2)}
