@@ -42,18 +42,15 @@ export default function Income() {
         navigate('/auth');
         return;
       }
-
       if (isAdmin) {
         setHasFinanceAccess(true);
         return;
       }
-
       const {
         data
       } = await supabase.from('department_visibility').select('department').eq('user_id', user.id);
       const allowedSections = data?.map(d => d.department) || [];
       const hasAccess = allowedSections.includes('Finance-Income') || allowedSections.includes('Finance');
-      
       if (!hasAccess) {
         // Redirect sales reps and other users away from Income page
         navigate('/');
@@ -74,7 +71,7 @@ export default function Income() {
       const today = new Date();
       const startDate = item.start_date ? new Date(item.start_date) : undefined;
       const endDate = item.end_date ? new Date(item.end_date) : undefined;
-      
+
       // Determine contract status
       let contractStatus: 'ongoing' | 'completed' | 'not_rental' = 'not_rental';
       if (item.is_rental && startDate && endDate) {
@@ -84,7 +81,6 @@ export default function Income() {
           contractStatus = 'ongoing';
         }
       }
-      
       return {
         product: item.product_name,
         quantity: item.quantity,
@@ -116,64 +112,66 @@ export default function Income() {
   // Generate period options based on period type
   const generatePeriodOptions = () => {
     const currentDate = new Date();
-    
     switch (periodType) {
-      case 'quarterly': {
-        // Generate last 8 quarters (most recent first)
-        const quarters = [];
-        for (let i = 0; i < 8; i++) {
-          const date = subMonths(currentDate, i * 3);
-          const quarter = Math.floor(date.getMonth() / 3) + 1;
-          const year = date.getFullYear();
-          quarters.push({
-            value: `${year}-Q${quarter}`,
-            label: `Q${quarter} ${year}`
-          });
+      case 'quarterly':
+        {
+          // Generate last 8 quarters (most recent first)
+          const quarters = [];
+          for (let i = 0; i < 8; i++) {
+            const date = subMonths(currentDate, i * 3);
+            const quarter = Math.floor(date.getMonth() / 3) + 1;
+            const year = date.getFullYear();
+            quarters.push({
+              value: `${year}-Q${quarter}`,
+              label: `Q${quarter} ${year}`
+            });
+          }
+          return quarters;
         }
-        return quarters;
-      }
-      case 'bi-annual': {
-        // Generate last 6 half-years (most recent first)
-        const halfYears = [];
-        for (let i = 0; i < 6; i++) {
-          const date = subMonths(currentDate, i * 6);
-          const half = date.getMonth() < 6 ? 1 : 2;
-          const year = date.getFullYear();
-          halfYears.push({
-            value: `${year}-H${half}`,
-            label: `H${half} ${year}`
-          });
+      case 'bi-annual':
+        {
+          // Generate last 6 half-years (most recent first)
+          const halfYears = [];
+          for (let i = 0; i < 6; i++) {
+            const date = subMonths(currentDate, i * 6);
+            const half = date.getMonth() < 6 ? 1 : 2;
+            const year = date.getFullYear();
+            halfYears.push({
+              value: `${year}-H${half}`,
+              label: `H${half} ${year}`
+            });
+          }
+          return halfYears;
         }
-        return halfYears;
-      }
-      case 'yearly': {
-        // Generate last 5 years (most recent first)
-        const years = [];
-        for (let i = 0; i < 5; i++) {
-          const year = currentDate.getFullYear() - i;
-          years.push({
-            value: `${year}`,
-            label: `${year}`
-          });
+      case 'yearly':
+        {
+          // Generate last 5 years (most recent first)
+          const years = [];
+          for (let i = 0; i < 5; i++) {
+            const year = currentDate.getFullYear() - i;
+            years.push({
+              value: `${year}`,
+              label: `${year}`
+            });
+          }
+          return years;
         }
-        return years;
-      }
-      default: {
-        // Monthly - last 12 months (most recent first)
-        const startDate = subMonths(currentDate, 12);
-        return eachMonthOfInterval({
-          start: startDate,
-          end: currentDate
-        }).map(date => ({
-          value: format(date, 'yyyy-MM'),
-          label: format(date, 'MMMM yyyy')
-        })).reverse(); // Reverse to show most recent first
-      }
+      default:
+        {
+          // Monthly - last 12 months (most recent first)
+          const startDate = subMonths(currentDate, 12);
+          return eachMonthOfInterval({
+            start: startDate,
+            end: currentDate
+          }).map(date => ({
+            value: format(date, 'yyyy-MM'),
+            label: format(date, 'MMMM yyyy')
+          })).reverse(); // Reverse to show most recent first
+        }
     }
   };
-  
   const periodOptions = generatePeriodOptions();
-  
+
   // Update selected period when period type changes
   useEffect(() => {
     if (periodOptions.length > 0 && periodOptions[0]?.value) {
@@ -219,7 +217,10 @@ export default function Income() {
 
   // Calculate revenue for any period based on contract amounts + spot purchases
   const calculatePeriodRevenue = (periodValue: string) => {
-    const { start: periodStart, end: periodEnd } = getPeriodRange(periodValue);
+    const {
+      start: periodStart,
+      end: periodEnd
+    } = getPeriodRange(periodValue);
 
     // Spot purchases (non-rental sales made in this period)
     const spotPurchases = sales.filter(sale => {
@@ -233,7 +234,6 @@ export default function Income() {
 
     // Calculate rental revenue based on period type
     let rentalRevenue = 0;
-    
     if (periodType === 'monthly') {
       // For monthly view, show monthly contract amounts
       const rentalItems = sales.flatMap(sale => sale.items.filter(item => {
@@ -242,9 +242,11 @@ export default function Income() {
         const endDate = item.endDate as Date;
         return startDate <= periodEnd && endDate >= periodStart;
       }));
-      
       console.log('=== Monthly Rental Revenue Calculation ===');
-      console.log('Period:', { periodStart, periodEnd });
+      console.log('Period:', {
+        periodStart,
+        periodEnd
+      });
       console.log('Active rental items:', rentalItems.map(item => ({
         product: item.product,
         price: item.price,
@@ -254,24 +256,22 @@ export default function Income() {
         endDate: item.endDate,
         status: item.contractStatus
       })));
-      
       rentalRevenue = rentalItems.map(item => item.price * item.quantity).reduce((sum, amount) => sum + amount, 0);
       console.log('Total rental revenue:', rentalRevenue);
     } else {
       // For other periods, calculate total rental payments received in that period
-      const rentalItems = sales.flatMap(sale => 
-        sale.items
-          .filter(item => {
-            if (!item.isRental || !item.startDate || !item.endDate) return false;
-            const startDate = item.startDate as Date;
-            const endDate = item.endDate as Date;
-            return startDate <= periodEnd && endDate >= periodStart;
-          })
-      );
-      
+      const rentalItems = sales.flatMap(sale => sale.items.filter(item => {
+        if (!item.isRental || !item.startDate || !item.endDate) return false;
+        const startDate = item.startDate as Date;
+        const endDate = item.endDate as Date;
+        return startDate <= periodEnd && endDate >= periodStart;
+      }));
       console.log('=== Non-Monthly Rental Revenue Calculation ===');
       console.log('Period Type:', periodType);
-      console.log('Period:', { periodStart, periodEnd });
+      console.log('Period:', {
+        periodStart,
+        periodEnd
+      });
       console.log('Active rental items:', rentalItems.map(item => {
         const itemStartDate = item.startDate as Date;
         const itemEndDate = item.endDate as Date;
@@ -292,21 +292,16 @@ export default function Income() {
           status: item.contractStatus
         };
       }));
-      
-      rentalRevenue = rentalItems
-        .map(item => {
-          const itemStartDate = item.startDate as Date;
-          const itemEndDate = item.endDate as Date;
-          const contractStart = itemStartDate > periodStart ? itemStartDate : periodStart;
-          const contractEnd = itemEndDate < periodEnd ? itemEndDate : periodEnd;
-          const activeMonths = Math.max(0, differenceInMonths(contractEnd, contractStart) + 1);
-          return item.price * item.quantity * activeMonths;
-        })
-        .reduce((sum, amount) => sum + amount, 0);
-      
+      rentalRevenue = rentalItems.map(item => {
+        const itemStartDate = item.startDate as Date;
+        const itemEndDate = item.endDate as Date;
+        const contractStart = itemStartDate > periodStart ? itemStartDate : periodStart;
+        const contractEnd = itemEndDate < periodEnd ? itemEndDate : periodEnd;
+        const activeMonths = Math.max(0, differenceInMonths(contractEnd, contractStart) + 1);
+        return item.price * item.quantity * activeMonths;
+      }).reduce((sum, amount) => sum + amount, 0);
       console.log('Total rental revenue:', rentalRevenue);
     }
-
     return {
       total: spotPurchases + rentalRevenue,
       rentalRevenue: rentalRevenue,
@@ -316,7 +311,10 @@ export default function Income() {
 
   // Calculate income data for selected period (for detailed views)
   const calculateIncomeData = (periodValue: string) => {
-    const { start: periodStart, end: periodEnd } = getPeriodRange(periodValue);
+    const {
+      start: periodStart,
+      end: periodEnd
+    } = getPeriodRange(periodValue);
 
     // Sales income (non-rental sales only)
     const salesData = sales.filter(sale => {
@@ -350,10 +348,8 @@ export default function Income() {
   // Calculate revenue for current and previous period
   const currentPeriodData = calculatePeriodRevenue(selectedMonth);
   const currentPeriodRevenue = currentPeriodData.total;
-  
   const getPreviousPeriod = (periodValue: string) => {
     if (!periodValue) return format(subMonths(new Date(), 1), 'yyyy-MM');
-    
     if (periodValue.includes('Q')) {
       const [year, quarter] = periodValue.split('-Q');
       const quarterNum = parseInt(quarter);
@@ -376,7 +372,6 @@ export default function Income() {
       return format(previousDate, 'yyyy-MM');
     }
   };
-  
   const previousPeriod = getPreviousPeriod(selectedMonth);
   const previousPeriodData = calculatePeriodRevenue(previousPeriod);
   const previousPeriodRevenue = previousPeriodData.total;
@@ -399,75 +394,71 @@ export default function Income() {
     };
   };
   const periodChange = calculatePeriodChange();
-  
+
   // Calculate contract status breakdown
   const calculateContractStatusBreakdown = () => {
-    const { start: periodStart, end: periodEnd } = getPeriodRange(selectedMonth);
-    
-    const ongoingRevenue = sales.flatMap(sale => 
-      sale.items
-        .filter(item => {
-          if (!item.isRental || item.contractStatus !== 'ongoing') return false;
-          if (!item.startDate || !item.endDate) return false;
-          const startDate = item.startDate as Date;
-          const endDate = item.endDate as Date;
-          return startDate <= periodEnd && endDate >= periodStart;
-        })
-        .map(item => {
-          if (periodType === 'monthly') {
-            return item.price * item.quantity;
-          } else {
-            const itemStartDate = item.startDate as Date;
-            const itemEndDate = item.endDate as Date;
-            const contractStart = itemStartDate > periodStart ? itemStartDate : periodStart;
-            const contractEnd = itemEndDate < periodEnd ? itemEndDate : periodEnd;
-            const activeMonths = Math.max(0, differenceInMonths(contractEnd, contractStart) + 1);
-            return item.price * item.quantity * activeMonths;
-          }
-        })
-    ).reduce((sum, amount) => sum + amount, 0);
-    
-    const completedRevenue = sales.flatMap(sale => 
-      sale.items
-        .filter(item => {
-          if (!item.isRental || item.contractStatus !== 'completed') return false;
-          if (!item.startDate || !item.endDate) return false;
-          const startDate = item.startDate as Date;
-          const endDate = item.endDate as Date;
-          return startDate <= periodEnd && endDate >= periodStart;
-        })
-        .map(item => {
-          if (periodType === 'monthly') {
-            return item.price * item.quantity;
-          } else {
-            const itemStartDate = item.startDate as Date;
-            const itemEndDate = item.endDate as Date;
-            const contractStart = itemStartDate > periodStart ? itemStartDate : periodStart;
-            const contractEnd = itemEndDate < periodEnd ? itemEndDate : periodEnd;
-            const activeMonths = Math.max(0, differenceInMonths(contractEnd, contractStart) + 1);
-            return item.price * item.quantity * activeMonths;
-          }
-        })
-    ).reduce((sum, amount) => sum + amount, 0);
-    
-    return { ongoingRevenue, completedRevenue };
+    const {
+      start: periodStart,
+      end: periodEnd
+    } = getPeriodRange(selectedMonth);
+    const ongoingRevenue = sales.flatMap(sale => sale.items.filter(item => {
+      if (!item.isRental || item.contractStatus !== 'ongoing') return false;
+      if (!item.startDate || !item.endDate) return false;
+      const startDate = item.startDate as Date;
+      const endDate = item.endDate as Date;
+      return startDate <= periodEnd && endDate >= periodStart;
+    }).map(item => {
+      if (periodType === 'monthly') {
+        return item.price * item.quantity;
+      } else {
+        const itemStartDate = item.startDate as Date;
+        const itemEndDate = item.endDate as Date;
+        const contractStart = itemStartDate > periodStart ? itemStartDate : periodStart;
+        const contractEnd = itemEndDate < periodEnd ? itemEndDate : periodEnd;
+        const activeMonths = Math.max(0, differenceInMonths(contractEnd, contractStart) + 1);
+        return item.price * item.quantity * activeMonths;
+      }
+    })).reduce((sum, amount) => sum + amount, 0);
+    const completedRevenue = sales.flatMap(sale => sale.items.filter(item => {
+      if (!item.isRental || item.contractStatus !== 'completed') return false;
+      if (!item.startDate || !item.endDate) return false;
+      const startDate = item.startDate as Date;
+      const endDate = item.endDate as Date;
+      return startDate <= periodEnd && endDate >= periodStart;
+    }).map(item => {
+      if (periodType === 'monthly') {
+        return item.price * item.quantity;
+      } else {
+        const itemStartDate = item.startDate as Date;
+        const itemEndDate = item.endDate as Date;
+        const contractStart = itemStartDate > periodStart ? itemStartDate : periodStart;
+        const contractEnd = itemEndDate < periodEnd ? itemEndDate : periodEnd;
+        const activeMonths = Math.max(0, differenceInMonths(contractEnd, contractStart) + 1);
+        return item.price * item.quantity * activeMonths;
+      }
+    })).reduce((sum, amount) => sum + amount, 0);
+    return {
+      ongoingRevenue,
+      completedRevenue
+    };
   };
-  
   const contractStatusBreakdown = calculateContractStatusBreakdown();
-  
+
   // Get period label
   const getPeriodLabel = () => {
     switch (periodType) {
-      case 'quarterly': return 'Quarter';
-      case 'bi-annual': return 'Half-Year';
-      case 'yearly': return 'Year';
-      default: return 'Month';
+      case 'quarterly':
+        return 'Quarter';
+      case 'bi-annual':
+        return 'Half-Year';
+      case 'yearly':
+        return 'Year';
+      default:
+        return 'Month';
     }
   };
-  
   const getPeriodDisplay = (periodValue: string) => {
     if (!periodValue) return 'N/A';
-    
     if (periodValue.includes('Q') || periodValue.includes('H')) {
       return periodValue.replace('-', ' ');
     } else if (periodValue.length === 4 && !periodValue.includes('-')) {
@@ -484,7 +475,6 @@ export default function Income() {
       return periodValue;
     }
   };
-
   const safeFormatDate = (value: string, pattern: string) => {
     try {
       if (!value) return 'N/A';
@@ -805,12 +795,12 @@ export default function Income() {
               </div>
               <div className="text-xs text-muted-foreground space-y-1">
                 <div className="flex items-center gap-1">
-                  <Badge variant="default" className="text-xs">Ongoing</Badge>
-                  <span>${contractStatusBreakdown.ongoingRevenue.toFixed(2)}</span>
+                  
+                  
                 </div>
                 <div className="flex items-center gap-1">
-                  <Badge variant="secondary" className="text-xs">Completed</Badge>
-                  <span>${contractStatusBreakdown.completedRevenue.toFixed(2)}</span>
+                  
+                  
                 </div>
               </div>
             </div>
