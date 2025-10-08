@@ -725,6 +725,74 @@ export default function Income() {
           </Card>
         </div>
       )}
+
+      {/* All Sales Log */}
+      <Card className="dashboard-card">
+        <CardHeader>
+          <CardTitle className="text-card-foreground flex items-center gap-2">
+            <Receipt className="h-5 w-5" />
+            Complete Sales Log
+          </CardTitle>
+          <CardDescription>
+            All sales transactions across all periods
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Sales Rep</TableHead>
+                  <TableHead>Items</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {supabaseSales.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      No sales found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  supabaseSales.map((sale) => (
+                    <TableRow key={sale.id}>
+                      <TableCell className="text-muted-foreground">
+                        {format(parseISO(sale.date), 'MMM dd, yyyy')}
+                      </TableCell>
+                      <TableCell className="font-medium">{sale.customer_name}</TableCell>
+                      <TableCell className="text-muted-foreground">{sale.rep_name}</TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {sale.items.map((item, idx) => (
+                            <div key={idx} className="text-sm">
+                              {item.product_name} x{item.quantity}
+                              {item.is_rental && (
+                                <Badge variant="outline" className="ml-2 text-xs">Rental</Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={sale.status === 'completed' ? 'default' : 'secondary'}>
+                          {sale.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold text-foreground">
+                        ${sale.total.toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
