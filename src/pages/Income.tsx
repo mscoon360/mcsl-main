@@ -159,7 +159,7 @@ export default function Income() {
   
   // Update selected period when period type changes
   useEffect(() => {
-    if (periodOptions.length > 0) {
+    if (periodOptions.length > 0 && periodOptions[0]?.value) {
       setSelectedMonth(periodOptions[0].value);
     }
   }, [periodType]);
@@ -292,6 +292,8 @@ export default function Income() {
   const currentPeriodRevenue = currentPeriodData.total;
   
   const getPreviousPeriod = (periodValue: string) => {
+    if (!periodValue) return format(subMonths(new Date(), 1), 'yyyy-MM');
+    
     if (periodValue.includes('Q')) {
       const [year, quarter] = periodValue.split('-Q');
       const quarterNum = parseInt(quarter);
@@ -349,12 +351,22 @@ export default function Income() {
   };
   
   const getPeriodDisplay = (periodValue: string) => {
+    if (!periodValue) return 'N/A';
+    
     if (periodValue.includes('Q') || periodValue.includes('H')) {
       return periodValue.replace('-', ' ');
-    } else if (periodValue.length === 4) {
+    } else if (periodValue.length === 4 && !periodValue.includes('-')) {
+      // Yearly format
       return periodValue;
+    } else if (periodValue.match(/^\d{4}-\d{2}$/)) {
+      // Monthly format: "2024-01"
+      try {
+        return format(parseISO(`${periodValue}-01`), 'MMMM yyyy');
+      } catch {
+        return periodValue;
+      }
     } else {
-      return format(parseISO(`${periodValue}-01`), 'MMMM yyyy');
+      return periodValue;
     }
   };
 
