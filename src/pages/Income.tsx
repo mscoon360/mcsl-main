@@ -241,7 +241,7 @@ export default function Income() {
       console.log('Total rental revenue:', rentalRevenue);
     } else {
       // For other periods, calculate total rental payments received in that period
-      rentalRevenue = sales.flatMap(sale => 
+      const rentalItems = sales.flatMap(sale => 
         sale.items
           .filter(item => {
             if (!item.isRental || !item.startDate || !item.endDate) return false;
@@ -249,16 +249,43 @@ export default function Income() {
             const endDate = item.endDate as Date;
             return startDate <= periodEnd && endDate >= periodStart;
           })
-          .map(item => {
-            // Calculate how many months of the contract fall within the period
-            const itemStartDate = item.startDate as Date;
-            const itemEndDate = item.endDate as Date;
-            const contractStart = itemStartDate > periodStart ? itemStartDate : periodStart;
-            const contractEnd = itemEndDate < periodEnd ? itemEndDate : periodEnd;
-            const activeMonths = Math.max(0, differenceInMonths(contractEnd, contractStart) + 1);
-            return item.price * item.quantity * activeMonths;
-          })
-      ).reduce((sum, amount) => sum + amount, 0);
+      );
+      
+      console.log('=== Non-Monthly Rental Revenue Calculation ===');
+      console.log('Period Type:', periodType);
+      console.log('Period:', { periodStart, periodEnd });
+      console.log('Active rental items:', rentalItems.map(item => {
+        const itemStartDate = item.startDate as Date;
+        const itemEndDate = item.endDate as Date;
+        const contractStart = itemStartDate > periodStart ? itemStartDate : periodStart;
+        const contractEnd = itemEndDate < periodEnd ? itemEndDate : periodEnd;
+        const activeMonths = Math.max(0, differenceInMonths(contractEnd, contractStart) + 1);
+        const revenue = item.price * item.quantity * activeMonths;
+        return {
+          product: item.product,
+          price: item.price,
+          quantity: item.quantity,
+          startDate: itemStartDate,
+          endDate: itemEndDate,
+          contractStart,
+          contractEnd,
+          activeMonths,
+          revenue
+        };
+      }));
+      
+      rentalRevenue = rentalItems
+        .map(item => {
+          const itemStartDate = item.startDate as Date;
+          const itemEndDate = item.endDate as Date;
+          const contractStart = itemStartDate > periodStart ? itemStartDate : periodStart;
+          const contractEnd = itemEndDate < periodEnd ? itemEndDate : periodEnd;
+          const activeMonths = Math.max(0, differenceInMonths(contractEnd, contractStart) + 1);
+          return item.price * item.quantity * activeMonths;
+        })
+        .reduce((sum, amount) => sum + amount, 0);
+      
+      console.log('Total rental revenue:', rentalRevenue);
     }
 
     return {
