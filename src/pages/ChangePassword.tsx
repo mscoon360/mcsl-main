@@ -66,10 +66,18 @@ export default function ChangePassword() {
 
       if (profileError) {
         console.error('Error updating profile:', profileError);
+        toast.error('Failed to update profile. Please contact support.');
+        setLoading(false);
+        return;
       }
 
-      toast.success('Password changed successfully');
-      navigate('/');
+      toast.success('Password changed successfully! Redirecting...');
+      
+      // Wait a moment for the database update to propagate
+      setTimeout(() => {
+        navigate('/');
+        window.location.reload(); // Force reload to refresh auth state
+      }, 1000);
     } catch (error) {
       console.error('Error changing password:', error);
       toast.error('An error occurred while changing your password');
