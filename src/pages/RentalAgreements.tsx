@@ -44,11 +44,41 @@ export default function RentalAgreements() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState("");
   const [contractLength, setContractLength] = useState("");
   const [paymentPeriod, setPaymentPeriod] = useState("monthly");
   const [startDate, setStartDate] = useState<Date>();
-  const [quantity, setQuantity] = useState(1);
+
+  // Support multiple rental items
+  const [rentalItems, setRentalItems] = useState([{
+    product: "",
+    quantity: 1,
+    price: 0
+  }]);
+
+  const addRentalItem = () => {
+    setRentalItems([...rentalItems, {
+      product: "",
+      quantity: 1,
+      price: 0
+    }]);
+  };
+
+  const updateRentalItem = (index: number, field: string, value: any) => {
+    setRentalItems(prev => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        [field]: value
+      };
+      return updated;
+    });
+  };
+
+  const removeRentalItem = (index: number) => {
+    if (rentalItems.length > 1) {
+      setRentalItems(rentalItems.filter((_, i) => i !== index));
+    }
+  };
 
   // Use products from Supabase
   const products = supabaseProducts;
@@ -150,37 +180,27 @@ export default function RentalAgreements() {
 
     if (!user) {
       toast({
-        title: "Authentication Required",
+        title: "Error",
         description: "You must be logged in to create rental agreements.",
         variant: "destructive"
       });
       return;
     }
 
-    if (!selectedCustomer || !selectedProduct || !contractLength || !startDate) {
+    if (!selectedCustomer || !startDate || !contractLength || rentalItems.some(item => !item.product)) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields and add at least one rental item.",
         variant: "destructive"
       });
       return;
     }
 
-    const product = products.find(p => p.id === selectedProduct);
-    if (!product) {
+    const customer = customers.find(c => c.id === selectedCustomer);
+    if (!customer) {
       toast({
-        title: "Product Not Found",
-        description: "Selected product is not available.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Check stock availability
-    if (product.stock < quantity) {
-      toast({
-        title: "Insufficient Stock",
-        description: "Not enough stock available for this rental.",
+        title: "Error",
+        description: "Selected customer not found.",
         variant: "destructive"
       });
       return;
@@ -189,69 +209,84 @@ export default function RentalAgreements() {
     const endDate = calculateEndDate(startDate, contractLength);
     if (!endDate) {
       toast({
-        title: "Invalid Contract Length",
-        description: "Please select a valid contract length.",
+        title: "Error",
+        description: "Could not calculate end date.",
         variant: "destructive"
       });
       return;
     }
 
     try {
-      const customer = customers.find(c => c.id === selectedCustomer);
-      const monthsInContract = differenceInMonths(endDate, startDate);
-      const totalValue = product.price * monthsInContract * quantity;
-
-      // Insert the sale into Supabase
-      const { data: saleData, error: saleError } = await supabase
-        .from('sales')
-        .insert({
-          user_id: user.id,
-          customer_name: customer?.name || "Unknown Customer",
-          total: totalValue,
-          date: new Date().toISOString(),
-          status: 'completed'
-        })
-        .select()
-        .single();
-
-      if (saleError) throw saleError;
-
-      // Insert sale items with rental information
-      const { error: itemsError } = await supabase
-        .from('sale_items')
-        .insert({
-          sale_id: saleData.id,
+      // Create sale items from rental items
+      const saleItems = rentalItems.map(item => {
+        const product = products.find(p => p.id === item.product);
+        if (!product) throw new Error(`Product ${item.product} not found`);
+        
+        return {
           product_name: product.name,
-          quantity: quantity,
+          quantity: item.quantity,
           price: product.price,
           is_rental: true,
           contract_length: contractLength,
           payment_period: paymentPeriod,
           start_date: startDate.toISOString(),
           end_date: endDate.toISOString()
-        });
+        };
+      });
+
+      const totalAmount = saleItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+      // Create the sale in Supabase
+      const { data: saleData, error: saleError } = await supabase
+        .from('sales')
+        .insert([{
+          customer_name: customer.name,
+          total: totalAmount,
+          date: startDate.toISOString(),
+          status: 'completed',
+          user_id: user.id
+        }])
+        .select()
+        .single();
+
+      if (saleError) throw saleError;
+
+      // Create the sale items
+      const { error: itemsError } = await supabase
+        .from('sale_items')
+        .insert(saleItems.map(item => ({
+          ...item,
+          sale_id: saleData.id
+        })));
 
       if (itemsError) throw itemsError;
 
-      // Update product stock in Supabase
-      await updateProduct(selectedProduct, {
-        stock: product.stock - quantity,
-        last_sold: new Date().toISOString().split('T')[0]
-      });
+      // Update product stock for rental items
+      for (const item of rentalItems) {
+        const product = products.find(p => p.id === item.product);
+        if (product) {
+          await updateProduct(product.id, {
+            stock: (product.stock || 0) - item.quantity
+          });
+        }
+      }
 
       toast({
         title: "Rental Agreement Created!",
-        description: `Rental agreement for ${product.name} has been created successfully.`
+        description: `Rental agreement for ${customer.name} has been created successfully.`
       });
 
       // Reset form
       setShowForm(false);
       setSelectedCustomer("");
-      setSelectedProduct("");
+      setRentalItems([{
+        product: "",
+        quantity: 1,
+        price: 0
+      }]);
       setContractLength("");
       setPaymentPeriod("monthly");
       setStartDate(undefined);
-      setQuantity(1);
 
       // Refetch sales to update the list
       refetch();
@@ -290,65 +325,112 @@ export default function RentalAgreements() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="customer">Customer *</Label>
-                  <Select value={selectedCustomer} onValueChange={setSelectedCustomer} required disabled={customers.length === 0}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={customers.length === 0 ? "Add customers first" : "Select customer"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map(customer => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name} - {customer.company}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {customers.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      <Link to="/customers" className="text-primary hover:underline">
-                        Add customers first
-                      </Link> to create rental agreements.
-                    </p>
-                  )}
+              <div className="space-y-2">
+                <Label htmlFor="customer">Customer *</Label>
+                <Select value={selectedCustomer} onValueChange={setSelectedCustomer} required disabled={customers.length === 0}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={customers.length === 0 ? "Add customers first" : "Select customer"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map(customer => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name} - {customer.company}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {customers.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    <Link to="/customers" className="text-primary hover:underline">
+                      Add customers first
+                    </Link> to create rental agreements.
+                  </p>
+                )}
+              </div>
+
+              {/* Rental Items */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Rental Items *</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={addRentalItem} disabled={rentalProducts.length === 0}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Item
+                  </Button>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="product">Product *</Label>
-                  <Select value={selectedProduct} onValueChange={setSelectedProduct} required disabled={rentalProducts.length === 0}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={rentalProducts.length === 0 ? "No rental products available" : "Select product"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rentalProducts.map(product => (
-                        <SelectItem key={product.id} value={product.id}>
-                          {product.name} - ${product.price}/month
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {rentalProducts.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      <Link to="/products" className="text-primary hover:underline">
-                        Add rental products first
-                      </Link> to create rental agreements.
-                    </p>
-                  )}
-                </div>
+                {rentalProducts.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    <Link to="/products" className="text-primary hover:underline">
+                      Add rental products first
+                    </Link> to create rental agreements.
+                  </p>
+                )}
+
+                {rentalItems.map((item, index) => (
+                  <Card key={index} className="p-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Product *</Label>
+                        <Select 
+                          value={item.product} 
+                          onValueChange={(value) => {
+                            updateRentalItem(index, 'product', value);
+                            const product = rentalProducts.find(p => p.id === value);
+                            if (product) {
+                              updateRentalItem(index, 'price', product.price);
+                            }
+                          }}
+                          required
+                          disabled={rentalProducts.length === 0}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select product" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {rentalProducts.map(product => (
+                              <SelectItem key={product.id} value={product.id}>
+                                {product.name} - ${product.price}/month
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Quantity *</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => updateRentalItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Monthly Rate</Label>
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                            ${item.price * item.quantity}/month
+                          </div>
+                          {rentalItems.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => removeRentalItem(index)}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
               </div>
 
               <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Quantity *</Label>
-                  <Input 
-                    type="number" 
-                    min="1" 
-                    value={quantity} 
-                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)} 
-                    required
-                  />
-                </div>
 
                 <div className="space-y-2">
                   <Label>Contract Length *</Label>
@@ -382,6 +464,9 @@ export default function RentalAgreements() {
                     </Select>
                   </div>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
 
                 <div className="space-y-2">
                   <Label>Payment Period *</Label>
@@ -429,24 +514,23 @@ export default function RentalAgreements() {
                 </div>
               </div>
 
-              {selectedProduct && startDate && contractLength && (
+              {startDate && contractLength && rentalItems.some(item => item.product) && (
                 <div className="p-4 bg-muted rounded-lg">
                   <h4 className="font-semibold mb-2">Agreement Summary</h4>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-muted-foreground">Monthly Amount:</span>
-                      <div className="font-bold">${(products.find(p => p.id === selectedProduct)?.price || 0) * quantity}/month</div>
+                      <span className="text-muted-foreground">Total Monthly Amount:</span>
+                      <div className="font-bold">${rentalItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}/month</div>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Total Contract Value:</span>
                       <div className="font-bold text-success">
                         ${(() => {
-                          const product = products.find(p => p.id === selectedProduct);
-                          if (product && startDate && contractLength) {
+                          if (startDate && contractLength) {
                             const endDate = calculateEndDate(startDate, contractLength);
                             if (endDate) {
                               const months = differenceInMonths(endDate, startDate);
-                              return (product.price * months * quantity).toFixed(2);
+                              return rentalItems.reduce((sum, item) => sum + (item.price * item.quantity * months), 0).toFixed(2);
                             }
                           }
                           return '0.00';
@@ -457,12 +541,11 @@ export default function RentalAgreements() {
                       <span className="text-muted-foreground">Payment Due ({paymentPeriod}):</span>
                       <div className="font-bold">
                         ${(() => {
-                          const product = products.find(p => p.id === selectedProduct);
-                          if (product && startDate && contractLength) {
+                          if (startDate && contractLength) {
                             const endDate = calculateEndDate(startDate, contractLength);
                             if (endDate) {
-                              return (
-                                product.price * monthsInPaymentPeriod(paymentPeriod) * quantity
+                              return rentalItems.reduce((sum, item) => 
+                                sum + (item.price * item.quantity * monthsInPaymentPeriod(paymentPeriod)), 0
                               ).toFixed(2);
                             }
                           }
