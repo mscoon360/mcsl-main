@@ -70,16 +70,33 @@ export default function Income() {
     id: sale.id,
     customer: sale.customer_name,
     total: sale.total,
-    items: sale.items.map(item => ({
-      product: item.product_name,
-      quantity: item.quantity,
-      price: item.price,
-      isRental: item.is_rental,
-      contractLength: item.contract_length,
-      paymentPeriod: item.payment_period,
-      startDate: item.start_date ? new Date(item.start_date) : undefined,
-      endDate: item.end_date ? new Date(item.end_date) : undefined
-    })),
+    items: sale.items.map(item => {
+      const today = new Date();
+      const startDate = item.start_date ? new Date(item.start_date) : undefined;
+      const endDate = item.end_date ? new Date(item.end_date) : undefined;
+      
+      // Determine contract status
+      let contractStatus: 'ongoing' | 'completed' | 'not_rental' = 'not_rental';
+      if (item.is_rental && startDate && endDate) {
+        if (today > endDate) {
+          contractStatus = 'completed';
+        } else if (today >= startDate && today <= endDate) {
+          contractStatus = 'ongoing';
+        }
+      }
+      
+      return {
+        product: item.product_name,
+        quantity: item.quantity,
+        price: item.price,
+        isRental: item.is_rental,
+        contractLength: item.contract_length,
+        paymentPeriod: item.payment_period,
+        startDate: startDate,
+        endDate: endDate,
+        contractStatus: contractStatus
+      };
+    }),
     date: sale.date,
     status: sale.status
   }));
@@ -234,7 +251,8 @@ export default function Income() {
         quantity: item.quantity,
         revenue: item.price * item.quantity,
         startDate: item.startDate,
-        endDate: item.endDate
+        endDate: item.endDate,
+        status: item.contractStatus
       })));
       
       rentalRevenue = rentalItems.map(item => item.price * item.quantity).reduce((sum, amount) => sum + amount, 0);
@@ -270,7 +288,8 @@ export default function Income() {
           contractStart,
           contractEnd,
           activeMonths,
-          revenue
+          revenue,
+          status: item.contractStatus
         };
       }));
       
@@ -380,6 +399,61 @@ export default function Income() {
     };
   };
   const periodChange = calculatePeriodChange();
+  
+  // Calculate contract status breakdown
+  const calculateContractStatusBreakdown = () => {
+    const { start: periodStart, end: periodEnd } = getPeriodRange(selectedMonth);
+    
+    const ongoingRevenue = sales.flatMap(sale => 
+      sale.items
+        .filter(item => {
+          if (!item.isRental || item.contractStatus !== 'ongoing') return false;
+          if (!item.startDate || !item.endDate) return false;
+          const startDate = item.startDate as Date;
+          const endDate = item.endDate as Date;
+          return startDate <= periodEnd && endDate >= periodStart;
+        })
+        .map(item => {
+          if (periodType === 'monthly') {
+            return item.price * item.quantity;
+          } else {
+            const itemStartDate = item.startDate as Date;
+            const itemEndDate = item.endDate as Date;
+            const contractStart = itemStartDate > periodStart ? itemStartDate : periodStart;
+            const contractEnd = itemEndDate < periodEnd ? itemEndDate : periodEnd;
+            const activeMonths = Math.max(0, differenceInMonths(contractEnd, contractStart) + 1);
+            return item.price * item.quantity * activeMonths;
+          }
+        })
+    ).reduce((sum, amount) => sum + amount, 0);
+    
+    const completedRevenue = sales.flatMap(sale => 
+      sale.items
+        .filter(item => {
+          if (!item.isRental || item.contractStatus !== 'completed') return false;
+          if (!item.startDate || !item.endDate) return false;
+          const startDate = item.startDate as Date;
+          const endDate = item.endDate as Date;
+          return startDate <= periodEnd && endDate >= periodStart;
+        })
+        .map(item => {
+          if (periodType === 'monthly') {
+            return item.price * item.quantity;
+          } else {
+            const itemStartDate = item.startDate as Date;
+            const itemEndDate = item.endDate as Date;
+            const contractStart = itemStartDate > periodStart ? itemStartDate : periodStart;
+            const contractEnd = itemEndDate < periodEnd ? itemEndDate : periodEnd;
+            const activeMonths = Math.max(0, differenceInMonths(contractEnd, contractStart) + 1);
+            return item.price * item.quantity * activeMonths;
+          }
+        })
+    ).reduce((sum, amount) => sum + amount, 0);
+    
+    return { ongoingRevenue, completedRevenue };
+  };
+  
+  const contractStatusBreakdown = calculateContractStatusBreakdown();
   
   // Get period label
   const getPeriodLabel = () => {
@@ -729,8 +803,15 @@ export default function Income() {
               <div className="text-2xl font-semibold text-green-600">
                 ${currentPeriodData.rentalRevenue.toFixed(2)}
               </div>
-              <div className="text-xs text-muted-foreground">
-                From rental contracts
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div className="flex items-center gap-1">
+                  <Badge variant="default" className="text-xs">Ongoing</Badge>
+                  <span>${contractStatusBreakdown.ongoingRevenue.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Badge variant="secondary" className="text-xs">Completed</Badge>
+                  <span>${contractStatusBreakdown.completedRevenue.toFixed(2)}</span>
+                </div>
               </div>
             </div>
 
