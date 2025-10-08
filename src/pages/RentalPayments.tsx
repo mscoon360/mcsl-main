@@ -39,7 +39,7 @@ export default function RentalPayments() {
           if (!existingScheduleSaleIds.has(sale.id)) {
             const startDate = new Date(item.start_date!);
             const endDate = new Date(item.end_date!);
-            const monthlyAmount = item.price;
+            const monthlyAmount = item.price * item.quantity;
             
             // Generate payment schedule based on payment period
             let currentDate = new Date(startDate);
