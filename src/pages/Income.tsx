@@ -26,6 +26,7 @@ export default function Income() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [viewType, setViewType] = useState<'summary' | 'detailed' | 'breakdown'>('summary');
   const [incomeSource, setIncomeSource] = useState<'all' | 'sales' | 'collections'>('all');
+  const [periodType, setPeriodType] = useState<'monthly' | 'quarterly' | 'bi-annual' | 'yearly'>('monthly');
   const [hasFinanceAccess, setHasFinanceAccess] = useState(false);
   const {
     sales: supabaseSales
@@ -95,67 +96,171 @@ export default function Income() {
     status: 'paid' as const
   }));
 
-  // Generate month options
-  const generateMonthOptions = () => {
+  // Generate period options based on period type
+  const generatePeriodOptions = () => {
     const currentDate = new Date();
-    const startDate = subMonths(currentDate, 12);
-    return eachMonthOfInterval({
-      start: startDate,
-      end: currentDate
-    }).map(date => ({
-      value: format(date, 'yyyy-MM'),
-      label: format(date, 'MMMM yyyy')
-    }));
+    
+    switch (periodType) {
+      case 'quarterly': {
+        // Generate last 8 quarters
+        const quarters = [];
+        for (let i = 0; i < 8; i++) {
+          const date = subMonths(currentDate, i * 3);
+          const quarter = Math.floor(date.getMonth() / 3) + 1;
+          const year = date.getFullYear();
+          quarters.push({
+            value: `${year}-Q${quarter}`,
+            label: `Q${quarter} ${year}`
+          });
+        }
+        return quarters;
+      }
+      case 'bi-annual': {
+        // Generate last 6 half-years
+        const halfYears = [];
+        for (let i = 0; i < 6; i++) {
+          const date = subMonths(currentDate, i * 6);
+          const half = date.getMonth() < 6 ? 1 : 2;
+          const year = date.getFullYear();
+          halfYears.push({
+            value: `${year}-H${half}`,
+            label: `H${half} ${year}`
+          });
+        }
+        return halfYears;
+      }
+      case 'yearly': {
+        // Generate last 5 years
+        const years = [];
+        for (let i = 0; i < 5; i++) {
+          const year = currentDate.getFullYear() - i;
+          years.push({
+            value: `${year}`,
+            label: `${year}`
+          });
+        }
+        return years;
+      }
+      default: {
+        // Monthly - last 12 months
+        const startDate = subMonths(currentDate, 12);
+        return eachMonthOfInterval({
+          start: startDate,
+          end: currentDate
+        }).map(date => ({
+          value: format(date, 'yyyy-MM'),
+          label: format(date, 'MMMM yyyy')
+        }));
+      }
+    }
   };
-  const monthOptions = generateMonthOptions();
+  
+  const periodOptions = generatePeriodOptions();
+  
+  // Update selected period when period type changes
+  useEffect(() => {
+    if (periodOptions.length > 0) {
+      setSelectedMonth(periodOptions[0].value);
+    }
+  }, [periodType]);
 
-  // Calculate monthly revenue based on contract amounts + spot purchases
-  const calculateMonthlyRevenue = (month: string) => {
-    const monthStart = startOfMonth(parseISO(`${month}-01`));
-    const monthEnd = endOfMonth(parseISO(`${month}-01`));
+  // Get period date range based on period type and value
+  const getPeriodRange = (periodValue: string) => {
+    if (periodValue.includes('Q')) {
+      // Quarterly: "2024-Q1"
+      const [year, quarter] = periodValue.split('-Q');
+      const quarterNum = parseInt(quarter);
+      const monthStart = (quarterNum - 1) * 3;
+      return {
+        start: startOfMonth(new Date(parseInt(year), monthStart, 1)),
+        end: endOfMonth(new Date(parseInt(year), monthStart + 2, 1))
+      };
+    } else if (periodValue.includes('H')) {
+      // Bi-annual: "2024-H1"
+      const [year, half] = periodValue.split('-H');
+      const halfNum = parseInt(half);
+      const monthStart = halfNum === 1 ? 0 : 6;
+      return {
+        start: startOfMonth(new Date(parseInt(year), monthStart, 1)),
+        end: endOfMonth(new Date(parseInt(year), monthStart + 5, 1))
+      };
+    } else if (periodValue.length === 4) {
+      // Yearly: "2024"
+      const year = parseInt(periodValue);
+      return {
+        start: startOfMonth(new Date(year, 0, 1)),
+        end: endOfMonth(new Date(year, 11, 1))
+      };
+    } else {
+      // Monthly: "2024-01"
+      return {
+        start: startOfMonth(parseISO(`${periodValue}-01`)),
+        end: endOfMonth(parseISO(`${periodValue}-01`))
+      };
+    }
+  };
 
-    // Spot purchases (non-rental sales made this month)
+  // Calculate revenue for any period based on contract amounts + spot purchases
+  const calculatePeriodRevenue = (periodValue: string) => {
+    const { start: periodStart, end: periodEnd } = getPeriodRange(periodValue);
+
+    // Spot purchases (non-rental sales made in this period)
     const spotPurchases = sales.filter(sale => {
       const saleDate = parseISO(sale.date);
       const hasNoRentalItems = !sale.items.some(item => item.isRental);
       return isWithinInterval(saleDate, {
-        start: monthStart,
-        end: monthEnd
+        start: periodStart,
+        end: periodEnd
       }) && hasNoRentalItems;
     }).reduce((sum, sale) => sum + sale.total, 0);
 
-    // Total monthly amount from ALL active rental contracts
-    const monthlyContractAmount = sales.flatMap(sale => sale.items.filter(item => {
-      if (!item.isRental || !item.startDate || !item.endDate) return false;
-      // startDate/endDate are Date objects already; compare directly
-      const startDate = item.startDate as Date;
-      const endDate = item.endDate as Date;
-      // Include contract if it's active during the selected month
-      return startDate <= monthEnd && endDate >= monthStart;
-    }).map(item => {
-      // Monthly rental price × quantity (payment period not considered)
-      return item.price * item.quantity;
-    })).reduce((sum, amount) => sum + amount, 0);
+    // Calculate rental revenue based on period type
+    let rentalRevenue = 0;
+    
+    if (periodType === 'monthly') {
+      // For monthly view, show monthly contract amounts
+      rentalRevenue = sales.flatMap(sale => sale.items.filter(item => {
+        if (!item.isRental || !item.startDate || !item.endDate) return false;
+        const startDate = item.startDate as Date;
+        const endDate = item.endDate as Date;
+        return startDate <= periodEnd && endDate >= periodStart;
+      }).map(item => item.price * item.quantity)).reduce((sum, amount) => sum + amount, 0);
+    } else {
+      // For other periods, calculate total rental payments received in that period
+      const monthsInPeriod = differenceInMonths(periodEnd, periodStart) + 1;
+      rentalRevenue = sales.flatMap(sale => sale.items.filter(item => {
+        if (!item.isRental || !item.startDate || !item.endDate) return false;
+        const startDate = item.startDate as Date;
+        const endDate = item.endDate as Date;
+        return startDate <= periodEnd && endDate >= periodStart;
+      }).map(item => {
+        // Calculate how many months of the contract fall within the period
+        const itemStartDate = item.startDate as Date;
+        const itemEndDate = item.endDate as Date;
+        const contractStart = itemStartDate > periodStart ? itemStartDate : periodStart;
+        const contractEnd = itemEndDate < periodEnd ? itemEndDate : periodEnd;
+        const activeMonths = Math.max(0, differenceInMonths(contractEnd, contractStart) + 1);
+        return item.price * item.quantity * activeMonths;
+      })).reduce((sum, amount) => sum + amount, 0);
+    }
 
-    // Current month revenue = Sales (non-rental items sold this month) + Monthly contract amounts
     return {
-      total: spotPurchases + monthlyContractAmount,
-      rentalRevenue: monthlyContractAmount,
+      total: spotPurchases + rentalRevenue,
+      rentalRevenue: rentalRevenue,
       purchaseRevenue: spotPurchases
     };
   };
 
-  // Calculate income data for selected month (for detailed views)
-  const calculateIncomeData = (month: string) => {
-    const monthStart = startOfMonth(parseISO(`${month}-01`));
-    const monthEnd = endOfMonth(parseISO(`${month}-01`));
+  // Calculate income data for selected period (for detailed views)
+  const calculateIncomeData = (periodValue: string) => {
+    const { start: periodStart, end: periodEnd } = getPeriodRange(periodValue);
 
     // Sales income (non-rental sales only)
     const salesData = sales.filter(sale => {
       const saleDate = parseISO(sale.date);
       return isWithinInterval(saleDate, {
-        start: monthStart,
-        end: monthEnd
+        start: periodStart,
+        end: periodEnd
       }) && !sale.items.some(item => item.isRental);
     });
     const salesIncome = salesData.reduce((sum, sale) => sum + sale.total, 0);
@@ -164,8 +269,8 @@ export default function Income() {
     const collectionsData = paidPayments.filter(payment => {
       const paymentDate = parseISO(payment.paidDate);
       return isWithinInterval(paymentDate, {
-        start: monthStart,
-        end: monthEnd
+        start: periodStart,
+        end: periodEnd
       });
     });
     const collectionIncome = collectionsData.reduce((sum, payment) => sum + payment.amount, 0);
@@ -179,36 +284,76 @@ export default function Income() {
   };
   const incomeData = calculateIncomeData(selectedMonth);
 
-  // Calculate monthly revenue for current and previous month
-  const currentMonthData = calculateMonthlyRevenue(selectedMonth);
-  const currentMonthRevenue = currentMonthData.total;
-  const getPreviousMonth = (month: string) => {
-    const currentDate = parseISO(`${month}-01`);
-    const previousDate = subMonths(currentDate, 1);
-    return format(previousDate, 'yyyy-MM');
+  // Calculate revenue for current and previous period
+  const currentPeriodData = calculatePeriodRevenue(selectedMonth);
+  const currentPeriodRevenue = currentPeriodData.total;
+  
+  const getPreviousPeriod = (periodValue: string) => {
+    if (periodValue.includes('Q')) {
+      const [year, quarter] = periodValue.split('-Q');
+      const quarterNum = parseInt(quarter);
+      if (quarterNum === 1) {
+        return `${parseInt(year) - 1}-Q4`;
+      }
+      return `${year}-Q${quarterNum - 1}`;
+    } else if (periodValue.includes('H')) {
+      const [year, half] = periodValue.split('-H');
+      const halfNum = parseInt(half);
+      if (halfNum === 1) {
+        return `${parseInt(year) - 1}-H2`;
+      }
+      return `${year}-H1`;
+    } else if (periodValue.length === 4) {
+      return `${parseInt(periodValue) - 1}`;
+    } else {
+      const currentDate = parseISO(`${periodValue}-01`);
+      const previousDate = subMonths(currentDate, 1);
+      return format(previousDate, 'yyyy-MM');
+    }
   };
-  const previousMonth = getPreviousMonth(selectedMonth);
-  const previousMonthData = calculateMonthlyRevenue(previousMonth);
-  const previousMonthRevenue = previousMonthData.total;
+  
+  const previousPeriod = getPreviousPeriod(selectedMonth);
+  const previousPeriodData = calculatePeriodRevenue(previousPeriod);
+  const previousPeriodRevenue = previousPeriodData.total;
 
-  // Calculate month-over-month change
-  const calculateMonthlyChange = () => {
-    if (previousMonthRevenue === 0) {
+  // Calculate period-over-period change
+  const calculatePeriodChange = () => {
+    if (previousPeriodRevenue === 0) {
       return {
         percentage: 0,
-        change: currentMonthRevenue,
+        change: currentPeriodRevenue,
         isIncrease: true
       };
     }
-    const change = currentMonthRevenue - previousMonthRevenue;
-    const percentage = change / previousMonthRevenue * 100;
+    const change = currentPeriodRevenue - previousPeriodRevenue;
+    const percentage = change / previousPeriodRevenue * 100;
     return {
       percentage: Math.abs(percentage),
       change: Math.abs(change),
       isIncrease: change >= 0
     };
   };
-  const monthlyChange = calculateMonthlyChange();
+  const periodChange = calculatePeriodChange();
+  
+  // Get period label
+  const getPeriodLabel = () => {
+    switch (periodType) {
+      case 'quarterly': return 'Quarter';
+      case 'bi-annual': return 'Half-Year';
+      case 'yearly': return 'Year';
+      default: return 'Month';
+    }
+  };
+  
+  const getPeriodDisplay = (periodValue: string) => {
+    if (periodValue.includes('Q') || periodValue.includes('H')) {
+      return periodValue.replace('-', ' ');
+    } else if (periodValue.length === 4) {
+      return periodValue;
+    } else {
+      return format(parseISO(`${periodValue}-01`), 'MMMM yyyy');
+    }
+  };
 
   // Calculate total contract value from all rental agreements
   const calculateTotalContractValue = () => {
@@ -283,7 +428,7 @@ export default function Income() {
     });
     const monthlyData = months.map(date => {
       const monthStr = format(date, 'yyyy-MM');
-      const revenueData = calculateMonthlyRevenue(monthStr);
+      const revenueData = calculatePeriodRevenue(monthStr);
       return {
         Month: format(date, 'MMMM yyyy'),
         Revenue: revenueData.total,
@@ -449,12 +594,23 @@ export default function Income() {
                 <SelectItem value="breakdown">Breakdown</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={periodType} onValueChange={(value: 'monthly' | 'quarterly' | 'bi-annual' | 'yearly') => setPeriodType(value)}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="quarterly">Quarterly</SelectItem>
+                <SelectItem value="bi-annual">Bi-Annual</SelectItem>
+                <SelectItem value="yearly">Yearly</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
               <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {monthOptions.map(option => <SelectItem key={option.value} value={option.value}>
+                {periodOptions.map(option => <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>)}
               </SelectContent>
@@ -473,10 +629,10 @@ export default function Income() {
             <div>
               <CardTitle className="text-card-foreground flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Monthly Revenue Tracker
+                {getPeriodLabel()} Revenue Tracker
               </CardTitle>
               <CardDescription>
-                Compare monthly revenue performance
+                Compare {periodType} revenue performance
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={handleExportMonthlyRevenue}>
@@ -487,61 +643,61 @@ export default function Income() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-            {/* Current Month */}
+            {/* Current Period */}
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Total Current Month Revenue</div>
+              <div className="text-sm text-muted-foreground">Total Current {getPeriodLabel()} Revenue</div>
               <div className="text-3xl font-bold text-foreground">
-                ${currentMonthRevenue.toFixed(2)}
+                ${currentPeriodRevenue.toFixed(2)}
               </div>
               <div className="text-xs text-muted-foreground">
-                {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
+                {getPeriodDisplay(selectedMonth)}
               </div>
             </div>
 
-            {/* Monthly Rental Revenue */}
+            {/* Rental Revenue */}
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Monthly Rental Revenue</div>
+              <div className="text-sm text-muted-foreground">{getPeriodLabel()} Rental Revenue</div>
               <div className="text-2xl font-semibold text-green-600">
-                ${currentMonthData.rentalRevenue.toFixed(2)}
+                ${currentPeriodData.rentalRevenue.toFixed(2)}
               </div>
               <div className="text-xs text-muted-foreground">
                 From rental contracts
               </div>
             </div>
 
-            {/* Monthly Purchase Revenue */}
+            {/* Purchase Revenue */}
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Monthly Purchase Revenue</div>
+              <div className="text-sm text-muted-foreground">{getPeriodLabel()} Purchase Revenue</div>
               <div className="text-2xl font-semibold text-blue-600">
-                ${currentMonthData.purchaseRevenue.toFixed(2)}
+                ${currentPeriodData.purchaseRevenue.toFixed(2)}
               </div>
               <div className="text-xs text-muted-foreground">
                 From spot purchases
               </div>
             </div>
 
-            {/* Previous Month */}
+            {/* Previous Period */}
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Previous Month Revenue</div>
+              <div className="text-sm text-muted-foreground">Previous {getPeriodLabel()} Revenue</div>
               <div className="text-2xl font-semibold text-muted-foreground">
-                ${previousMonthRevenue.toFixed(2)}
+                ${previousPeriodRevenue.toFixed(2)}
               </div>
               <div className="text-xs text-muted-foreground">
-                {format(parseISO(`${previousMonth}-01`), 'MMMM yyyy')}
+                {getPeriodDisplay(previousPeriod)}
               </div>
             </div>
 
             {/* Change Indicator */}
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Month-over-Month</div>
-              <div className={`flex items-center gap-2 ${monthlyChange.isIncrease ? 'text-success' : 'text-destructive'}`}>
-                {monthlyChange.isIncrease ? <ArrowUpRight className="h-6 w-6" /> : <ArrowDownRight className="h-6 w-6" />}
+              <div className="text-sm text-muted-foreground">{getPeriodLabel()}-over-{getPeriodLabel()}</div>
+              <div className={`flex items-center gap-2 ${periodChange.isIncrease ? 'text-success' : 'text-destructive'}`}>
+                {periodChange.isIncrease ? <ArrowUpRight className="h-6 w-6" /> : <ArrowDownRight className="h-6 w-6" />}
                 <span className="text-2xl font-bold">
-                  {monthlyChange.percentage.toFixed(1)}%
+                  {periodChange.percentage.toFixed(1)}%
                 </span>
               </div>
-              <div className={`text-sm ${monthlyChange.isIncrease ? 'text-success' : 'text-destructive'}`}>
-                {monthlyChange.isIncrease ? '+' : '-'}${monthlyChange.change.toFixed(2)} from last month
+              <div className={`text-sm ${periodChange.isIncrease ? 'text-success' : 'text-destructive'}`}>
+                {periodChange.isIncrease ? '+' : '-'}${periodChange.change.toFixed(2)} from last {periodType === 'monthly' ? 'month' : periodType === 'quarterly' ? 'quarter' : periodType === 'bi-annual' ? 'half-year' : 'year'}
               </div>
             </div>
           </div>
