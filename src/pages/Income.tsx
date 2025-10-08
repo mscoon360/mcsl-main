@@ -112,24 +112,8 @@ export default function Income() {
             return startDate <= monthEnd && endDate >= monthStart;
           })
           .map(item => {
-            // Convert per-period payment to monthly amount
-            const getMonthlyAmount = (price: number, paymentPeriod?: string) => {
-              switch (paymentPeriod?.toLowerCase()) {
-                case 'monthly':
-                  return price;
-                case 'quarterly':
-                  return price / 3;
-                case 'semi-annually':
-                  return price / 6;
-                case 'annually':
-                  return price / 12;
-                default:
-                  return price; // Default to monthly if not specified
-              }
-            };
-            
-            const monthlyAmount = getMonthlyAmount(item.price, item.paymentPeriod);
-            return monthlyAmount * item.quantity;
+            // Monthly rental price × quantity (payment period not considered)
+            return item.price * item.quantity;
           })
       )
       .reduce((sum, amount) => sum + amount, 0);
