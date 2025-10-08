@@ -26,6 +26,7 @@ export default function Income() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [viewType, setViewType] = useState<'summary' | 'detailed' | 'breakdown'>('summary');
   const [incomeSource, setIncomeSource] = useState<'all' | 'sales' | 'collections'>('all');
+  const [hasFinanceAccess, setHasFinanceAccess] = useState(false);
   const {
     sales: supabaseSales
   } = useSales();
@@ -33,24 +34,38 @@ export default function Income() {
     paymentSchedules: supabasePaymentSchedules
   } = usePaymentSchedules();
 
-  // Check access permissions
+  // Check access permissions - only admins and Finance department users can see all data
   useEffect(() => {
     const checkAccess = async () => {
-      if (!user || isAdmin) return;
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+
+      if (isAdmin) {
+        setHasFinanceAccess(true);
+        return;
+      }
+
       const {
         data
       } = await supabase.from('department_visibility').select('department').eq('user_id', user.id);
       const allowedSections = data?.map(d => d.department) || [];
       const hasAccess = allowedSections.includes('Finance-Income') || allowedSections.includes('Finance');
-      if (!hasAccess && allowedSections.length > 0) {
+      
+      if (!hasAccess) {
+        // Redirect sales reps and other users away from Income page
         navigate('/');
+      } else {
+        setHasFinanceAccess(true);
       }
     };
     checkAccess();
   }, [user, isAdmin, navigate]);
 
   // Map Supabase sales to expected format
-  const sales = supabaseSales.map(sale => ({
+  // Only show all sales if user has finance access, otherwise show only their own
+  const sales = (hasFinanceAccess && isAdmin ? supabaseSales : supabaseSales.filter(s => s.user_id === user?.id)).map(sale => ({
     id: sale.id,
     customer: sale.customer_name,
     total: sale.total,

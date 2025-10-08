@@ -5,9 +5,11 @@ import { Link } from "react-router-dom";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useSales } from "@/hooks/useSales";
 import { startOfMonth, endOfMonth, format, subMonths } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Dashboard() {
   const { sales, loading } = useSales();
+  const { user } = useAuth();
   
   const [customers] = useLocalStorage<Array<{
     id: string;
@@ -22,18 +24,21 @@ export default function Dashboard() {
     status: string;
   }>>('dashboard-customers', []);
 
-  // Calculate real stats
-  const totalSales = sales.reduce((sum, sale) => sum + sale.total, 0);
-  const totalSalesCount = sales.length;
+  // Filter sales to only show user's own sales (RLS already handles this, but explicit for clarity)
+  const userSales = sales.filter(sale => sale.user_id === user?.id);
+
+  // Calculate real stats - only for user's own sales
+  const totalSales = userSales.reduce((sum, sale) => sum + sale.total, 0);
+  const totalSalesCount = userSales.length;
   const customersCount = customers.length;
 
-  // Calculate monthly revenue for last 6 months
+  // Calculate monthly revenue for last 6 months - only user's own sales
   const monthlyRevenue = Array.from({ length: 6 }, (_, i) => {
     const month = subMonths(new Date(), 5 - i);
     const monthStart = startOfMonth(month);
     const monthEnd = endOfMonth(month);
     
-    const revenue = sales
+    const revenue = userSales
       .filter(sale => {
         const saleDate = new Date(sale.date);
         return saleDate >= monthStart && saleDate <= monthEnd;
@@ -70,8 +75,8 @@ export default function Dashboard() {
     }
   ];
 
-  // Get recent sales (last 5)
-  const recentSales = sales
+  // Get recent sales (last 5) - only user's own sales
+  const recentSales = userSales
     .slice(0, 5)
     .map(sale => ({
       customer: sale.customer_name,
