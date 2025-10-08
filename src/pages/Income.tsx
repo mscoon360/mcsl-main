@@ -123,7 +123,11 @@ export default function Income() {
     })).reduce((sum, amount) => sum + amount, 0);
 
     // Current month revenue = Sales (non-rental items sold this month) + Monthly contract amounts
-    return spotPurchases + monthlyContractAmount;
+    return {
+      total: spotPurchases + monthlyContractAmount,
+      rentalRevenue: monthlyContractAmount,
+      purchaseRevenue: spotPurchases
+    };
   };
 
   // Calculate income data for selected month (for detailed views)
@@ -161,14 +165,16 @@ export default function Income() {
   const incomeData = calculateIncomeData(selectedMonth);
 
   // Calculate monthly revenue for current and previous month
-  const currentMonthRevenue = calculateMonthlyRevenue(selectedMonth);
+  const currentMonthData = calculateMonthlyRevenue(selectedMonth);
+  const currentMonthRevenue = currentMonthData.total;
   const getPreviousMonth = (month: string) => {
     const currentDate = parseISO(`${month}-01`);
     const previousDate = subMonths(currentDate, 1);
     return format(previousDate, 'yyyy-MM');
   };
   const previousMonth = getPreviousMonth(selectedMonth);
-  const previousMonthRevenue = calculateMonthlyRevenue(previousMonth);
+  const previousMonthData = calculateMonthlyRevenue(previousMonth);
+  const previousMonthRevenue = previousMonthData.total;
 
   // Calculate month-over-month change
   const calculateMonthlyChange = () => {
@@ -262,10 +268,10 @@ export default function Income() {
     });
     const monthlyData = months.map(date => {
       const monthStr = format(date, 'yyyy-MM');
-      const revenue = calculateMonthlyRevenue(monthStr);
+      const revenueData = calculateMonthlyRevenue(monthStr);
       return {
         Month: format(date, 'MMMM yyyy'),
-        Revenue: revenue,
+        Revenue: revenueData.total,
         'Change from Previous': ''
       };
     });
@@ -465,7 +471,7 @@ export default function Income() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             {/* Current Month */}
             <div className="space-y-2">
               <div className="text-sm text-muted-foreground">Total Current Month Revenue</div>
@@ -474,6 +480,28 @@ export default function Income() {
               </div>
               <div className="text-xs text-muted-foreground">
                 {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
+              </div>
+            </div>
+
+            {/* Monthly Rental Revenue */}
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Monthly Rental Revenue</div>
+              <div className="text-2xl font-semibold text-green-600">
+                ${currentMonthData.rentalRevenue.toFixed(2)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                From rental contracts
+              </div>
+            </div>
+
+            {/* Monthly Purchase Revenue */}
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Monthly Purchase Revenue</div>
+              <div className="text-2xl font-semibold text-blue-600">
+                ${currentMonthData.purchaseRevenue.toFixed(2)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                From spot purchases
               </div>
             </div>
 
