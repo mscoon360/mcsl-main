@@ -73,8 +73,8 @@ export default function RentalAgreements() {
           paymentPeriod: item.payment_period || 'monthly',
           startDate,
           endDate,
-          monthlyAmount: item.price,
-          totalValue: item.price * monthsInContract,
+           monthlyAmount: item.price * item.quantity,
+           totalValue: item.price * monthsInContract * item.quantity,
           status: endDate > new Date() ? 'active' : 'expired' as 'active' | 'expired',
           saleId: sale.id,
           saleDate: sale.date
@@ -435,7 +435,7 @@ export default function RentalAgreements() {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground">Monthly Amount:</span>
-                      <div className="font-bold">${products.find(p => p.id === selectedProduct)?.price || 0}/month</div>
+                      <div className="font-bold">${(products.find(p => p.id === selectedProduct)?.price || 0) * quantity}/month</div>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Total Contract Value:</span>
