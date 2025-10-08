@@ -14,30 +14,34 @@ import * as XLSX from 'xlsx';
 import { useSales } from "@/hooks/useSales";
 import { usePaymentSchedules } from "@/hooks/usePaymentSchedules";
 import { supabase } from "@/integrations/supabase/client";
-
 export default function Income() {
-  const { toast } = useToast();
-  const { user, isAdmin } = useAuth();
+  const {
+    toast
+  } = useToast();
+  const {
+    user,
+    isAdmin
+  } = useAuth();
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [viewType, setViewType] = useState<'summary' | 'detailed' | 'breakdown'>('summary');
   const [incomeSource, setIncomeSource] = useState<'all' | 'sales' | 'collections'>('all');
-  const { sales: supabaseSales } = useSales();
-  const { paymentSchedules: supabasePaymentSchedules } = usePaymentSchedules();
+  const {
+    sales: supabaseSales
+  } = useSales();
+  const {
+    paymentSchedules: supabasePaymentSchedules
+  } = usePaymentSchedules();
 
   // Check access permissions
   useEffect(() => {
     const checkAccess = async () => {
       if (!user || isAdmin) return;
-      
-      const { data } = await supabase
-        .from('department_visibility')
-        .select('department')
-        .eq('user_id', user.id);
-      
+      const {
+        data
+      } = await supabase.from('department_visibility').select('department').eq('user_id', user.id);
       const allowedSections = data?.map(d => d.department) || [];
       const hasAccess = allowedSections.includes('Finance-Income') || allowedSections.includes('Finance');
-      
       if (!hasAccess && allowedSections.length > 0) {
         navigate('/');
       }
@@ -65,24 +69,21 @@ export default function Income() {
   }));
 
   // Map Supabase payment schedules to expected format
-  const paidPayments = supabasePaymentSchedules
-    .filter(p => p.status === 'paid' && p.paid_date)
-    .map(p => ({
-      id: p.id,
-      customer: p.customer,
-      product: p.product,
-      amount: p.amount,
-      dueDate: p.due_date,
-      paidDate: p.paid_date!,
-      paymentMethod: p.payment_method || 'cash',
-      status: 'paid' as const
-    }));
+  const paidPayments = supabasePaymentSchedules.filter(p => p.status === 'paid' && p.paid_date).map(p => ({
+    id: p.id,
+    customer: p.customer,
+    product: p.product,
+    amount: p.amount,
+    dueDate: p.due_date,
+    paidDate: p.paid_date!,
+    paymentMethod: p.payment_method || 'cash',
+    status: 'paid' as const
+  }));
 
   // Generate month options
   const generateMonthOptions = () => {
     const currentDate = new Date();
     const startDate = subMonths(currentDate, 12);
-    
     return eachMonthOfInterval({
       start: startDate,
       end: currentDate
@@ -91,7 +92,6 @@ export default function Income() {
       label: format(date, 'MMMM yyyy')
     }));
   };
-
   const monthOptions = generateMonthOptions();
 
   // Calculate monthly revenue based on contract amounts + spot purchases
@@ -100,32 +100,27 @@ export default function Income() {
     const monthEnd = endOfMonth(parseISO(`${month}-01`));
 
     // Spot purchases (non-rental sales made this month)
-    const spotPurchases = sales
-      .filter(sale => {
-        const saleDate = parseISO(sale.date);
-        const hasNoRentalItems = !sale.items.some(item => item.isRental);
-        return isWithinInterval(saleDate, { start: monthStart, end: monthEnd }) && hasNoRentalItems;
-      })
-      .reduce((sum, sale) => sum + sale.total, 0);
+    const spotPurchases = sales.filter(sale => {
+      const saleDate = parseISO(sale.date);
+      const hasNoRentalItems = !sale.items.some(item => item.isRental);
+      return isWithinInterval(saleDate, {
+        start: monthStart,
+        end: monthEnd
+      }) && hasNoRentalItems;
+    }).reduce((sum, sale) => sum + sale.total, 0);
 
     // Total monthly amount from ALL active rental contracts
-    const monthlyContractAmount = sales
-      .flatMap(sale => 
-        sale.items
-          .filter(item => {
-            if (!item.isRental || !item.startDate || !item.endDate) return false;
-            // startDate/endDate are Date objects already; compare directly
-            const startDate = item.startDate as Date;
-            const endDate = item.endDate as Date;
-            // Include contract if it's active during the selected month
-            return startDate <= monthEnd && endDate >= monthStart;
-          })
-          .map(item => {
-            // Monthly rental price × quantity (payment period not considered)
-            return item.price * item.quantity;
-          })
-      )
-      .reduce((sum, amount) => sum + amount, 0);
+    const monthlyContractAmount = sales.flatMap(sale => sale.items.filter(item => {
+      if (!item.isRental || !item.startDate || !item.endDate) return false;
+      // startDate/endDate are Date objects already; compare directly
+      const startDate = item.startDate as Date;
+      const endDate = item.endDate as Date;
+      // Include contract if it's active during the selected month
+      return startDate <= monthEnd && endDate >= monthStart;
+    }).map(item => {
+      // Monthly rental price × quantity (payment period not considered)
+      return item.price * item.quantity;
+    })).reduce((sum, amount) => sum + amount, 0);
 
     // Current month revenue = Sales (non-rental items sold this month) + Monthly contract amounts
     return spotPurchases + monthlyContractAmount;
@@ -137,24 +132,24 @@ export default function Income() {
     const monthEnd = endOfMonth(parseISO(`${month}-01`));
 
     // Sales income (non-rental sales only)
-    const salesData = sales
-      .filter(sale => {
-        const saleDate = parseISO(sale.date);
-        return isWithinInterval(saleDate, { start: monthStart, end: monthEnd }) &&
-               !sale.items.some(item => item.isRental);
-      });
-
+    const salesData = sales.filter(sale => {
+      const saleDate = parseISO(sale.date);
+      return isWithinInterval(saleDate, {
+        start: monthStart,
+        end: monthEnd
+      }) && !sale.items.some(item => item.isRental);
+    });
     const salesIncome = salesData.reduce((sum, sale) => sum + sale.total, 0);
 
     // Collection income (rental payments received)
-    const collectionsData = paidPayments
-      .filter(payment => {
-        const paymentDate = parseISO(payment.paidDate);
-        return isWithinInterval(paymentDate, { start: monthStart, end: monthEnd });
+    const collectionsData = paidPayments.filter(payment => {
+      const paymentDate = parseISO(payment.paidDate);
+      return isWithinInterval(paymentDate, {
+        start: monthStart,
+        end: monthEnd
       });
-
+    });
     const collectionIncome = collectionsData.reduce((sum, payment) => sum + payment.amount, 0);
-
     return {
       salesData,
       collectionsData,
@@ -163,55 +158,46 @@ export default function Income() {
       totalIncome: salesIncome + collectionIncome
     };
   };
-
   const incomeData = calculateIncomeData(selectedMonth);
 
   // Calculate monthly revenue for current and previous month
   const currentMonthRevenue = calculateMonthlyRevenue(selectedMonth);
-  
   const getPreviousMonth = (month: string) => {
     const currentDate = parseISO(`${month}-01`);
     const previousDate = subMonths(currentDate, 1);
     return format(previousDate, 'yyyy-MM');
   };
-
   const previousMonth = getPreviousMonth(selectedMonth);
   const previousMonthRevenue = calculateMonthlyRevenue(previousMonth);
 
   // Calculate month-over-month change
   const calculateMonthlyChange = () => {
     if (previousMonthRevenue === 0) {
-      return { percentage: 0, change: currentMonthRevenue, isIncrease: true };
+      return {
+        percentage: 0,
+        change: currentMonthRevenue,
+        isIncrease: true
+      };
     }
-    
     const change = currentMonthRevenue - previousMonthRevenue;
-    const percentage = (change / previousMonthRevenue) * 100;
-    
+    const percentage = change / previousMonthRevenue * 100;
     return {
       percentage: Math.abs(percentage),
       change: Math.abs(change),
       isIncrease: change >= 0
     };
   };
-
   const monthlyChange = calculateMonthlyChange();
 
   // Calculate total contract value from all rental agreements
   const calculateTotalContractValue = () => {
-    return sales
-      .flatMap(sale => 
-        sale.items
-          .filter(item => item.isRental && item.startDate && item.endDate)
-          .map(item => {
-            const startDate = new Date(item.startDate!);
-            const endDate = new Date(item.endDate!);
-            const monthsInContract = differenceInMonths(endDate, startDate);
-            return item.price * monthsInContract * item.quantity;
-          })
-      )
-      .reduce((sum, value) => sum + value, 0);
+    return sales.flatMap(sale => sale.items.filter(item => item.isRental && item.startDate && item.endDate).map(item => {
+      const startDate = new Date(item.startDate!);
+      const endDate = new Date(item.endDate!);
+      const monthsInContract = differenceInMonths(endDate, startDate);
+      return item.price * monthsInContract * item.quantity;
+    })).reduce((sum, value) => sum + value, 0);
   };
-
   const totalContractValue = calculateTotalContractValue();
 
   // Filter data based on income source
@@ -245,33 +231,28 @@ export default function Income() {
         };
       default:
         return {
-          items: [
-            ...incomeData.salesData.map(sale => ({
-              id: sale.id,
-              type: 'sale' as const,
-              customer: sale.customer,
-              description: `Sale of ${sale.items.length} items`,
-              amount: sale.total,
-              date: sale.date,
-              items: sale.items
-            })),
-            ...incomeData.collectionsData.map(payment => ({
-              id: payment.id,
-              type: 'collection' as const,
-              customer: payment.customer,
-              description: `Payment for ${payment.product}`,
-              amount: payment.amount,
-              date: payment.paidDate,
-              paymentMethod: payment.paymentMethod
-            }))
-          ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+          items: [...incomeData.salesData.map(sale => ({
+            id: sale.id,
+            type: 'sale' as const,
+            customer: sale.customer,
+            description: `Sale of ${sale.items.length} items`,
+            amount: sale.total,
+            date: sale.date,
+            items: sale.items
+          })), ...incomeData.collectionsData.map(payment => ({
+            id: payment.id,
+            type: 'collection' as const,
+            customer: payment.customer,
+            description: `Payment for ${payment.product}`,
+            amount: payment.amount,
+            date: payment.paidDate,
+            paymentMethod: payment.paymentMethod
+          }))].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
           total: incomeData.totalIncome
         };
     }
   };
-
   const filteredData = getFilteredData();
-
   const handleExportMonthlyRevenue = () => {
     // Generate last 6 months of data
     const currentDate = new Date();
@@ -279,11 +260,9 @@ export default function Income() {
       start: subMonths(currentDate, 5),
       end: currentDate
     });
-
     const monthlyData = months.map(date => {
       const monthStr = format(date, 'yyyy-MM');
       const revenue = calculateMonthlyRevenue(monthStr);
-      
       return {
         Month: format(date, 'MMMM yyyy'),
         Revenue: revenue,
@@ -296,7 +275,7 @@ export default function Income() {
       const current = monthlyData[i].Revenue;
       const previous = monthlyData[i - 1].Revenue;
       const change = current - previous;
-      const percentage = previous !== 0 ? (change / previous) * 100 : 0;
+      const percentage = previous !== 0 ? change / previous * 100 : 0;
       monthlyData[i]['Change from Previous'] = `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${percentage.toFixed(1)}%)`;
     }
 
@@ -305,10 +284,17 @@ export default function Income() {
     const ws = XLSX.utils.json_to_sheet(monthlyData);
 
     // Set column widths
-    ws['!cols'] = [
-      { width: 20 }, // Month
-      { width: 15 }, // Revenue
-      { width: 25 }  // Change from Previous
+    ws['!cols'] = [{
+      width: 20
+    },
+    // Month
+    {
+      width: 15
+    },
+    // Revenue
+    {
+      width: 25
+    } // Change from Previous
     ];
 
     // Add worksheet to workbook
@@ -319,13 +305,11 @@ export default function Income() {
 
     // Save file
     XLSX.writeFile(wb, filename);
-
     toast({
       title: "Monthly Revenue Exported",
       description: `Monthly revenue report downloaded as ${filename}`
     });
   };
-
   const handleExportIncomeReport = () => {
     // Prepare income transactions for Excel
     const transactionExport = filteredData.items.map(item => ({
@@ -338,15 +322,49 @@ export default function Income() {
     }));
 
     // Add summary data
-    const summaryData = [
-      { Date: '', Type: '', Customer: '', Description: '', Amount: '', 'Payment Method': '' },
-      { Date: '', Type: 'SUMMARY', Customer: '', Description: '', Amount: '', 'Payment Method': '' },
-      { Date: '', Type: 'Total Income', Customer: '', Description: '', Amount: incomeData.totalIncome, 'Payment Method': '' },
-      { Date: '', Type: 'Sales Income', Customer: '', Description: '', Amount: incomeData.salesIncome, 'Payment Method': '' },
-      { Date: '', Type: 'Collection Income', Customer: '', Description: '', Amount: incomeData.collectionIncome, 'Payment Method': '' },
-      { Date: '', Type: 'Total Contract Value', Customer: '', Description: '', Amount: totalContractValue, 'Payment Method': '' }
-    ];
-
+    const summaryData = [{
+      Date: '',
+      Type: '',
+      Customer: '',
+      Description: '',
+      Amount: '',
+      'Payment Method': ''
+    }, {
+      Date: '',
+      Type: 'SUMMARY',
+      Customer: '',
+      Description: '',
+      Amount: '',
+      'Payment Method': ''
+    }, {
+      Date: '',
+      Type: 'Total Income',
+      Customer: '',
+      Description: '',
+      Amount: incomeData.totalIncome,
+      'Payment Method': ''
+    }, {
+      Date: '',
+      Type: 'Sales Income',
+      Customer: '',
+      Description: '',
+      Amount: incomeData.salesIncome,
+      'Payment Method': ''
+    }, {
+      Date: '',
+      Type: 'Collection Income',
+      Customer: '',
+      Description: '',
+      Amount: incomeData.collectionIncome,
+      'Payment Method': ''
+    }, {
+      Date: '',
+      Type: 'Total Contract Value',
+      Customer: '',
+      Description: '',
+      Amount: totalContractValue,
+      'Payment Method': ''
+    }];
     const finalData = [...transactionExport, ...summaryData];
 
     // Create workbook and worksheet
@@ -354,13 +372,29 @@ export default function Income() {
     const ws = XLSX.utils.json_to_sheet(finalData);
 
     // Set column widths
-    ws['!cols'] = [
-      { width: 12 }, // Date
-      { width: 18 }, // Type
-      { width: 20 }, // Customer
-      { width: 40 }, // Description
-      { width: 12 }, // Amount
-      { width: 15 }  // Payment Method
+    ws['!cols'] = [{
+      width: 12
+    },
+    // Date
+    {
+      width: 18
+    },
+    // Type
+    {
+      width: 20
+    },
+    // Customer
+    {
+      width: 40
+    },
+    // Description
+    {
+      width: 12
+    },
+    // Amount
+    {
+      width: 15
+    } // Payment Method
     ];
 
     // Add worksheet to workbook
@@ -371,15 +405,12 @@ export default function Income() {
 
     // Save file
     XLSX.writeFile(wb, filename);
-
     toast({
       title: "Income Report Exported",
       description: `Income report downloaded as ${filename}`
     });
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -402,11 +433,9 @@ export default function Income() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {monthOptions.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
+                {monthOptions.map(option => <SelectItem key={option.value} value={option.value}>
                     {option.label}
-                  </SelectItem>
-                ))}
+                  </SelectItem>)}
               </SelectContent>
             </Select>
             <Button variant="outline" onClick={handleExportIncomeReport}>
@@ -439,7 +468,7 @@ export default function Income() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Current Month */}
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Current Month Revenue</div>
+              <div className="text-sm text-muted-foreground">Total Current Month Revenue</div>
               <div className="text-3xl font-bold text-foreground">
                 ${currentMonthRevenue.toFixed(2)}
               </div>
@@ -463,11 +492,7 @@ export default function Income() {
             <div className="space-y-2">
               <div className="text-sm text-muted-foreground">Month-over-Month</div>
               <div className={`flex items-center gap-2 ${monthlyChange.isIncrease ? 'text-success' : 'text-destructive'}`}>
-                {monthlyChange.isIncrease ? (
-                  <ArrowUpRight className="h-6 w-6" />
-                ) : (
-                  <ArrowDownRight className="h-6 w-6" />
-                )}
+                {monthlyChange.isIncrease ? <ArrowUpRight className="h-6 w-6" /> : <ArrowDownRight className="h-6 w-6" />}
                 <span className="text-2xl font-bold">
                   {monthlyChange.percentage.toFixed(1)}%
                 </span>
@@ -573,8 +598,7 @@ export default function Income() {
       </div>
 
       {/* Income Details */}
-      {viewType === 'summary' && (
-        <Card className="dashboard-card">
+      {viewType === 'summary' && <Card className="dashboard-card">
           <CardHeader>
             <CardTitle className="text-card-foreground">Income Summary</CardTitle>
             <CardDescription>
@@ -608,11 +632,9 @@ export default function Income() {
               </div>
             </div>
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
-      {viewType === 'detailed' && (
-        <Card className="dashboard-card">
+      {viewType === 'detailed' && <Card className="dashboard-card">
           <CardHeader>
             <CardTitle className="text-card-foreground">Detailed Income Records</CardTitle>
             <CardDescription>
@@ -621,13 +643,10 @@ export default function Income() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {filteredData.items.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+            {filteredData.items.length === 0 ? <div className="text-center py-8 text-muted-foreground">
                 <Receipt className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p>No income records found for this period</p>
-              </div>
-            ) : (
-              <Table>
+              </div> : <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
@@ -638,8 +657,7 @@ export default function Income() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredData.items.map((item) => (
-                    <TableRow key={item.id}>
+                  {filteredData.items.map(item => <TableRow key={item.id}>
                       <TableCell>{format(parseISO(item.date), 'MMM dd, yyyy')}</TableCell>
                       <TableCell>
                         <Badge variant={item.type === 'sale' ? 'default' : 'secondary'}>
@@ -654,32 +672,24 @@ export default function Income() {
                       <TableCell className="text-right font-bold text-success">
                         ${item.amount.toFixed(2)}
                       </TableCell>
-                    </TableRow>
-                  ))}
+                    </TableRow>)}
                 </TableBody>
-              </Table>
-            )}
+              </Table>}
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
-      {viewType === 'breakdown' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {viewType === 'breakdown' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="dashboard-card">
             <CardHeader>
               <CardTitle className="text-card-foreground">Sales Breakdown</CardTitle>
               <CardDescription>Product sales for {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}</CardDescription>
             </CardHeader>
             <CardContent>
-              {incomeData.salesData.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+              {incomeData.salesData.length === 0 ? <div className="text-center py-8 text-muted-foreground">
                   <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p>No sales recorded</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {incomeData.salesData.map((sale) => (
-                    <div key={sale.id} className="flex items-center justify-between p-3 border rounded-lg">
+                </div> : <div className="space-y-3">
+                  {incomeData.salesData.map(sale => <div key={sale.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex-1">
                         <div className="font-medium">{sale.customer}</div>
                         <div className="text-sm text-muted-foreground">
@@ -692,10 +702,8 @@ export default function Income() {
                       <div className="font-bold text-blue-600">
                         ${sale.total.toFixed(2)}
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    </div>)}
+                </div>}
             </CardContent>
           </Card>
 
@@ -705,15 +713,11 @@ export default function Income() {
               <CardDescription>Rental payments received in {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}</CardDescription>
             </CardHeader>
             <CardContent>
-              {incomeData.collectionsData.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+              {incomeData.collectionsData.length === 0 ? <div className="text-center py-8 text-muted-foreground">
                   <DollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p>No collections recorded</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {incomeData.collectionsData.map((payment) => (
-                    <div key={payment.id} className="flex items-center justify-between p-3 border rounded-lg">
+                </div> : <div className="space-y-3">
+                  {incomeData.collectionsData.map(payment => <div key={payment.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex-1">
                         <div className="font-medium">{payment.customer}</div>
                         <div className="text-sm text-muted-foreground">{payment.product}</div>
@@ -726,14 +730,11 @@ export default function Income() {
                       <div className="font-bold text-green-600">
                         ${payment.amount.toFixed(2)}
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    </div>)}
+                </div>}
             </CardContent>
           </Card>
-        </div>
-      )}
+        </div>}
 
       {/* All Sales Log */}
       <Card className="dashboard-card">
@@ -760,15 +761,11 @@ export default function Income() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {supabaseSales.length === 0 ? (
-                  <TableRow>
+                {supabaseSales.length === 0 ? <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                       No sales found
                     </TableCell>
-                  </TableRow>
-                ) : (
-                  supabaseSales.map((sale) => (
-                    <TableRow key={sale.id}>
+                  </TableRow> : supabaseSales.map(sale => <TableRow key={sale.id}>
                       <TableCell className="text-muted-foreground">
                         {format(parseISO(sale.date), 'MMM dd, yyyy')}
                       </TableCell>
@@ -776,14 +773,10 @@ export default function Income() {
                       <TableCell className="text-muted-foreground">{sale.rep_name}</TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          {sale.items.map((item, idx) => (
-                            <div key={idx} className="text-sm">
+                          {sale.items.map((item, idx) => <div key={idx} className="text-sm">
                               {item.product_name} x{item.quantity}
-                              {item.is_rental && (
-                                <Badge variant="outline" className="ml-2 text-xs">Rental</Badge>
-                              )}
-                            </div>
-                          ))}
+                              {item.is_rental && <Badge variant="outline" className="ml-2 text-xs">Rental</Badge>}
+                            </div>)}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -794,14 +787,11 @@ export default function Income() {
                       <TableCell className="text-right font-semibold text-foreground">
                         ${sale.total.toFixed(2)}
                       </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                    </TableRow>)}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 }
