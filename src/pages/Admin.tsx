@@ -853,37 +853,41 @@ export default function Admin() {
               <CardTitle>User Navigation Access</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Navigation Section</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visibilities.map((vis) => {
-                    const user = users.find((u) => u.id === vis.user_id);
+              <div className="space-y-6">
+                {(() => {
+                  // Group visibilities by user
+                  const userPermissions = visibilities.reduce((acc, vis) => {
+                    if (!acc[vis.user_id]) {
+                      acc[vis.user_id] = [];
+                    }
+                    acc[vis.user_id].push(vis);
+                    return acc;
+                  }, {} as Record<string, typeof visibilities>);
+
+                  return Object.entries(userPermissions).map(([userId, userVis]) => {
+                    const user = users.find((u) => u.id === userId);
                     return (
-                      <TableRow key={vis.id}>
-                        <TableCell>{user?.name || 'Unknown'}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{vis.department}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleRemoveVisibility(vis.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                      <div key={userId} className="border rounded-lg p-4">
+                        <h3 className="font-semibold text-lg mb-3">{user?.name || 'Unknown'}</h3>
+                        <div className="space-y-2">
+                          {userVis.map((vis) => (
+                            <div key={vis.id} className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded">
+                              <Badge variant="secondary">{vis.department}</Badge>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleRemoveVisibility(vis.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     );
-                  })}
-                </TableBody>
-              </Table>
+                  });
+                })()}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
