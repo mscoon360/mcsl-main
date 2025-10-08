@@ -582,7 +582,7 @@ export default function Income() {
     XLSX.utils.book_append_sheet(wb, ws, 'Income Report');
 
     // Generate filename
-    const filename = `Income_Details_${format(parseISO(`${selectedMonth}-01`), 'yyyy_MM')}.xlsx`;
+    const filename = `Income_Details_${selectedMonth.replace(/-/g, '_')}.xlsx`;
 
     // Save file
     XLSX.writeFile(wb, filename);
@@ -751,7 +751,7 @@ export default function Income() {
           <CardContent>
             <div className="text-2xl font-bold text-success">${incomeData.totalIncome.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
+              {getPeriodDisplay(selectedMonth)}
             </p>
           </CardContent>
         </Card>
@@ -816,7 +816,7 @@ export default function Income() {
           <CardHeader>
             <CardTitle className="text-card-foreground">Income Summary</CardTitle>
             <CardDescription>
-              Overview of income sources for {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
+              Overview of income sources for {getPeriodDisplay(selectedMonth)}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -852,7 +852,7 @@ export default function Income() {
           <CardHeader>
             <CardTitle className="text-card-foreground">Detailed Income Records</CardTitle>
             <CardDescription>
-              All income transactions for {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
+              All income transactions for {getPeriodDisplay(selectedMonth)}
               {incomeSource !== 'all' && ` - ${incomeSource === 'sales' ? 'Sales' : 'Collections'} only`}
             </CardDescription>
           </CardHeader>
@@ -896,7 +896,7 @@ export default function Income() {
           <Card className="dashboard-card">
             <CardHeader>
               <CardTitle className="text-card-foreground">Sales Breakdown</CardTitle>
-              <CardDescription>Product sales for {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}</CardDescription>
+              <CardDescription>Product sales for {getPeriodDisplay(selectedMonth)}</CardDescription>
             </CardHeader>
             <CardContent>
               {incomeData.salesData.length === 0 ? <div className="text-center py-8 text-muted-foreground">
@@ -924,7 +924,7 @@ export default function Income() {
           <Card className="dashboard-card">
             <CardHeader>
               <CardTitle className="text-card-foreground">Collections Breakdown</CardTitle>
-              <CardDescription>Rental payments received in {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}</CardDescription>
+              <CardDescription>Rental payments received in {getPeriodDisplay(selectedMonth)}</CardDescription>
             </CardHeader>
             <CardContent>
               {incomeData.collectionsData.length === 0 ? <div className="text-center py-8 text-muted-foreground">
