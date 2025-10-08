@@ -102,7 +102,7 @@ export default function Income() {
     
     switch (periodType) {
       case 'quarterly': {
-        // Generate last 8 quarters
+        // Generate last 8 quarters (most recent first)
         const quarters = [];
         for (let i = 0; i < 8; i++) {
           const date = subMonths(currentDate, i * 3);
@@ -116,7 +116,7 @@ export default function Income() {
         return quarters;
       }
       case 'bi-annual': {
-        // Generate last 6 half-years
+        // Generate last 6 half-years (most recent first)
         const halfYears = [];
         for (let i = 0; i < 6; i++) {
           const date = subMonths(currentDate, i * 6);
@@ -130,7 +130,7 @@ export default function Income() {
         return halfYears;
       }
       case 'yearly': {
-        // Generate last 5 years
+        // Generate last 5 years (most recent first)
         const years = [];
         for (let i = 0; i < 5; i++) {
           const year = currentDate.getFullYear() - i;
@@ -142,7 +142,7 @@ export default function Income() {
         return years;
       }
       default: {
-        // Monthly - last 12 months
+        // Monthly - last 12 months (most recent first)
         const startDate = subMonths(currentDate, 12);
         return eachMonthOfInterval({
           start: startDate,
@@ -150,7 +150,7 @@ export default function Income() {
         }).map(date => ({
           value: format(date, 'yyyy-MM'),
           label: format(date, 'MMMM yyyy')
-        }));
+        })).reverse(); // Reverse to show most recent first
       }
     }
   };
