@@ -100,6 +100,68 @@ export default function RentalPayments() {
     });
   }, [supabaseSales, supabasePaymentSchedules, user]);
 
+  // Reconcile existing schedules amounts with current contract terms
+  useEffect(() => {
+    if (!user) return;
+
+    const scheduleMap = new Map<string, typeof supabasePaymentSchedules[number]>();
+    supabasePaymentSchedules.forEach((s) => {
+      if (s.sale_id && s.due_date) {
+        const key = `${s.sale_id}|${s.product}|${s.due_date}`;
+        scheduleMap.set(key, s as any);
+      }
+    });
+
+    supabaseSales.forEach((sale) => {
+      sale.items
+        .filter((item) => item.is_rental && item.start_date && item.end_date && item.payment_period)
+        .forEach(async (item) => {
+          const startDate = new Date(item.start_date!);
+          const endDate = new Date(item.end_date!);
+          const monthlyAmount = item.price * item.quantity;
+          let currentDate = new Date(startDate);
+          while (currentDate < endDate) {
+            let nextPaymentDate: Date;
+            let periodMultiplier = 1;
+            switch (item.payment_period) {
+              case 'monthly':
+                nextPaymentDate = addMonths(currentDate, 1);
+                periodMultiplier = 1;
+                break;
+              case 'quarterly':
+                nextPaymentDate = addMonths(currentDate, 3);
+                periodMultiplier = 3;
+                break;
+              case 'biannually':
+                nextPaymentDate = addMonths(currentDate, 6);
+                periodMultiplier = 6;
+                break;
+              case 'annually':
+                nextPaymentDate = addMonths(currentDate, 12);
+                periodMultiplier = 12;
+                break;
+              default:
+                nextPaymentDate = addMonths(currentDate, 1);
+                periodMultiplier = 1;
+            }
+
+            const expectedAmount = monthlyAmount * periodMultiplier;
+            const key = `${sale.id}|${item.product_name}|${currentDate.toISOString().split('T')[0]}`;
+            const schedule = scheduleMap.get(key);
+            if (schedule && schedule.status !== 'paid' && Math.abs(Number(schedule.amount) - expectedAmount) > 0.01) {
+              try {
+                await updatePaymentSchedule(schedule.id, { amount: expectedAmount });
+              } catch (e) {
+                console.error('Failed to reconcile schedule amount', e);
+              }
+            }
+
+            currentDate = nextPaymentDate;
+          }
+        });
+    });
+  }, [user, supabaseSales, supabasePaymentSchedules, updatePaymentSchedule]);
+
   // Filter and sort payment schedules
   const filteredPayments = supabasePaymentSchedules
     .filter(payment => {
