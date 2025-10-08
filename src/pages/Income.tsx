@@ -370,6 +370,19 @@ export default function Income() {
     }
   };
 
+  const safeFormatDate = (value: string, pattern: string) => {
+    try {
+      if (!value) return 'N/A';
+      const iso = parseISO(value as string);
+      if (!isNaN(iso.getTime())) return format(iso, pattern);
+      const d = new Date(value);
+      if (!isNaN(d.getTime())) return format(d, pattern);
+      return value;
+    } catch {
+      return value || 'N/A';
+    }
+  };
+
   // Calculate total contract value from all rental agreements
   const calculateTotalContractValue = () => {
     return sales.flatMap(sale => sale.items.filter(item => item.isRental && item.startDate && item.endDate).map(item => {
@@ -494,7 +507,7 @@ export default function Income() {
   const handleExportIncomeReport = () => {
     // Prepare income transactions for Excel
     const transactionExport = filteredData.items.map(item => ({
-      Date: format(parseISO(item.date), 'MM/dd/yyyy'),
+      Date: safeFormatDate(item.date, 'MM/dd/yyyy'),
       Type: item.type === 'sale' ? 'Product Sale' : 'Rental Payment',
       Customer: item.customer,
       Description: item.description,
@@ -872,7 +885,7 @@ export default function Income() {
                 </TableHeader>
                 <TableBody>
                   {filteredData.items.map(item => <TableRow key={item.id}>
-                      <TableCell>{format(parseISO(item.date), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell>{safeFormatDate(item.date, 'MMM dd, yyyy')}</TableCell>
                       <TableCell>
                         <Badge variant={item.type === 'sale' ? 'default' : 'secondary'}>
                           {item.type === 'sale' ? 'Sale' : 'Collection'}
@@ -910,7 +923,7 @@ export default function Income() {
                           {sale.items.map(item => item.product).join(', ')}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {format(parseISO(sale.date), 'MMM dd, yyyy')}
+                          {safeFormatDate(sale.date, 'MMM dd, yyyy')}
                         </div>
                       </div>
                       <div className="font-bold text-blue-600">
@@ -936,7 +949,7 @@ export default function Income() {
                         <div className="font-medium">{payment.customer}</div>
                         <div className="text-sm text-muted-foreground">{payment.product}</div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>Paid {format(parseISO(payment.paidDate), 'MMM dd, yyyy')}</span>
+                          <span>Paid {safeFormatDate(payment.paidDate, 'MMM dd, yyyy')}</span>
                           <span>•</span>
                           <Badge variant="outline" className="text-xs">{payment.paymentMethod}</Badge>
                         </div>
@@ -981,7 +994,7 @@ export default function Income() {
                     </TableCell>
                   </TableRow> : supabaseSales.map(sale => <TableRow key={sale.id}>
                       <TableCell className="text-muted-foreground">
-                        {format(parseISO(sale.date), 'MMM dd, yyyy')}
+                        {safeFormatDate(sale.date, 'MMM dd, yyyy')}
                       </TableCell>
                       <TableCell className="font-medium">{sale.customer_name}</TableCell>
                       <TableCell className="text-muted-foreground">{sale.rep_name}</TableCell>
