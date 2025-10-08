@@ -1138,28 +1138,40 @@ export default function Income() {
                       <TableCell>
                         <div className="space-y-1">
                           {sale.items.map((item, idx) => {
-                            const today = new Date();
-                            const startDate = item.start_date ? new Date(item.start_date) : undefined;
-                            const endDate = item.end_date ? new Date(item.end_date) : undefined;
+                            if (!item.is_rental) {
+                              return (
+                                <div key={idx}>
+                                  <Badge variant="default" className="text-xs">Sale</Badge>
+                                </div>
+                              );
+                            }
                             
-                            let contractStatus: 'ongoing' | 'completed' | 'not_rental' = 'not_rental';
-                            if (item.is_rental && startDate && endDate) {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0); // Normalize to start of day
+                            const startDate = item.start_date ? new Date(item.start_date) : null;
+                            const endDate = item.end_date ? new Date(item.end_date) : null;
+                            
+                            if (startDate) startDate.setHours(0, 0, 0, 0);
+                            if (endDate) endDate.setHours(0, 0, 0, 0);
+                            
+                            let contractStatus: 'ongoing' | 'completed' | 'pending' = 'pending';
+                            
+                            if (startDate && endDate) {
                               if (today > endDate) {
                                 contractStatus = 'completed';
-                              } else if (today >= startDate && today <= endDate) {
+                              } else {
                                 contractStatus = 'ongoing';
                               }
                             }
                             
                             return (
                               <div key={idx}>
-                                {item.is_rental ? (
-                                  <Badge variant={contractStatus === 'ongoing' ? 'default' : 'secondary'} className="text-xs">
-                                    {contractStatus === 'ongoing' ? 'Ongoing' : contractStatus === 'completed' ? 'Completed' : 'N/A'}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="default" className="text-xs">Sale</Badge>
-                                )}
+                                <Badge 
+                                  variant={contractStatus === 'ongoing' ? 'default' : 'secondary'} 
+                                  className="text-xs"
+                                >
+                                  {contractStatus === 'ongoing' ? 'Ongoing' : contractStatus === 'completed' ? 'Completed' : 'Pending'}
+                                </Badge>
                               </div>
                             );
                           })}
