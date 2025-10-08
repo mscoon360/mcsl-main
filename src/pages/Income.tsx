@@ -89,15 +89,10 @@ export default function Income() {
     const spotPurchases = sales
       .filter(sale => {
         const saleDate = parseISO(sale.date);
-        return isWithinInterval(saleDate, { start: monthStart, end: monthEnd });
+        const hasNoRentalItems = !sale.items.some(item => item.isRental);
+        return isWithinInterval(saleDate, { start: monthStart, end: monthEnd }) && hasNoRentalItems;
       })
-      .reduce((sum, sale) => {
-        // Sum ONLY non-rental items, even for mixed sales
-        const nonRentalTotal = sale.items
-          .filter(item => !item.isRental)
-          .reduce((itemSum, item) => itemSum + item.price * item.quantity, 0);
-        return sum + nonRentalTotal;
-      }, 0);
+      .reduce((sum, sale) => sum + sale.total, 0);
 
     // Total monthly amount from ALL active rental contracts
     const monthlyContractAmount = sales
