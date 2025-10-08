@@ -31,6 +31,7 @@ export default function Products() {
     const sku = formData.get('sku') as string;
     const description = formData.get('description') as string;
     const category = formData.get('category') as string;
+    const units = formData.get('units') as string;
     const stock = parseInt(formData.get('stock') as string) || 0;
     const price = parseFloat(formData.get('price') as string) || 0;
 
@@ -40,6 +41,7 @@ export default function Products() {
       description,
       price,
       category,
+      units,
       stock,
       status: stock > 10 ? 'active' : stock > 0 ? 'low_stock' : 'out_of_stock',
       is_rental: productType !== 'sale_only',
@@ -81,6 +83,7 @@ export default function Products() {
       sku: formData.get('sku') as string,
       description: formData.get('description') as string,
       category: formData.get('category') as string,
+      units: formData.get('units') as string,
       stock: parseInt(formData.get('stock') as string) || 0,
       price: parseFloat(formData.get('price') as string) || 0,
     };
@@ -166,7 +169,7 @@ export default function Products() {
                 </RadioGroup>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="price">Price *</Label>
                   <Input id="price" name="price" type="number" step="0.01" required />
@@ -178,6 +181,10 @@ export default function Products() {
                 <div className="space-y-2">
                   <Label htmlFor="stock">Initial Stock *</Label>
                   <Input id="stock" name="stock" type="number" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="units">Units *</Label>
+                  <Input id="units" name="units" placeholder="e.g., cases, ml, litres" required />
                 </div>
               </div>
 
@@ -209,6 +216,7 @@ export default function Products() {
                   <TableHead>SKU</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Price</TableHead>
+                  <TableHead>Units</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Type</TableHead>
@@ -222,6 +230,7 @@ export default function Products() {
                     <TableCell>{product.sku}</TableCell>
                     <TableCell>{product.category || '-'}</TableCell>
                     <TableCell>${product.price.toFixed(2)}</TableCell>
+                    <TableCell>{product.units || '-'}</TableCell>
                     <TableCell>{product.stock}</TableCell>
                     <TableCell>
                       <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
@@ -288,7 +297,7 @@ export default function Products() {
                 <Textarea id="edit-description" name="description" defaultValue={editingProduct.description} />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-price">Price *</Label>
                   <Input id="edit-price" name="price" type="number" step="0.01" defaultValue={editingProduct.price} required />
@@ -300,6 +309,10 @@ export default function Products() {
                 <div className="space-y-2">
                   <Label htmlFor="edit-stock">Stock</Label>
                   <Input id="edit-stock" name="stock" type="number" defaultValue={editingProduct.stock} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-units">Units *</Label>
+                  <Input id="edit-units" name="units" defaultValue={editingProduct.units} placeholder="e.g., cases, ml, litres" required />
                 </div>
               </div>
 

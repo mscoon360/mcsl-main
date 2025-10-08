@@ -427,6 +427,7 @@ export type Database = {
           sku: string
           status: string | null
           stock: number | null
+          units: string | null
           updated_at: string | null
           user_id: string
         }
@@ -443,6 +444,7 @@ export type Database = {
           sku: string
           status?: string | null
           stock?: number | null
+          units?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -459,6 +461,7 @@ export type Database = {
           sku?: string
           status?: string | null
           stock?: number | null
+          units?: string | null
           updated_at?: string | null
           user_id?: string
         }

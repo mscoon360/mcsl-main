@@ -9,6 +9,7 @@ export interface Product {
   price: number;
   sku: string;
   category?: string;
+  units?: string;
   stock: number;
   status: string;
   last_sold?: string;
