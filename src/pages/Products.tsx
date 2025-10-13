@@ -231,10 +231,16 @@ export default function Products() {
                     <TableCell>{product.category || '-'}</TableCell>
                     <TableCell>${product.price.toFixed(2)}</TableCell>
                     <TableCell>{product.units || '-'}</TableCell>
-                    <TableCell>{product.stock}</TableCell>
                     <TableCell>
-                      <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
-                        {product.status}
+                      {product.stock === 0 ? (
+                        <span className="text-destructive font-semibold">No Stock</span>
+                      ) : (
+                        product.stock
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={product.stock === 0 ? 'destructive' : product.status === 'active' ? 'default' : 'secondary'}>
+                        {product.stock === 0 ? 'no stock' : product.status}
                       </Badge>
                     </TableCell>
                     <TableCell>

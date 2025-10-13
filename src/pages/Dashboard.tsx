@@ -1,14 +1,17 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, DollarSign, ShoppingCart, Users, Plus, Package, FileText, TrendingUp } from "lucide-react";
+import { BarChart3, DollarSign, ShoppingCart, Users, Plus, Package, FileText, TrendingUp, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useSales } from "@/hooks/useSales";
+import { useProducts } from "@/hooks/useProducts";
 import { startOfMonth, endOfMonth, format, subMonths } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
   const { sales, loading } = useSales();
+  const { products } = useProducts();
   const { user, isAdmin } = useAuth();
   
   const [customers] = useLocalStorage<Array<{
@@ -86,6 +89,9 @@ export default function Dashboard() {
       rep: sale.rep_name
     }));
 
+  // Get out of stock products
+  const outOfStockProducts = products.filter(product => product.stock === 0);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -152,6 +158,37 @@ export default function Dashboard() {
           </Card>
         ))}
       </div>
+
+      {/* Out of Stock Notifications */}
+      {outOfStockProducts.length > 0 && (
+        <Card className="dashboard-card border-destructive">
+          <CardHeader>
+            <CardTitle className="text-card-foreground flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              Stock Alerts
+            </CardTitle>
+            <CardDescription>
+              {outOfStockProducts.length} product{outOfStockProducts.length !== 1 ? 's' : ''} out of stock
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {outOfStockProducts.map((product) => (
+                <div key={product.id} className="flex items-center justify-between p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <div className="flex items-center gap-3">
+                    <Package className="h-4 w-4 text-destructive" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{product.name}</p>
+                      <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
+                    </div>
+                  </div>
+                  <Badge variant="destructive">No Stock</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Main Content Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
