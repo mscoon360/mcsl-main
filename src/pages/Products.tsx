@@ -239,8 +239,8 @@ export default function Products() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={product.stock === 0 ? 'destructive' : product.status === 'active' ? 'default' : 'secondary'}>
-                        {product.stock === 0 ? 'no stock' : product.status.replace(/_/g, ' ')}
+                      <Badge variant={product.stock === 0 || product.status === 'low_stock' ? 'destructive' : product.status === 'active' ? 'default' : 'secondary'}>
+                        {product.stock === 0 ? 'No Stock' : product.status.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                       </Badge>
                     </TableCell>
                     <TableCell>
