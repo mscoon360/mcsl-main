@@ -12,6 +12,7 @@ import { Pencil, Trash2, Plus, Package, Barcode } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Products() {
   const { products, loading, addProduct, updateProduct, deleteProduct } = useProducts();
@@ -78,18 +79,58 @@ export default function Products() {
     const form = e.currentTarget;
     const formData = new FormData(form);
 
+    const newStock = parseInt(formData.get('stock') as string) || 0;
+    const oldStock = editingProduct.stock;
+    const stockIncrease = newStock - oldStock;
+
     const updates = {
       name: formData.get('name') as string,
       sku: formData.get('sku') as string,
       description: formData.get('description') as string,
       category: formData.get('category') as string,
       units: formData.get('units') as string,
-      stock: parseInt(formData.get('stock') as string) || 0,
+      stock: newStock,
       price: parseFloat(formData.get('price') as string) || 0,
     };
 
     try {
       await updateProduct(editingProduct.id, updates);
+      
+      // Generate new barcodes if stock increased
+      if (stockIncrease > 0) {
+        const newBarcodes = [];
+        for (let i = 0; i < stockIncrease; i++) {
+          // Generate unique barcode: timestamp + random string
+          const barcode = `${Date.now()}${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+          newBarcodes.push({
+            product_id: editingProduct.id,
+            barcode: barcode,
+            status: 'available',
+          });
+        }
+
+        const { error: barcodeError } = await supabase
+          .from('product_items')
+          .insert(newBarcodes);
+
+        if (barcodeError) throw barcodeError;
+
+        toast({
+          title: 'Product updated',
+          description: `${stockIncrease} new barcode${stockIncrease !== 1 ? 's' : ''} generated`,
+          action: (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/products/${editingProduct.id}/barcodes`)}
+            >
+              <Barcode className="mr-2 h-4 w-4" />
+              View Barcodes
+            </Button>
+          ),
+        });
+      }
+
       setIsEditDialogOpen(false);
       setEditingProduct(null);
     } catch (error) {
