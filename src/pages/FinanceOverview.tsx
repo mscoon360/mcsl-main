@@ -29,7 +29,7 @@ export default function FinanceOverview() {
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const [selectedPeriod, setSelectedPeriod] = useState('12-months');
+  const [selectedPeriod, setSelectedPeriod] = useState<'monthly' | 'quarterly' | 'biannual' | 'annual'>('monthly');
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const { sales: supabaseSales } = useSales();
   const { paymentSchedules: supabasePaymentSchedules } = usePaymentSchedules();
@@ -171,44 +171,102 @@ export default function FinanceOverview() {
   // Generate data for charts based on selected period
   const getPerformanceData = () => {
     const currentDate = new Date();
-    let months: Date[] = [];
-
+    
     switch (selectedPeriod) {
-      case '6-months':
-        months = eachMonthOfInterval({
-          start: subMonths(currentDate, 5),
-          end: currentDate
-        });
-        break;
-      case '12-months':
-        months = eachMonthOfInterval({
+      case 'monthly': {
+        // Last 12 months
+        const months = eachMonthOfInterval({
           start: subMonths(currentDate, 11),
           end: currentDate
         });
-        break;
-      case '24-months':
-        months = eachMonthOfInterval({
-          start: subMonths(currentDate, 23),
-          end: currentDate
+        return months.map(date => {
+          const monthStr = format(date, 'yyyy-MM');
+          const data = calculateMonthlyFinancials(monthStr);
+          return {
+            month: format(date, 'MMM yy'),
+            income: data.totalIncome,
+            expenses: data.totalExpenses,
+            net: data.netIncome
+          };
         });
-        break;
+      }
+      
+      case 'quarterly': {
+        // Last 4 quarters
+        const quarters = [];
+        for (let i = 3; i >= 0; i--) {
+          const quarterEnd = subMonths(currentDate, i * 3);
+          const quarterStart = subMonths(quarterEnd, 2);
+          const months = eachMonthOfInterval({ start: quarterStart, end: quarterEnd });
+          
+          let income = 0, expenses = 0, net = 0;
+          months.forEach(month => {
+            const data = calculateMonthlyFinancials(format(month, 'yyyy-MM'));
+            income += data.totalIncome;
+            expenses += data.totalExpenses;
+            net += data.netIncome;
+          });
+          
+          quarters.push({
+            month: `Q${4 - i} ${format(quarterEnd, 'yy')}`,
+            income,
+            expenses,
+            net
+          });
+        }
+        return quarters;
+      }
+      
+      case 'biannual': {
+        // Last 2 half-years
+        const periods = [];
+        for (let i = 1; i >= 0; i--) {
+          const periodEnd = subMonths(currentDate, i * 6);
+          const periodStart = subMonths(periodEnd, 5);
+          const months = eachMonthOfInterval({ start: periodStart, end: periodEnd });
+          
+          let income = 0, expenses = 0, net = 0;
+          months.forEach(month => {
+            const data = calculateMonthlyFinancials(format(month, 'yyyy-MM'));
+            income += data.totalIncome;
+            expenses += data.totalExpenses;
+            net += data.netIncome;
+          });
+          
+          periods.push({
+            month: `H${2 - i} ${format(periodEnd, 'yy')}`,
+            income,
+            expenses,
+            net
+          });
+        }
+        return periods;
+      }
+      
+      case 'annual': {
+        // Current year
+        const yearStart = new Date(currentDate.getFullYear(), 0, 1);
+        const months = eachMonthOfInterval({ start: yearStart, end: currentDate });
+        
+        let income = 0, expenses = 0, net = 0;
+        months.forEach(month => {
+          const data = calculateMonthlyFinancials(format(month, 'yyyy-MM'));
+          income += data.totalIncome;
+          expenses += data.totalExpenses;
+          net += data.netIncome;
+        });
+        
+        return [{
+          month: format(currentDate, 'yyyy'),
+          income,
+          expenses,
+          net
+        }];
+      }
+      
       default:
-        months = eachMonthOfInterval({
-          start: subMonths(currentDate, 11),
-          end: currentDate
-        });
+        return [];
     }
-
-    return months.map(date => {
-      const monthStr = format(date, 'yyyy-MM');
-      const data = calculateMonthlyFinancials(monthStr);
-      return {
-        month: format(date, 'MMM yy'),
-        income: data.totalIncome,
-        expenses: data.totalExpenses,
-        net: data.netIncome
-      };
-    });
   };
 
   const currentMonth = selectedMonth;
@@ -311,7 +369,8 @@ export default function FinanceOverview() {
       XLSX.utils.book_append_sheet(wb, ws, 'Financial Overview');
 
       // Generate filename
-      const filename = `Financial_Overview_${selectedPeriod}_${format(new Date(), 'yyyy_MM_dd')}.xlsx`;
+      const periodLabel = selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1);
+      const filename = `Financial_Overview_${periodLabel}_${format(new Date(), 'yyyy_MM_dd')}.xlsx`;
 
       // Save file
       XLSX.writeFile(wb, filename);
@@ -551,14 +610,15 @@ export default function FinanceOverview() {
                 Income, expenses, and net profit over the selected period
               </CardDescription>
             </div>
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+            <Select value={selectedPeriod} onValueChange={(value: any) => setSelectedPeriod(value)}>
               <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="6-months">Last 6 Months</SelectItem>
-                <SelectItem value="12-months">Last 12 Months</SelectItem>
-                <SelectItem value="24-months">Last 24 Months</SelectItem>
+                <SelectItem value="monthly">Monthly (Last 12)</SelectItem>
+                <SelectItem value="quarterly">Quarterly (Last 4)</SelectItem>
+                <SelectItem value="biannual">Bi-Annual (Last 2)</SelectItem>
+                <SelectItem value="annual">Annual (This Year)</SelectItem>
               </SelectContent>
             </Select>
           </div>
