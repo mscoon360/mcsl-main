@@ -289,41 +289,40 @@ export default function Invoices() {
       
       // Log all field names to help with debugging
       console.log('Available form fields:', fields.map(f => f.getName()));
-      
-      // Fill in the form fields
-      try {
-        // Try to fill customer info
-        const billToField = form.getTextField('Bill To');
-        billToField.setText(invoice.customerName);
-      } catch (e) {
-        console.log('Bill To field not found');
-      }
-      
-      try {
-        const invoiceDateField = form.getTextField('Invoice Date');
-        invoiceDateField.setText(format(new Date(invoice.issueDate), 'dd/MM/yyyy'));
-      } catch (e) {
-        console.log('Invoice Date field not found');
-      }
-      
-      try {
-        const invoiceNumberField = form.getTextField('Invoice Number');
-        invoiceNumberField.setText(invoice.invoiceNumber);
-      } catch (e) {
-        console.log('Invoice Number field not found');
-      }
-      
-      // Fill in amounts for items that match the template services
-      invoice.items.forEach(item => {
+
+      // Helper to safely set a field if it exists
+      const setField = (name: string, value: string) => {
         try {
-          // Try to find a matching field for this item
-          const amountField = form.getTextField(item.description);
-          amountField.setText(`${item.total.toFixed(2)}`);
-        } catch (e) {
-          console.log(`Field not found for: ${item.description}`);
+          form.getTextField(name).setText(value);
+        } catch {
+          console.log(`${name} field not found`);
         }
-      });
+      };
+
+      // Customer details
+      const customer = customers.find(c => c.id === invoice.customerId);
+      setField('Customer Name', invoice.customerName);
+      setField('Company Name, Address', [customer?.company, customer?.address].filter(Boolean).join(', '));
+
+      // Header fields (from template: Text17, Text18)
+      setField('Text17', format(parseISO(invoice.issueDate), 'dd/MM/yyyy')); // Invoice Date
+      setField('Text18', invoice.invoiceNumber); // Invoice Number
+
+      // Line items mapping to Item 1..10 and Amount 1..10
+      for (let i = 0; i < 10; i++) {
+        const item = invoice.items[i];
+        setField(`Item ${i + 1}`, item?.description ? String(item.description) : '');
+        setField(`Amount ${i + 1}`, item ? item.total.toFixed(2) : '');
+      }
+
+      // Totals area (bottom fields: Text41, Text42, Text43)
+      setField('Text41', invoice.subtotal.toFixed(2));
+      setField('Text42', invoice.taxAmount.toFixed(2));
+      setField('Text43', invoice.total.toFixed(2));
       
+      // Optionally flatten to make entries non-editable
+      // form.flatten();
+
       // Save the filled PDF
       const pdfBytes = await pdfDoc.save();
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
