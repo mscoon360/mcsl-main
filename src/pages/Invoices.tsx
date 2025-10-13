@@ -238,9 +238,43 @@ export default function Invoices() {
       const availableItems = getAvailableItemsForCustomer();
       const selectedItem = availableItems.find(item => item.id === value);
       if (selectedItem) {
-        updatedItems[index].description = selectedItem.name;
+        // Get product units if it's a product type
+        let units = '';
+        if (selectedItem.type === 'product') {
+          const productId = selectedItem.id.replace('product-', '');
+          const product = products.find(p => p.id === productId);
+          units = product?.units || '';
+        }
+        
+        // Format description as "quantity units productName" (e.g., "2 C/S test 1")
+        const quantity = updatedItems[index].quantity || 1;
+        const formattedDescription = units 
+          ? `${quantity} ${units} ${selectedItem.name}`
+          : `${quantity} ${selectedItem.name}`;
+        
+        updatedItems[index].description = formattedDescription;
         updatedItems[index].unitPrice = selectedItem.price;
-        updatedItems[index].total = updatedItems[index].quantity * selectedItem.price;
+        updatedItems[index].total = quantity * selectedItem.price;
+      }
+    }
+    
+    // Update description when quantity changes
+    if (field === 'quantity' && updatedItems[index].productId && updatedItems[index].productId !== 'custom') {
+      const availableItems = getAvailableItemsForCustomer();
+      const selectedItem = availableItems.find(item => item.id === updatedItems[index].productId);
+      if (selectedItem) {
+        let units = '';
+        if (selectedItem.type === 'product') {
+          const productId = selectedItem.id.replace('product-', '');
+          const product = products.find(p => p.id === productId);
+          units = product?.units || '';
+        }
+        
+        const formattedDescription = units 
+          ? `${value} ${units} ${selectedItem.name}`
+          : `${value} ${selectedItem.name}`;
+        
+        updatedItems[index].description = formattedDescription;
       }
     }
     
