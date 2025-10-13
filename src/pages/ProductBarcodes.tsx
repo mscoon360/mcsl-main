@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Download, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import bwipjs from 'bwip-js';
 
 interface ProductItem {
   id: string;
@@ -69,18 +70,14 @@ export default function ProductBarcodes() {
         const canvas = canvasRefs.current[item.id];
         if (canvas) {
           try {
-            // Using canvas 2D context to draw barcode
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              canvas.width = 400;
-              canvas.height = 120;
-              ctx.fillStyle = 'white';
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
-              ctx.fillStyle = 'black';
-              ctx.font = '14px monospace';
-              ctx.textAlign = 'center';
-              ctx.fillText(item.barcode, canvas.width / 2, canvas.height / 2);
-            }
+            bwipjs.toCanvas(canvas, {
+              bcid: 'code128',
+              text: item.barcode,
+              scale: 3,
+              height: 10,
+              includetext: true,
+              textxalign: 'center',
+            });
           } catch (error) {
             console.error('Error generating barcode:', error);
           }
