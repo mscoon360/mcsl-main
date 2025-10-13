@@ -5,7 +5,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, TrendingDown, DollarSign, Receipt, Calendar, BarChart3, PieChart, Download } from "lucide-react";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, parseISO } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell, LineChart, Line, Pie } from "recharts";
@@ -13,6 +12,7 @@ import * as XLSX from 'xlsx';
 import { useSales } from "@/hooks/useSales";
 import { usePaymentSchedules } from "@/hooks/usePaymentSchedules";
 import { supabase } from "@/integrations/supabase/client";
+import { useExpenditures } from "@/hooks/useExpenditures";
 
 interface MonthlyFinancials {
   month: string;
@@ -82,14 +82,7 @@ export default function FinanceOverview() {
       status: 'paid' as const
     }));
 
-  const [expenditures] = useLocalStorage<Array<{
-    id: string;
-    date: string;
-    description: string;
-    amount: number;
-    category: 'working-capital' | 'fixed-capital';
-    type: string;
-  }>>('finance-expenditures', []);
+  const { expenditures } = useExpenditures();
 
   const calculateMonthlyFinancials = (month: string): MonthlyFinancials => {
     const monthStart = startOfMonth(parseISO(`${month}-01`));

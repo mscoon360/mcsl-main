@@ -10,11 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Building, Wrench, Trash2, Calendar, DollarSign, Filter, TrendingDown, Download } from "lucide-react";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isWithinInterval, parseISO } from "date-fns";
 import * as XLSX from 'xlsx';
 import { supabase } from "@/integrations/supabase/client";
+import { useExpenditures } from "@/hooks/useExpenditures";
 
 interface Expenditure {
   id: string;
@@ -61,7 +61,7 @@ export default function Expenditure() {
     type: ''
   });
 
-  const [expenditures, setExpenditures] = useLocalStorage<Expenditure[]>('finance-expenditures', []);
+  const { expenditures, addExpense, deleteExpense } = useExpenditures();
 
   // Generate month options
   const generateMonthOptions = () => {
@@ -152,7 +152,7 @@ export default function Expenditure() {
     })
     .reduce((sum, expense) => sum + expense.amount, 0);
 
-  const handleAddExpense = (e: React.FormEvent) => {
+  const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!newExpense.description || !newExpense.amount || !newExpense.type) {
@@ -164,16 +164,11 @@ export default function Expenditure() {
       return;
     }
 
-    const expense: Expenditure = {
-      id: Date.now().toString(),
-      ...newExpense
-    };
+    await addExpense(newExpense);
 
-    setExpenditures(prev => [...prev, expense]);
-    
     toast({
       title: "Expense Added",
-      description: `${expense.category === 'working-capital' ? 'Working' : 'Fixed'} capital expense of $${expense.amount.toFixed(2)} has been recorded.`
+      description: `${newExpense.category === 'working-capital' ? 'Working' : 'Fixed'} capital expense of $${newExpense.amount.toFixed(2)} has been recorded.`
     });
 
     // Reset form
@@ -187,12 +182,12 @@ export default function Expenditure() {
     setShowExpenseForm(false);
   };
 
-  const handleDeleteExpense = (expenseId: string) => {
+  const handleDeleteExpense = async (expenseId: string) => {
     const expense = expenditures.find(e => e.id === expenseId);
     if (!expense) return;
 
-    setExpenditures(prev => prev.filter(e => e.id !== expenseId));
-    
+    await deleteExpense(expenseId);
+
     toast({
       title: "Expense Deleted",
       description: `Expense of $${expense.amount.toFixed(2)} has been removed.`
