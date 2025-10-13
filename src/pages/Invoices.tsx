@@ -283,52 +283,45 @@ export default function Invoices() {
       const templateBytes = await fetch(invoiceTemplate).then(res => res.arrayBuffer());
       const pdfDoc = await PDFDocument.load(templateBytes);
       
-      const pages = pdfDoc.getPages();
-      const firstPage = pages[0];
-      const { height } = firstPage.getSize();
+      // Get the form from the PDF
+      const form = pdfDoc.getForm();
+      const fields = form.getFields();
       
-      // Define text positions (you can adjust these coordinates)
-      // Y coordinate is from bottom, so we convert from top: height - yFromTop
+      // Log all field names to help with debugging
+      console.log('Available form fields:', fields.map(f => f.getName()));
       
-      // Add invoice items in the DESCRIPTION column (left side of table)
-      let itemYPosition = height - 240; // Starting position for first item
-      const lineHeight = 12;
+      // Fill in the form fields
+      try {
+        // Try to fill customer info
+        const billToField = form.getTextField('Bill To');
+        billToField.setText(invoice.customerName);
+      } catch (e) {
+        console.log('Bill To field not found');
+      }
       
-      invoice.items.forEach((item, index) => {
-        // Description on the left
-        firstPage.drawText(item.description, {
-          x: 50,
-          y: itemYPosition - (index * lineHeight),
-          size: 9,
-          color: rgb(0, 0, 0),
-        });
-      });
+      try {
+        const invoiceDateField = form.getTextField('Invoice Date');
+        invoiceDateField.setText(format(new Date(invoice.issueDate), 'dd/MM/yyyy'));
+      } catch (e) {
+        console.log('Invoice Date field not found');
+      }
       
-      // Add amounts in the AMOUNT column (right side of table)
-      itemYPosition = height - 240;
-      invoice.items.forEach((item, index) => {
-        firstPage.drawText(`${item.total.toFixed(2)}`, {
-          x: 500,
-          y: itemYPosition - (index * lineHeight),
-          size: 9,
-          color: rgb(0, 0, 0),
-        });
-      });
+      try {
+        const invoiceNumberField = form.getTextField('Invoice Number');
+        invoiceNumberField.setText(invoice.invoiceNumber);
+      } catch (e) {
+        console.log('Invoice Number field not found');
+      }
       
-      // Add VAT amount in the VAT box
-      firstPage.drawText(`${invoice.taxAmount.toFixed(2)}`, {
-        x: 500,
-        y: height - 500, // Adjust this to match your template's VAT box
-        size: 10,
-        color: rgb(0, 0, 0),
-      });
-      
-      // Add TOTAL amount in the TOTAL box
-      firstPage.drawText(`${invoice.total.toFixed(2)}`, {
-        x: 500,
-        y: height - 520, // Adjust this to match your template's TOTAL box
-        size: 10,
-        color: rgb(0, 0, 0),
+      // Fill in amounts for items that match the template services
+      invoice.items.forEach(item => {
+        try {
+          // Try to find a matching field for this item
+          const amountField = form.getTextField(item.description);
+          amountField.setText(`${item.total.toFixed(2)}`);
+        } catch (e) {
+          console.log(`Field not found for: ${item.description}`);
+        }
       });
       
       // Save the filled PDF
