@@ -88,7 +88,7 @@ interface ActivityLog {
 }
 
 export default function Admin() {
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, loading, userDepartment } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<Profile[]>([]);
   const [visibilities, setVisibilities] = useState<DepartmentVisibility[]>([]);
@@ -104,6 +104,7 @@ export default function Admin() {
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editDepartment, setEditDepartment] = useState('');
+  const [revokeAdminRole, setRevokeAdminRole] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -408,7 +409,7 @@ export default function Admin() {
     
     setSubmitting(true);
 
-    const updates: { username?: string; password?: string; department?: string } = {};
+    const updates: { username?: string; password?: string; department?: string; revokeAdmin?: boolean } = {};
     
     if (editUsername && editUsername !== editingUser.username) {
       updates.username = editUsername;
@@ -420,6 +421,10 @@ export default function Admin() {
 
     if (editDepartment && editDepartment !== editingUser.department) {
       updates.department = editDepartment;
+    }
+
+    if (revokeAdminRole) {
+      updates.revokeAdmin = true;
     }
 
     if (Object.keys(updates).length === 0) {
@@ -457,7 +462,9 @@ export default function Admin() {
     setEditUsername('');
     setEditPassword('');
     setEditDepartment('');
+    setRevokeAdminRole(false);
     loadUsers();
+    loadUserRoles();
     setSubmitting(false);
   };
 
@@ -479,6 +486,7 @@ export default function Admin() {
           setEditUsername('');
           setEditPassword('');
           setEditDepartment('');
+          setRevokeAdminRole(false);
         }
       }}>
         <DialogContent>
@@ -527,6 +535,25 @@ export default function Admin() {
                 Must be at least 8 characters with uppercase, lowercase, and number
               </p>
             </div>
+            {(userDepartment === 'it' || userDepartment === 'executive department') && 
+             editingUser && 
+             userRoles.some((role) => role.user_id === editingUser.id && role.role === 'admin') && (
+              <div className="flex items-center space-x-2 p-3 border rounded-md bg-muted/50">
+                <Checkbox
+                  id="revoke-admin"
+                  checked={revokeAdminRole}
+                  onCheckedChange={(checked) => setRevokeAdminRole(checked as boolean)}
+                />
+                <div className="flex flex-col">
+                  <Label htmlFor="revoke-admin" className="cursor-pointer font-medium">
+                    Revoke Admin Privileges
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Remove administrator access from this user
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="flex gap-2 justify-end">
               <Button
                 type="button"
@@ -536,6 +563,7 @@ export default function Admin() {
                   setEditUsername('');
                   setEditPassword('');
                   setEditDepartment('');
+                  setRevokeAdminRole(false);
                 }}
               >
                 Cancel
@@ -662,6 +690,7 @@ export default function Admin() {
                                 setEditUsername(user.username);
                                 setEditPassword('');
                                 setEditDepartment(user.department);
+                                setRevokeAdminRole(false);
                               }}
                             >
                               <Pencil className="w-4 h-4" />

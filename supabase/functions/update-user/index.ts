@@ -77,7 +77,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { userId, username, password, department } = await req.json();
+    const { userId, username, password, department, revokeAdmin } = await req.json();
 
     if (!userId) {
       return new Response(
@@ -87,6 +87,49 @@ serve(async (req) => {
     }
 
     console.log('Updating user:', userId);
+
+    // Handle admin role revocation (only IT and Executive departments)
+    if (revokeAdmin) {
+      // Get the calling user's department
+      const { data: callerProfile, error: callerError } = await supabaseAdmin
+        .from('profiles')
+        .select('department')
+        .eq('id', user.id)
+        .single();
+
+      if (callerError || !callerProfile) {
+        console.error('Error fetching caller profile:', callerError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to verify caller permissions' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const callerDept = callerProfile.department.toLowerCase();
+      if (callerDept !== 'it' && callerDept !== 'executive department') {
+        return new Response(
+          JSON.stringify({ error: 'Only IT and Executive departments can revoke admin privileges' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Revoke admin role
+      const { error: revokeError } = await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId)
+        .eq('role', 'admin');
+
+      if (revokeError) {
+        console.error('Error revoking admin role:', revokeError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to revoke admin privileges' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Admin role revoked successfully');
+    }
 
     // Update password if provided
     if (password) {
