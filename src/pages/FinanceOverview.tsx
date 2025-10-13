@@ -30,8 +30,10 @@ export default function FinanceOverview() {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState('12-months');
+  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const { sales: supabaseSales } = useSales();
   const { paymentSchedules: supabasePaymentSchedules } = usePaymentSchedules();
+  const { expenditures } = useExpenditures();
 
   // Check access permissions
   useEffect(() => {
@@ -82,7 +84,21 @@ export default function FinanceOverview() {
       status: 'paid' as const
     }));
 
-  const { expenditures } = useExpenditures();
+
+  console.log('Finance Overview - Expenditures loaded:', expenditures.length);
+  console.log('Finance Overview - Selected month:', selectedMonth);
+
+  // Generate month options for the selector
+  const generateMonthOptions = () => {
+    const currentDate = new Date();
+    return [
+      { value: format(currentDate, 'yyyy-MM'), label: 'This Month' },
+      { value: format(subMonths(currentDate, 1), 'yyyy-MM'), label: 'Last Month' },
+      { value: format(subMonths(currentDate, 2), 'yyyy-MM'), label: 'Last 3 Months (View)' }
+    ];
+  };
+
+  const monthOptions = generateMonthOptions();
 
   const calculateMonthlyFinancials = (month: string): MonthlyFinancials => {
     const monthStart = startOfMonth(parseISO(`${month}-01`));
@@ -174,13 +190,16 @@ export default function FinanceOverview() {
     });
   };
 
-  const currentMonth = format(new Date(), 'yyyy-MM');
+  const currentMonth = selectedMonth;
   const currentMonthData = calculateMonthlyFinancials(currentMonth);
   const performanceData = getPerformanceData();
   
   // Calculate previous month data for comparison
-  const previousMonth = format(subMonths(new Date(), 1), 'yyyy-MM');
+  const previousMonth = format(subMonths(parseISO(`${selectedMonth}-01`), 1), 'yyyy-MM');
   const previousMonthData = calculateMonthlyFinancials(previousMonth);
+  
+  console.log('Current month data:', currentMonthData);
+  console.log('Expenses for current month:', currentMonthData.totalExpenses);
   
   // Calculate month-over-month changes
   const incomeChange = currentMonthData.totalIncome - previousMonthData.totalIncome;
@@ -281,6 +300,18 @@ export default function FinanceOverview() {
           <p className="text-muted-foreground">Comprehensive financial analysis and insights</p>
         </div>
         <div className="flex gap-2">
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {monthOptions.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
             <SelectTrigger className="w-48">
               <SelectValue />
@@ -308,7 +339,7 @@ export default function FinanceOverview() {
           <CardContent>
             <div className="text-2xl font-bold text-success">${currentMonthData.totalIncome.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              {format(new Date(), 'MMMM yyyy')}
+              {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
             </p>
           </CardContent>
         </Card>
@@ -321,7 +352,7 @@ export default function FinanceOverview() {
           <CardContent>
             <div className="text-2xl font-bold text-destructive">${currentMonthData.totalExpenses.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              {format(new Date(), 'MMMM yyyy')}
+              {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
             </p>
           </CardContent>
         </Card>
@@ -379,7 +410,7 @@ export default function FinanceOverview() {
                 ${currentMonthData.totalIncome.toFixed(2)}
               </div>
               <div className="text-xs text-muted-foreground">
-                {format(new Date(), 'MMMM yyyy')}
+                {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
               </div>
             </div>
 
@@ -412,7 +443,7 @@ export default function FinanceOverview() {
                 ${previousMonthData.netIncome.toFixed(2)}
               </div>
               <div className="text-xs text-muted-foreground">
-                {format(subMonths(new Date(), 1), 'MMMM yyyy')}
+                {format(parseISO(`${previousMonth}-01`), 'MMMM yyyy')}
               </div>
             </div>
 
