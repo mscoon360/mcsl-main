@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrendingUp, TrendingDown, DollarSign, Receipt, Calendar, BarChart3, PieChart, Download, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Receipt, Calendar, BarChart3, PieChart, Download, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, parseISO } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell, LineChart, Line, Pie } from "recharts";
@@ -29,8 +29,8 @@ export default function FinanceOverview() {
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const [selectedPeriod, setSelectedPeriod] = useState<'monthly' | 'quarterly' | 'biannual' | 'annual'>('monthly');
-  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [periodLength, setPeriodLength] = useState<'1' | '3' | '6' | '12'>('1');
+  const [periodEndDate, setPeriodEndDate] = useState(new Date());
   const { sales: supabaseSales } = useSales();
   const { paymentSchedules: supabasePaymentSchedules } = usePaymentSchedules();
   const { expenditures } = useExpenditures();
@@ -86,28 +86,36 @@ export default function FinanceOverview() {
 
 
   console.log('Finance Overview - Expenditures loaded:', expenditures.length);
-  console.log('Finance Overview - Selected month:', selectedMonth);
 
-  // Generate month options for the selector
-  const generateMonthOptions = () => {
-    const currentDate = new Date();
-    return [
-      { value: format(currentDate, 'yyyy-MM'), label: 'This Month' },
-      { value: format(subMonths(currentDate, 1), 'yyyy-MM'), label: 'Last Month' },
-      { value: format(subMonths(currentDate, 2), 'yyyy-MM'), label: 'Last 3 Months (View)' }
-    ];
+  // Calculate period start and end dates
+  const periodStart = startOfMonth(subMonths(periodEndDate, parseInt(periodLength) - 1));
+  const periodEnd = endOfMonth(periodEndDate);
+
+  // Navigate to previous period
+  const handlePreviousPeriod = () => {
+    setPeriodEndDate(subMonths(periodEndDate, parseInt(periodLength)));
   };
 
-  const monthOptions = generateMonthOptions();
+  // Navigate to next period
+  const handleNextPeriod = () => {
+    setPeriodEndDate(addMonths(periodEndDate, parseInt(periodLength)));
+  };
 
-  const calculateMonthlyFinancials = (month: string): MonthlyFinancials => {
-    const monthStart = startOfMonth(parseISO(`${month}-01`));
-    const monthEnd = endOfMonth(parseISO(`${month}-01`));
+  // Generate month options for the selector
+  const getPeriodLabel = () => {
+    if (periodLength === '1') {
+      return format(periodEndDate, 'MMMM yyyy');
+    } else {
+      return `${format(periodStart, 'MMM yyyy')} - ${format(periodEnd, 'MMM yyyy')}`;
+    }
+  };
 
+  // Calculate financial data for the selected period
+  const calculatePeriodFinancials = (): MonthlyFinancials => {
     const salesIncome = sales
       .filter(sale => {
         const saleDate = parseISO(sale.date);
-        return isWithinInterval(saleDate, { start: monthStart, end: monthEnd }) &&
+        return isWithinInterval(saleDate, { start: periodStart, end: periodEnd }) &&
                !sale.items.some(item => item.isRental);
       })
       .reduce((sum, sale) => sum + sale.total, 0);
@@ -115,49 +123,28 @@ export default function FinanceOverview() {
     const collectionIncome = paidPayments
       .filter(payment => {
         const paymentDate = parseISO(payment.paidDate);
-        return isWithinInterval(paymentDate, { start: monthStart, end: monthEnd });
+        return isWithinInterval(paymentDate, { start: periodStart, end: periodEnd });
       })
       .reduce((sum, payment) => sum + payment.amount, 0);
 
-    const monthExpenses = expenditures.filter(expense => {
+    const periodExpenses = expenditures.filter(expense => {
       const expenseDate = parseISO(expense.date);
-      const isInRange = isWithinInterval(expenseDate, { start: monthStart, end: monthEnd });
-      console.log('Expense check:', {
-        expenseId: expense.id,
-        expenseDate: expense.date,
-        expenseAmount: expense.amount,
-        expenseCategory: expense.category,
-        monthStart: monthStart.toISOString(),
-        monthEnd: monthEnd.toISOString(),
-        isInRange
-      });
-      return isInRange;
+      return isWithinInterval(expenseDate, { start: periodStart, end: periodEnd });
     });
 
-    console.log('Month expenses found:', monthExpenses.length, monthExpenses);
-
-    const workingCapitalExpenses = monthExpenses
-      .filter(expense => {
-        // Check for both working-capital category AND supplies type (from inventory)
-        const isWorking = expense.category === 'working-capital' || expense.type === 'supplies';
-        console.log('Working capital check:', expense.category, expense.type, isWorking, expense.amount);
-        return isWorking;
-      })
+    const workingCapitalExpenses = periodExpenses
+      .filter(expense => expense.category === 'working-capital' || expense.type === 'supplies')
       .reduce((sum, expense) => sum + expense.amount, 0);
 
-    const fixedCapitalExpenses = monthExpenses
-      .filter(expense => {
-        const isFixed = expense.category === 'fixed-capital';
-        console.log('Fixed capital check:', expense.category, isFixed, expense.amount);
-        return isFixed;
-      })
+    const fixedCapitalExpenses = periodExpenses
+      .filter(expense => expense.category === 'fixed-capital')
       .reduce((sum, expense) => sum + expense.amount, 0);
 
     const totalIncome = salesIncome + collectionIncome;
     const totalExpenses = workingCapitalExpenses + fixedCapitalExpenses;
 
     return {
-      month,
+      month: format(periodEndDate, 'yyyy-MM'),
       salesIncome,
       collectionIncome,
       totalIncome,
@@ -168,132 +155,118 @@ export default function FinanceOverview() {
     };
   };
 
-  // Generate data for charts based on selected period
+  // Generate data for monthly breakdown chart
   const getPerformanceData = () => {
-    const currentDate = new Date();
+    const months = eachMonthOfInterval({ start: periodStart, end: periodEnd });
     
-    switch (selectedPeriod) {
-      case 'monthly': {
-        // Last 12 months
-        const months = eachMonthOfInterval({
-          start: subMonths(currentDate, 11),
-          end: currentDate
-        });
-        return months.map(date => {
-          const monthStr = format(date, 'yyyy-MM');
-          const data = calculateMonthlyFinancials(monthStr);
-          return {
-            month: format(date, 'MMM yy'),
-            income: data.totalIncome,
-            expenses: data.totalExpenses,
-            net: data.netIncome
-          };
-        });
-      }
-      
-      case 'quarterly': {
-        // Last 4 quarters
-        const quarters = [];
-        for (let i = 3; i >= 0; i--) {
-          const quarterEnd = subMonths(currentDate, i * 3);
-          const quarterStart = subMonths(quarterEnd, 2);
-          const months = eachMonthOfInterval({ start: quarterStart, end: quarterEnd });
-          
-          let income = 0, expenses = 0, net = 0;
-          months.forEach(month => {
-            const data = calculateMonthlyFinancials(format(month, 'yyyy-MM'));
-            income += data.totalIncome;
-            expenses += data.totalExpenses;
-            net += data.netIncome;
-          });
-          
-          quarters.push({
-            month: `Q${4 - i} ${format(quarterEnd, 'yy')}`,
-            income,
-            expenses,
-            net
-          });
-        }
-        return quarters;
-      }
-      
-      case 'biannual': {
-        // Last 2 half-years
-        const periods = [];
-        for (let i = 1; i >= 0; i--) {
-          const periodEnd = subMonths(currentDate, i * 6);
-          const periodStart = subMonths(periodEnd, 5);
-          const months = eachMonthOfInterval({ start: periodStart, end: periodEnd });
-          
-          let income = 0, expenses = 0, net = 0;
-          months.forEach(month => {
-            const data = calculateMonthlyFinancials(format(month, 'yyyy-MM'));
-            income += data.totalIncome;
-            expenses += data.totalExpenses;
-            net += data.netIncome;
-          });
-          
-          periods.push({
-            month: `H${2 - i} ${format(periodEnd, 'yy')}`,
-            income,
-            expenses,
-            net
-          });
-        }
-        return periods;
-      }
-      
-      case 'annual': {
-        // Current year
-        const yearStart = new Date(currentDate.getFullYear(), 0, 1);
-        const months = eachMonthOfInterval({ start: yearStart, end: currentDate });
-        
-        let income = 0, expenses = 0, net = 0;
-        months.forEach(month => {
-          const data = calculateMonthlyFinancials(format(month, 'yyyy-MM'));
-          income += data.totalIncome;
-          expenses += data.totalExpenses;
-          net += data.netIncome;
-        });
-        
-        return [{
-          month: format(currentDate, 'yyyy'),
-          income,
-          expenses,
-          net
-        }];
-      }
-      
-      default:
-        return [];
-    }
+    return months.map(date => {
+      const monthStr = format(date, 'yyyy-MM');
+      const monthStart = startOfMonth(date);
+      const monthEnd = endOfMonth(date);
+
+      const salesIncome = sales
+        .filter(sale => {
+          const saleDate = parseISO(sale.date);
+          return isWithinInterval(saleDate, { start: monthStart, end: monthEnd }) &&
+                 !sale.items.some(item => item.isRental);
+        })
+        .reduce((sum, sale) => sum + sale.total, 0);
+
+      const collectionIncome = paidPayments
+        .filter(payment => {
+          const paymentDate = parseISO(payment.paidDate);
+          return isWithinInterval(paymentDate, { start: monthStart, end: monthEnd });
+        })
+        .reduce((sum, payment) => sum + payment.amount, 0);
+
+      const monthExpenses = expenditures.filter(expense => {
+        const expenseDate = parseISO(expense.date);
+        return isWithinInterval(expenseDate, { start: monthStart, end: monthEnd });
+      });
+
+      const workingCapitalExpenses = monthExpenses
+        .filter(expense => expense.category === 'working-capital' || expense.type === 'supplies')
+        .reduce((sum, expense) => sum + expense.amount, 0);
+
+      const fixedCapitalExpenses = monthExpenses
+        .filter(expense => expense.category === 'fixed-capital')
+        .reduce((sum, expense) => sum + expense.amount, 0);
+
+      const totalIncome = salesIncome + collectionIncome;
+      const totalExpenses = workingCapitalExpenses + fixedCapitalExpenses;
+
+      return {
+        month: format(date, 'MMM yy'),
+        income: totalIncome,
+        expenses: totalExpenses,
+        net: totalIncome - totalExpenses
+      };
+    });
   };
 
-  const currentMonth = selectedMonth;
-  const currentMonthData = calculateMonthlyFinancials(currentMonth);
+  const currentPeriodData = calculatePeriodFinancials();
   const performanceData = getPerformanceData();
   
-  // Calculate previous month data for comparison
-  const previousMonth = format(subMonths(parseISO(`${selectedMonth}-01`), 1), 'yyyy-MM');
-  const previousMonthData = calculateMonthlyFinancials(previousMonth);
+  // Calculate previous period data for comparison
+  const previousPeriodStart = startOfMonth(subMonths(periodStart, parseInt(periodLength)));
+  const previousPeriodEnd = endOfMonth(subMonths(periodEnd, parseInt(periodLength)));
   
-  console.log('Current month data:', currentMonthData);
-  console.log('Expenses for current month:', currentMonthData.totalExpenses);
+  const previousPeriodData = (() => {
+    const salesIncome = sales
+      .filter(sale => {
+        const saleDate = parseISO(sale.date);
+        return isWithinInterval(saleDate, { start: previousPeriodStart, end: previousPeriodEnd }) &&
+               !sale.items.some(item => item.isRental);
+      })
+      .reduce((sum, sale) => sum + sale.total, 0);
+
+    const collectionIncome = paidPayments
+      .filter(payment => {
+        const paymentDate = parseISO(payment.paidDate);
+        return isWithinInterval(paymentDate, { start: previousPeriodStart, end: previousPeriodEnd });
+      })
+      .reduce((sum, payment) => sum + payment.amount, 0);
+
+    const prevExpenses = expenditures.filter(expense => {
+      const expenseDate = parseISO(expense.date);
+      return isWithinInterval(expenseDate, { start: previousPeriodStart, end: previousPeriodEnd });
+    });
+
+    const workingCapitalExpenses = prevExpenses
+      .filter(expense => expense.category === 'working-capital' || expense.type === 'supplies')
+      .reduce((sum, expense) => sum + expense.amount, 0);
+
+    const fixedCapitalExpenses = prevExpenses
+      .filter(expense => expense.category === 'fixed-capital')
+      .reduce((sum, expense) => sum + expense.amount, 0);
+
+    const totalIncome = salesIncome + collectionIncome;
+    const totalExpenses = workingCapitalExpenses + fixedCapitalExpenses;
+
+    return {
+      totalIncome,
+      totalExpenses,
+      netIncome: totalIncome - totalExpenses
+    };
+  })();
   
-  // Calculate month-over-month changes
-  const incomeChange = currentMonthData.totalIncome - previousMonthData.totalIncome;
-  const incomePercentage = previousMonthData.totalIncome > 0 
-    ? (incomeChange / previousMonthData.totalIncome) * 100 
+  console.log('Current period data:', currentPeriodData);
+  console.log('Expenses for current period:', currentPeriodData.totalExpenses);
+  
+  // Calculate period-over-period changes
+  const incomeChange = currentPeriodData.totalIncome - previousPeriodData.totalIncome;
+  const incomePercentage = previousPeriodData.totalIncome > 0 
+    ? (incomeChange / previousPeriodData.totalIncome) * 100 
     : 0;
   
-  const expenseChange = currentMonthData.totalExpenses - previousMonthData.totalExpenses;
-  const expensePercentage = previousMonthData.totalExpenses > 0 
-    ? (expenseChange / previousMonthData.totalExpenses) * 100 
+  const expenseChange = currentPeriodData.totalExpenses - previousPeriodData.totalExpenses;
+  const expensePercentage = previousPeriodData.totalExpenses > 0 
+    ? (expenseChange / previousPeriodData.totalExpenses) * 100 
     : 0;
   
-  const netChange = currentMonthData.netIncome - previousMonthData.netIncome;
-  const netPercentage = previousMonthData.netIncome !== 0 
-    ? (netChange / Math.abs(previousMonthData.netIncome)) * 100 
+  const netChange = currentPeriodData.netIncome - previousPeriodData.netIncome;
+  const netPercentage = previousPeriodData.netIncome !== 0 
+    ? (netChange / Math.abs(previousPeriodData.netIncome)) * 100 
     : 0;
 
   // Calculate totals for current period
@@ -305,14 +278,14 @@ export default function FinanceOverview() {
 
   // Pie chart data for income breakdown
   const incomeBreakdown = [
-    { name: 'Sales', value: currentMonthData.salesIncome, color: '#3b82f6' },
-    { name: 'Collections', value: currentMonthData.collectionIncome, color: '#10b981' }
+    { name: 'Sales', value: currentPeriodData.salesIncome, color: '#3b82f6' },
+    { name: 'Collections', value: currentPeriodData.collectionIncome, color: '#10b981' }
   ].filter(item => item.value > 0);
 
   // Pie chart data for expense breakdown
   const expenseBreakdown = [
-    { name: 'Working Capital', value: currentMonthData.workingCapitalExpenses, color: '#f59e0b' },
-    { name: 'Fixed Capital', value: currentMonthData.fixedCapitalExpenses, color: '#ef4444' }
+    { name: 'Working Capital', value: currentPeriodData.workingCapitalExpenses, color: '#f59e0b' },
+    { name: 'Fixed Capital', value: currentPeriodData.fixedCapitalExpenses, color: '#ef4444' }
   ].filter(item => item.value > 0);
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
@@ -335,11 +308,11 @@ export default function FinanceOverview() {
         { Month: 'Total Expenses', Income: '', Expenses: Number(periodTotals.expenses.toFixed(2)), 'Net Profit': '' },
         { Month: 'Net Profit/Loss', Income: '', Expenses: '', 'Net Profit': Number(periodTotals.net.toFixed(2)) },
         { Month: '', Income: '', Expenses: '', 'Net Profit': '' },
-        { Month: 'Current Month Breakdown', Income: '', Expenses: '', 'Net Profit': '' },
-        { Month: 'Sales Income', Income: Number(currentMonthData.salesIncome.toFixed(2)), Expenses: '', 'Net Profit': '' },
-        { Month: 'Collection Income', Income: Number(currentMonthData.collectionIncome.toFixed(2)), Expenses: '', 'Net Profit': '' },
-        { Month: 'Working Capital Expenses', Income: '', Expenses: Number(currentMonthData.workingCapitalExpenses.toFixed(2)), 'Net Profit': '' },
-        { Month: 'Fixed Capital Expenses', Income: '', Expenses: Number(currentMonthData.fixedCapitalExpenses.toFixed(2)), 'Net Profit': '' }
+        { Month: 'Current Period Breakdown', Income: '', Expenses: '', 'Net Profit': '' },
+        { Month: 'Sales Income', Income: Number(currentPeriodData.salesIncome.toFixed(2)), Expenses: '', 'Net Profit': '' },
+        { Month: 'Collection Income', Income: Number(currentPeriodData.collectionIncome.toFixed(2)), Expenses: '', 'Net Profit': '' },
+        { Month: 'Working Capital Expenses', Income: '', Expenses: Number(currentPeriodData.workingCapitalExpenses.toFixed(2)), 'Net Profit': '' },
+        { Month: 'Fixed Capital Expenses', Income: '', Expenses: Number(currentPeriodData.fixedCapitalExpenses.toFixed(2)), 'Net Profit': '' }
       ];
 
       const finalData = [...performanceExport, ...summaryData];
@@ -369,8 +342,8 @@ export default function FinanceOverview() {
       XLSX.utils.book_append_sheet(wb, ws, 'Financial Overview');
 
       // Generate filename
-      const periodLabel = selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1);
-      const filename = `Financial_Overview_${periodLabel}_${format(new Date(), 'yyyy_MM_dd')}.xlsx`;
+      const periodLabel = `${periodLength}month${periodLength !== '1' ? 's' : ''}_${format(periodStart, 'MMM_yy')}_to_${format(periodEnd, 'MMM_yy')}`;
+      const filename = `Financial_Overview_${periodLabel}.xlsx`;
 
       // Save file
       XLSX.writeFile(wb, filename);
@@ -397,19 +370,34 @@ export default function FinanceOverview() {
           <h1 className="text-3xl font-bold text-foreground">Finance Overview</h1>
           <p className="text-muted-foreground">Comprehensive financial analysis and insights</p>
         </div>
-        <div className="flex gap-2">
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+        <div className="flex gap-2 items-center">
+          <Select value={periodLength} onValueChange={(value: any) => setPeriodLength(value)}>
             <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {monthOptions.map(option => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
+              <SelectItem value="1">1 Month</SelectItem>
+              <SelectItem value="3">3 Months</SelectItem>
+              <SelectItem value="6">6 Months</SelectItem>
+              <SelectItem value="12">12 Months</SelectItem>
             </SelectContent>
           </Select>
+          <div className="flex items-center gap-2 border rounded-md px-3 py-2">
+            <Button variant="ghost" size="icon" onClick={handlePreviousPeriod}>
+              <TrendingDown className="h-4 w-4 rotate-90" />
+            </Button>
+            <span className="text-sm font-medium min-w-[200px] text-center">
+              {getPeriodLabel()}
+            </span>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleNextPeriod}
+              disabled={periodEnd >= endOfMonth(new Date())}
+            >
+              <TrendingUp className="h-4 w-4 rotate-90" />
+            </Button>
+          </div>
           <Button variant="outline" onClick={handleExportFinancialReport}>
             <Download className="h-4 w-4 mr-2" />
             Export Excel
@@ -417,45 +405,45 @@ export default function FinanceOverview() {
         </div>
       </div>
 
-      {/* Current Month Summary */}
+      {/* Current Period Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Current Month Income</CardTitle>
+            <CardTitle className="text-sm font-medium text-card-foreground">Period Income</CardTitle>
             <TrendingUp className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">${currentMonthData.totalIncome.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-success">${currentPeriodData.totalIncome.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
+              {getPeriodLabel()}
             </p>
           </CardContent>
         </Card>
 
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Current Month Expenses</CardTitle>
+            <CardTitle className="text-sm font-medium text-card-foreground">Period Expenses</CardTitle>
             <TrendingDown className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">${currentMonthData.totalExpenses.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-destructive">${currentPeriodData.totalExpenses.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
+              {getPeriodLabel()}
             </p>
           </CardContent>
         </Card>
 
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Current Month Net</CardTitle>
-            <DollarSign className={`h-4 w-4 ${currentMonthData.netIncome >= 0 ? 'text-success' : 'text-destructive'}`} />
+            <CardTitle className="text-sm font-medium text-card-foreground">Period Net</CardTitle>
+            <DollarSign className={`h-4 w-4 ${currentPeriodData.netIncome >= 0 ? 'text-success' : 'text-destructive'}`} />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${currentMonthData.netIncome >= 0 ? 'text-success' : 'text-destructive'}`}>
-              ${currentMonthData.netIncome.toFixed(2)}
+            <div className={`text-2xl font-bold ${currentPeriodData.netIncome >= 0 ? 'text-success' : 'text-destructive'}`}>
+              ${currentPeriodData.netIncome.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {currentMonthData.netIncome >= 0 ? 'Profit' : 'Loss'}
+              {currentPeriodData.netIncome >= 0 ? 'Profit' : 'Loss'}
             </p>
           </CardContent>
         </Card>
@@ -466,78 +454,78 @@ export default function FinanceOverview() {
             <Receipt className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${currentMonthData.netIncome >= 0 ? 'text-success' : 'text-destructive'}`}>
-              {currentMonthData.totalIncome > 0 ? ((currentMonthData.netIncome / currentMonthData.totalIncome) * 100).toFixed(1) : '0.0'}%
+            <div className={`text-2xl font-bold ${currentPeriodData.netIncome >= 0 ? 'text-success' : 'text-destructive'}`}>
+              {currentPeriodData.totalIncome > 0 ? ((currentPeriodData.netIncome / currentPeriodData.totalIncome) * 100).toFixed(1) : '0.0'}%
             </div>
-            <p className="text-xs text-muted-foreground">Current month</p>
+            <p className="text-xs text-muted-foreground">Current period</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Monthly Financial Performance Tracker */}
+      {/* Period Financial Performance Tracker */}
       <Card className="dashboard-card border-2">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-card-foreground flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Monthly Financial Performance Tracker
+                Period Financial Performance Tracker
               </CardTitle>
               <CardDescription>
-                Compare month-over-month financial performance
+                Compare period-over-period financial performance
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-            {/* Current Month Income */}
+            {/* Current Period Income */}
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Current Month Income</div>
+              <div className="text-sm text-muted-foreground">Current Period Income</div>
               <div className="text-3xl font-bold text-success">
-                ${currentMonthData.totalIncome.toFixed(2)}
+                ${currentPeriodData.totalIncome.toFixed(2)}
               </div>
               <div className="text-xs text-muted-foreground">
-                {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
+                {getPeriodLabel()}
               </div>
             </div>
 
-            {/* Current Month Expenses */}
+            {/* Current Period Expenses */}
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Current Month Expenses</div>
+              <div className="text-sm text-muted-foreground">Current Period Expenses</div>
               <div className="text-2xl font-semibold text-destructive">
-                ${currentMonthData.totalExpenses.toFixed(2)}
+                ${currentPeriodData.totalExpenses.toFixed(2)}
               </div>
               <div className="text-xs text-muted-foreground">
                 Working + Fixed Capital
               </div>
             </div>
 
-            {/* Current Month Net */}
+            {/* Current Period Net */}
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Current Month Net</div>
-              <div className={`text-2xl font-semibold ${currentMonthData.netIncome >= 0 ? 'text-success' : 'text-destructive'}`}>
-                ${currentMonthData.netIncome.toFixed(2)}
+              <div className="text-sm text-muted-foreground">Current Period Net</div>
+              <div className={`text-2xl font-semibold ${currentPeriodData.netIncome >= 0 ? 'text-success' : 'text-destructive'}`}>
+                ${currentPeriodData.netIncome.toFixed(2)}
               </div>
               <div className="text-xs text-muted-foreground">
-                {currentMonthData.netIncome >= 0 ? 'Profit' : 'Loss'}
+                {currentPeriodData.netIncome >= 0 ? 'Profit' : 'Loss'}
               </div>
             </div>
 
-            {/* Previous Month Net */}
+            {/* Previous Period Net */}
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Previous Month Net</div>
+              <div className="text-sm text-muted-foreground">Previous Period Net</div>
               <div className={`text-2xl font-semibold text-muted-foreground`}>
-                ${previousMonthData.netIncome.toFixed(2)}
+                ${previousPeriodData.netIncome.toFixed(2)}
               </div>
               <div className="text-xs text-muted-foreground">
-                {format(parseISO(`${previousMonth}-01`), 'MMMM yyyy')}
+                {format(previousPeriodStart, 'MMM yy')} - {format(previousPeriodEnd, 'MMM yy')}
               </div>
             </div>
 
-            {/* Month-over-Month Change */}
+            {/* Period-over-Period Change */}
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Month-over-Month</div>
+              <div className="text-sm text-muted-foreground">Period-over-Period</div>
               <div className={`flex items-center gap-2 ${netChange >= 0 ? 'text-success' : 'text-destructive'}`}>
                 {netChange >= 0 ? <ArrowUpRight className="h-6 w-6" /> : <ArrowDownRight className="h-6 w-6" />}
                 <span className="text-2xl font-bold">
@@ -545,7 +533,7 @@ export default function FinanceOverview() {
                 </span>
               </div>
               <div className={`text-sm ${netChange >= 0 ? 'text-success' : 'text-destructive'}`}>
-                {netChange >= 0 ? '+' : '-'}${Math.abs(netChange).toFixed(2)} from last month
+                {netChange >= 0 ? '+' : '-'}${Math.abs(netChange).toFixed(2)} from previous
               </div>
             </div>
           </div>
@@ -585,13 +573,13 @@ export default function FinanceOverview() {
               <div className="space-y-2">
                 <div className="text-xs text-muted-foreground">Profit Margin</div>
                 <div className="text-lg font-bold text-foreground">
-                  {currentMonthData.totalIncome > 0 
-                    ? ((currentMonthData.netIncome / currentMonthData.totalIncome) * 100).toFixed(1) 
+                  {currentPeriodData.totalIncome > 0 
+                    ? ((currentPeriodData.netIncome / currentPeriodData.totalIncome) * 100).toFixed(1) 
                     : '0.0'}%
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Previous: {previousMonthData.totalIncome > 0 
-                    ? ((previousMonthData.netIncome / previousMonthData.totalIncome) * 100).toFixed(1) 
+                  Previous: {previousPeriodData.totalIncome > 0 
+                    ? ((previousPeriodData.netIncome / previousPeriodData.totalIncome) * 100).toFixed(1) 
                     : '0.0'}%
                 </div>
               </div>
@@ -607,20 +595,9 @@ export default function FinanceOverview() {
             <div>
               <CardTitle className="text-card-foreground">Financial Performance Trend</CardTitle>
               <CardDescription>
-                Income, expenses, and net profit over the selected period
+                Monthly breakdown of income, expenses, and net profit
               </CardDescription>
             </div>
-            <Select value={selectedPeriod} onValueChange={(value: any) => setSelectedPeriod(value)}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monthly">Monthly (Last 12)</SelectItem>
-                <SelectItem value="quarterly">Quarterly (Last 4)</SelectItem>
-                <SelectItem value="biannual">Bi-Annual (Last 2)</SelectItem>
-                <SelectItem value="annual">Annual (This Year)</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardHeader>
         <CardContent>
@@ -661,7 +638,7 @@ export default function FinanceOverview() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="dashboard-card">
           <CardHeader>
-            <CardTitle className="text-card-foreground">Current Month Income Breakdown</CardTitle>
+            <CardTitle className="text-card-foreground">Current Period Income Breakdown</CardTitle>
             <CardDescription>Distribution of income sources</CardDescription>
           </CardHeader>
           <CardContent>
@@ -705,7 +682,7 @@ export default function FinanceOverview() {
               <div className="h-64 flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
                   <PieChart className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No income data for current month</p>
+                  <p>No income data for current period</p>
                 </div>
               </div>
             )}
@@ -771,7 +748,7 @@ export default function FinanceOverview() {
         <CardHeader>
           <CardTitle className="text-card-foreground">Period Summary</CardTitle>
           <CardDescription>
-            Financial totals for the selected {selectedPeriod.replace('-', ' ')} period
+            Financial totals for {getPeriodLabel()}
           </CardDescription>
         </CardHeader>
         <CardContent>
