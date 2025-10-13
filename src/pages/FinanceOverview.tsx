@@ -121,15 +121,35 @@ export default function FinanceOverview() {
 
     const monthExpenses = expenditures.filter(expense => {
       const expenseDate = parseISO(expense.date);
-      return isWithinInterval(expenseDate, { start: monthStart, end: monthEnd });
+      const isInRange = isWithinInterval(expenseDate, { start: monthStart, end: monthEnd });
+      console.log('Expense check:', {
+        expenseId: expense.id,
+        expenseDate: expense.date,
+        expenseAmount: expense.amount,
+        expenseCategory: expense.category,
+        monthStart: monthStart.toISOString(),
+        monthEnd: monthEnd.toISOString(),
+        isInRange
+      });
+      return isInRange;
     });
 
+    console.log('Month expenses found:', monthExpenses.length, monthExpenses);
+
     const workingCapitalExpenses = monthExpenses
-      .filter(expense => expense.category === 'working-capital')
+      .filter(expense => {
+        const isWorking = expense.category === 'working-capital';
+        console.log('Working capital check:', expense.category, isWorking, expense.amount);
+        return isWorking;
+      })
       .reduce((sum, expense) => sum + expense.amount, 0);
 
     const fixedCapitalExpenses = monthExpenses
-      .filter(expense => expense.category === 'fixed-capital')
+      .filter(expense => {
+        const isFixed = expense.category === 'fixed-capital';
+        console.log('Fixed capital check:', expense.category, isFixed, expense.amount);
+        return isFixed;
+      })
       .reduce((sum, expense) => sum + expense.amount, 0);
 
     const totalIncome = salesIncome + collectionIncome;
