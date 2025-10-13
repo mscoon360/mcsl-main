@@ -240,7 +240,7 @@ export default function Products() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={product.stock === 0 ? 'destructive' : product.status === 'active' ? 'default' : 'secondary'}>
-                        {product.stock === 0 ? 'no stock' : product.status}
+                        {product.stock === 0 ? 'no stock' : product.status.replace(/_/g, ' ')}
                       </Badge>
                     </TableCell>
                     <TableCell>
