@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Sales from "./pages/Sales";
 import Customers from "./pages/Customers";
 import Products from "./pages/Products";
+import Inventory from "./pages/Inventory";
 import ProductBarcodes from "./pages/ProductBarcodes";
 import BarcodeScanner from "./pages/BarcodeScanner";
 import RentalAgreements from "./pages/RentalAgreements";
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="sales" element={<Sales />} />
               <Route path="customers" element={<Customers />} />
             <Route path="products" element={<Products />} />
+            <Route path="inventory" element={<Inventory />} />
             <Route path="products/:productId/barcodes" element={<ProductBarcodes />} />
             <Route path="barcode-scanner" element={<BarcodeScanner />} />
             <Route path="rental-agreements" element={<RentalAgreements />} />

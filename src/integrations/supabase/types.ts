@@ -586,6 +586,51 @@ export type Database = {
         }
         Relationships: []
       }
+      supplies: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          last_restock_date: string | null
+          min_stock_level: number | null
+          name: string
+          quantity: number
+          status: string | null
+          unit: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_restock_date?: string | null
+          min_stock_level?: number | null
+          name: string
+          quantity?: number
+          status?: string | null
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_restock_date?: string | null
+          min_stock_level?: number | null
+          name?: string
+          quantity?: number
+          status?: string | null
+          unit?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
