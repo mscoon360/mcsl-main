@@ -281,199 +281,97 @@ export default function Invoices() {
     try {
       const doc = new jsPDF();
       
-      // Add logo at top left (smaller)
+      // Add logo at top left
       const logoImg = new Image();
       logoImg.src = '/src/assets/magic-care-logo.png';
       logoImg.onload = () => {
-        doc.addImage(logoImg, 'PNG', 15, 8, 20, 20);
+        doc.addImage(logoImg, 'PNG', 20, 10, 30, 30);
       };
       
-      // Company Name
-      doc.setFontSize(14);
-      doc.setTextColor(0, 102, 204);
+      // TAX INVOICE header - centered at top
+      doc.setFontSize(20);
       doc.setFont(undefined, 'bold');
-      doc.text('MAGIC-CARE SOLUTIONS LIMITED', 105, 15, { align: 'center' });
-      
-      // TAX INVOICE
-      doc.setFontSize(12);
       doc.setTextColor(0, 0, 0);
-      doc.text('TAX INVOICE', 105, 22, { align: 'center' });
+      doc.text('TAX INVOICE', 105, 20, { align: 'center' });
+      
+      // VAT Registration number
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.text('VAT REG. No. 317089', 105, 27, { align: 'center' });
+      
+      // Company Name
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('MAGIC-CARE SOLUTIONS Ltd.', 105, 38, { align: 'center' });
       
       // Tagline
-      doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
+      doc.setFontSize(10);
       doc.setFont(undefined, 'italic');
-      doc.text('"Caring for your Health"', 105, 28, { align: 'center' });
+      doc.setTextColor(100, 100, 100);
+      doc.text('"Caring for your Health"', 105, 45, { align: 'center' });
       
-      // VAT Registration
-      doc.setFontSize(8);
-      doc.setFont(undefined, 'normal');
-      doc.text('VAT REG. No. 317089', 105, 33, { align: 'center' });
-      
-      // Invoice details - right side
-      doc.setFontSize(9);
-      doc.setTextColor(40, 40, 40);
-      doc.text(`Invoice Date: ${format(parseISO(invoice.issueDate), 'MM/dd/yyyy')}`, 140, 42);
-      doc.text(`Invoice Number: ${invoice.invoiceNumber}`, 140, 48);
-      
-      // Customer details - left side
-      const customer = customers.find(c => c.id === invoice.customerId);
-      let yPos = 42;
-      doc.setFontSize(9);
-      doc.setTextColor(40, 40, 40);
-      doc.text(invoice.customerName, 20, yPos);
-      
-      if (customer) {
-        yPos += 6;
-        if (customer.address) {
-          doc.text(customer.address, 20, yPos);
-          yPos += 6;
-        }
-        if (customer.city) {
-          doc.text(customer.city, 20, yPos);
-          yPos += 6;
-        }
-      }
-      
-      // Services Division Menu (Column 1 - Fixed content)
-      const servicesMenu = [
-        'SOLUTIONS Division - I',
-        'i-giene care SOLUTIONS',
-        'Fem-Care Units',
-        'Nappy-Care Units',
-        'washroom care SOLUTIONS',
-        'Magic AeroWest Units',
-        'Hand-Care Units',
-        'Air-Care Units',
-        'Toilet Seat Sani-Care Units',
-        'Urinal Care',
-        'Paper Dispensers',
-        'Infant Care',
-        'healthcare SOLUTIONS',
-        'Clinical Waste Units',
-        'Medical Waste Units',
-        'Dental Waste Units',
-        'ACE PEST MANAGEMENT',
-        'SOLUTIONS Division - II',
-        'Rodent Control',
-        'Insect Control',
-        'Bird Control',
-        'Bed Bugs',
-        'Pest Prevention & Management',
-        'Wildlife Management',
-        'Global Eco-Products SOLUTIONS',
-        'Division - III',
-        'Eco-Paper Products',
-        'SCENT: LINQ:',
-        'Corporate Scenting System',
-        'Ambient Scenting System',
-        'Microfiber Cleaning System',
-        'Janitorial Products',
-        'Dust Control Mats'
-      ];
-      
-      // Create table data with 3 columns
+      // Create simple 2-column table with DESCRIPTION and AMOUNT
       const tableStartY = 60;
-      const maxRows = Math.max(servicesMenu.length, invoice.items.length);
-      const tableData = [];
-      
-      for (let i = 0; i < maxRows; i++) {
-        tableData.push([
-          servicesMenu[i] || '',
-          invoice.items[i]?.description || '',
-          invoice.items[i] ? `TTD$ ${invoice.items[i].total.toFixed(2)}` : ''
-        ]);
-      }
+      const tableData = invoice.items.map(item => [
+        item.description,
+        ''  // Empty amount column - amounts go in the right box at bottom
+      ]);
       
       autoTable(doc, {
         startY: tableStartY,
-        head: [['', 'DESCRIPTION', 'AMOUNT']],
+        head: [['DESCRIPTION', 'AMOUNT']],
         body: tableData,
         theme: 'plain',
         headStyles: {
           fillColor: [255, 255, 255],
           textColor: 0,
-          fontSize: 8,
+          fontSize: 11,
           fontStyle: 'bold',
-          halign: 'left',
+          halign: 'center',
           lineWidth: 0.5,
           lineColor: [0, 0, 0],
-          cellPadding: 1
+          cellPadding: 3
         },
         bodyStyles: {
-          fontSize: 6.5,
-          textColor: 60,
-          cellPadding: 0.8,
-          lineWidth: 0.1,
-          lineColor: [200, 200, 200]
+          fontSize: 10,
+          textColor: 0,
+          cellPadding: 3,
+          lineWidth: 0.5,
+          lineColor: [0, 0, 0],
+          minCellHeight: 8
         },
         columnStyles: {
-          0: { cellWidth: 50, halign: 'left', fontSize: 6, fontStyle: 'bold', cellPadding: { top: 0.5, bottom: 0.5, left: 1, right: 1 } },
-          1: { cellWidth: 95, halign: 'left', fontSize: 7 },
-          2: { cellWidth: 40, halign: 'right', fontSize: 7 }
-        },
-        didParseCell: (data: any) => {
-          if (data.column.index === 0) {
-            data.cell.styles.lineWidth = 0;
-          }
+          0: { cellWidth: 130, halign: 'left' },
+          1: { cellWidth: 60, halign: 'right' }
         },
         margin: { left: 15, right: 15 },
         styles: {
           lineColor: [0, 0, 0],
-          lineWidth: 0.1
+          lineWidth: 0.5
         }
       });
       
       // Calculate totals position
-      const finalY = (doc as any).lastAutoTable.finalY + 5;
+      const finalY = (doc as any).lastAutoTable.finalY + 10;
       
-      // Company Name Footer
-      doc.setFontSize(8);
-      doc.setTextColor(0, 102, 204);
-      doc.setFont(undefined, 'bold');
-      doc.text('MAGIC-CARE SOLUTIONS LIMITED', 20, finalY);
-      
-      // Thank You
-      doc.setFontSize(9);
-      doc.setTextColor(0, 0, 0);
-      doc.text('Thank You!', 20, finalY + 6);
-      
-      // Totals section - right aligned
+      // Totals section - right aligned boxes like in template
       const totalsX = 140;
-      const valuesX = 190;
+      const boxWidth = 50;
+      const boxHeight = 8;
       
-      doc.setFontSize(9);
-      doc.setTextColor(40, 40, 40);
-      doc.text('SUB-TOTAL:', totalsX, finalY);
-      doc.text(`TTD$ ${invoice.subtotal.toFixed(2)}`, valuesX, finalY, { align: 'right' });
-      
-      doc.text('VAT:', totalsX, finalY + 5);
-      doc.text(`TTD$ ${invoice.taxAmount.toFixed(2)}`, valuesX, finalY + 5, { align: 'right' });
-      
-      doc.setFont(undefined, 'bold');
-      doc.text('TOTAL TTD$:', totalsX, finalY + 10);
-      doc.text(`TTD$ ${invoice.total.toFixed(2)}`, valuesX, finalY + 10, { align: 'right' });
-      
-      // Authorized Signature
+      // VAT box
+      doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
-      doc.setFontSize(8);
-      doc.text('AUTHORIZED SIGNATURE', totalsX, finalY + 18);
-      doc.line(totalsX, finalY + 20, valuesX, finalY + 20);
+      doc.text('VAT:', totalsX - 10, finalY + 5);
+      doc.rect(totalsX, finalY, boxWidth, boxHeight);
+      doc.text(`${invoice.taxAmount.toFixed(2)}`, totalsX + boxWidth - 3, finalY + 5.5, { align: 'right' });
       
-      // Footer section
-      const pageHeight = doc.internal.pageSize.height;
-      doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
-      doc.text('A member of GROUP of Companies', 105, pageHeight - 45, { align: 'center' });
-      
-      doc.setFontSize(8);
-      doc.text('Please make cheques payable to: MAGIC-CARE SOLUTIONS LIMITED', 20, pageHeight - 35);
-      doc.text('Corner Stone & Duke Streets, West, Port of Spain,', 20, pageHeight - 30);
-      doc.text('Tel: (868) 627-7717, 623-9863', 20, pageHeight - 25);
-      doc.text('Fax: (868)627-3897', 20, pageHeight - 20);
-      doc.text('Mobile: (868)342-3386', 20, pageHeight - 15);
-      doc.text('Email: magiccaresolutions@mmsl.co', 20, pageHeight - 10);
-      doc.text('Email: magiccaresolutions@gmail.com', 100, pageHeight - 10);
+      // TOTAL box
+      doc.text('TOTAL:', totalsX - 10, finalY + boxHeight + 5);
+      doc.rect(totalsX, finalY + boxHeight, boxWidth, boxHeight);
+      doc.setFont(undefined, 'bold');
+      doc.text(`${invoice.total.toFixed(2)}`, totalsX + boxWidth - 3, finalY + boxHeight + 5.5, { align: 'right' });
       
       // Save the PDF
       doc.save(`Invoice_${invoice.invoiceNumber}.pdf`);
