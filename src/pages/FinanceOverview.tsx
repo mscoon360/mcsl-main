@@ -260,56 +260,74 @@ export default function FinanceOverview() {
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
   const handleExportFinancialReport = () => {
-    // Prepare performance data for Excel
-    const performanceExport = performanceData.map(month => ({
-      Month: month.month,
-      Income: month.income,
-      Expenses: month.expenses,
-      'Net Profit': month.net
-    }));
+    try {
+      // Prepare performance data for Excel
+      const performanceExport = performanceData.map(month => ({
+        Month: month.month,
+        Income: Number(month.income.toFixed(2)),
+        Expenses: Number(month.expenses.toFixed(2)),
+        'Net Profit': Number(month.net.toFixed(2))
+      }));
 
-    // Prepare summary data
-    const summaryData = [
-      { Month: '', Income: '', Expenses: '', 'Net Profit': '' },
-      { Month: 'SUMMARY', Income: '', Expenses: '', 'Net Profit': '' },
-      { Month: 'Total Income', Income: periodTotals.income, Expenses: '', 'Net Profit': '' },
-      { Month: 'Total Expenses', Income: '', Expenses: periodTotals.expenses, 'Net Profit': '' },
-      { Month: 'Net Profit/Loss', Income: '', Expenses: '', 'Net Profit': periodTotals.net },
-      { Month: '', Income: '', Expenses: '', 'Net Profit': '' },
-      { Month: 'Current Month Breakdown', Income: '', Expenses: '', 'Net Profit': '' },
-      { Month: 'Sales Income', Income: currentMonthData.salesIncome, Expenses: '', 'Net Profit': '' },
-      { Month: 'Collection Income', Income: currentMonthData.collectionIncome, Expenses: '', 'Net Profit': '' },
-      { Month: 'Working Capital Expenses', Income: '', Expenses: currentMonthData.workingCapitalExpenses, 'Net Profit': '' },
-      { Month: 'Fixed Capital Expenses', Income: '', Expenses: currentMonthData.fixedCapitalExpenses, 'Net Profit': '' }
-    ];
+      // Prepare summary data
+      const summaryData = [
+        { Month: '', Income: '', Expenses: '', 'Net Profit': '' },
+        { Month: 'SUMMARY', Income: '', Expenses: '', 'Net Profit': '' },
+        { Month: 'Total Income', Income: Number(periodTotals.income.toFixed(2)), Expenses: '', 'Net Profit': '' },
+        { Month: 'Total Expenses', Income: '', Expenses: Number(periodTotals.expenses.toFixed(2)), 'Net Profit': '' },
+        { Month: 'Net Profit/Loss', Income: '', Expenses: '', 'Net Profit': Number(periodTotals.net.toFixed(2)) },
+        { Month: '', Income: '', Expenses: '', 'Net Profit': '' },
+        { Month: 'Current Month Breakdown', Income: '', Expenses: '', 'Net Profit': '' },
+        { Month: 'Sales Income', Income: Number(currentMonthData.salesIncome.toFixed(2)), Expenses: '', 'Net Profit': '' },
+        { Month: 'Collection Income', Income: Number(currentMonthData.collectionIncome.toFixed(2)), Expenses: '', 'Net Profit': '' },
+        { Month: 'Working Capital Expenses', Income: '', Expenses: Number(currentMonthData.workingCapitalExpenses.toFixed(2)), 'Net Profit': '' },
+        { Month: 'Fixed Capital Expenses', Income: '', Expenses: Number(currentMonthData.fixedCapitalExpenses.toFixed(2)), 'Net Profit': '' }
+      ];
 
-    const finalData = [...performanceExport, ...summaryData];
+      const finalData = [...performanceExport, ...summaryData];
 
-    // Create workbook and worksheet
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(finalData);
+      if (finalData.length === 0) {
+        toast({
+          title: "Export Error",
+          description: "No data available to export",
+          variant: "destructive"
+        });
+        return;
+      }
 
-    // Set column widths
-    ws['!cols'] = [
-      { width: 15 }, // Month
-      { width: 15 }, // Income
-      { width: 15 }, // Expenses
-      { width: 15 }  // Net Profit
-    ];
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(finalData);
 
-    // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(wb, ws, 'Financial Overview');
+      // Set column widths
+      ws['!cols'] = [
+        { width: 25 }, // Month
+        { width: 15 }, // Income
+        { width: 15 }, // Expenses
+        { width: 15 }  // Net Profit
+      ];
 
-    // Generate filename
-    const filename = `Financial_Overview_${selectedPeriod}_${format(new Date(), 'yyyy_MM_dd')}.xlsx`;
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Financial Overview');
 
-    // Save file
-    XLSX.writeFile(wb, filename);
+      // Generate filename
+      const filename = `Financial_Overview_${selectedPeriod}_${format(new Date(), 'yyyy_MM_dd')}.xlsx`;
 
-    toast({
-      title: "Financial Report Exported",
-      description: `Complete financial overview downloaded as ${filename}`
-    });
+      // Save file
+      XLSX.writeFile(wb, filename);
+
+      toast({
+        title: "Financial Report Exported",
+        description: `Complete financial overview downloaded as ${filename}`
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "There was an error exporting the financial report",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
