@@ -77,10 +77,12 @@ export default function ProductBarcodes() {
         bwipjs.toCanvas(canvasRef.current, {
           bcid: 'code128',
           text: selectedItem.barcode,
-          scale: 3,
+          scale: 2,
           height: 10,
           includetext: true,
           textxalign: 'center',
+          paddingwidth: 10,
+          paddingheight: 8,
         });
       } catch (error) {
         console.error('Error generating barcode:', error);
@@ -172,7 +174,7 @@ export default function ProductBarcodes() {
       </Card>
 
       <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-xl w-[90vw] overflow-hidden">
           <DialogHeader>
             <DialogTitle>Barcode: {selectedItem?.barcode}</DialogTitle>
           </DialogHeader>
@@ -185,17 +187,19 @@ export default function ProductBarcodes() {
                     bwipjs.toCanvas(el, {
                       bcid: 'code128',
                       text: selectedItem.barcode,
-                      scale: 4,
-                      height: 12,
+                      scale: 2,
+                      height: 10,
                       includetext: true,
                       textxalign: 'center',
+                      paddingwidth: 10,
+                      paddingheight: 8,
                     });
                   } catch (error) {
                     console.error('Error generating barcode:', error);
                   }
                 }
               }}
-              className="bg-white p-4 rounded border"
+              className="bg-white p-4 rounded border w-full max-w-[560px] mx-auto"
             />
             <p className="text-sm text-muted-foreground capitalize">
               Status: {selectedItem?.status}
