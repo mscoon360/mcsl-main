@@ -405,7 +405,7 @@ export default function Sales() {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0 bg-popover z-50" align="start">
-                      <Command>
+                      <Command shouldFilter={false}>
                         <CommandInput 
                           placeholder="Search customer..." 
                           value={customerSearchValue}
@@ -423,7 +423,7 @@ export default function Sales() {
                               .map((customer) => (
                                 <CommandItem
                                   key={customer.id}
-                                  value={customer.id}
+                                  value={customer.name}
                                   onSelect={() => {
                                     setSelectedCustomer(customer.id);
                                     setCustomerSearchOpen(false);
