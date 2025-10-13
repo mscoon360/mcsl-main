@@ -18,6 +18,8 @@ interface ProductItem {
   barcode: string;
   status: string;
   created_at: string;
+  product_id: string;
+  price?: number;
 }
 
 interface Product {
@@ -53,12 +55,19 @@ export default function ProductBarcodes() {
 
       const { data: itemsData, error: itemsError } = await supabase
         .from('product_items')
-        .select('*')
+        .select('*, products!inner(price)')
         .eq('product_id', productId)
         .order('barcode', { ascending: true });
 
       if (itemsError) throw itemsError;
-      setItems(itemsData || []);
+      
+      // Map the data to include price
+      const mappedItems = itemsData?.map(item => ({
+        ...item,
+        price: item.products?.price
+      })) || [];
+      
+      setItems(mappedItems);
     } catch (error: any) {
       console.error('Error fetching data:', error);
       toast({
@@ -201,9 +210,16 @@ export default function ProductBarcodes() {
               }}
               className="bg-white p-4 rounded border w-full max-w-[560px] mx-auto"
             />
-            <p className="text-sm text-muted-foreground capitalize">
-              Status: {selectedItem?.status}
-            </p>
+            <div className="text-center space-y-2">
+              {selectedItem?.price && (
+                <p className="text-2xl font-bold text-primary">
+                  ${selectedItem.price.toFixed(2)}
+                </p>
+              )}
+              <p className="text-sm text-muted-foreground capitalize">
+                Status: {selectedItem?.status}
+              </p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
