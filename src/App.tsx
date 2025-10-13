@@ -11,6 +11,7 @@ import Sales from "./pages/Sales";
 import Customers from "./pages/Customers";
 import Products from "./pages/Products";
 import ProductBarcodes from "./pages/ProductBarcodes";
+import BarcodeScanner from "./pages/BarcodeScanner";
 import RentalAgreements from "./pages/RentalAgreements";
 import RentalPayments from "./pages/RentalPayments";
 import Fulfillment from "./pages/Fulfillment";
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="customers" element={<Customers />} />
             <Route path="products" element={<Products />} />
             <Route path="products/:productId/barcodes" element={<ProductBarcodes />} />
+            <Route path="barcode-scanner" element={<BarcodeScanner />} />
             <Route path="rental-agreements" element={<RentalAgreements />} />
               <Route path="rental-payments" element={<RentalPayments />} />
               <Route path="fulfillment" element={<Fulfillment />} />

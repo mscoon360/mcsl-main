@@ -15,6 +15,7 @@ import {
   ShoppingCart,
   Shield,
   LogOut,
+  ScanBarcode,
 } from "lucide-react";
 import magicCareLogo from "@/assets/magic-care-logo.png";
 import {
@@ -45,6 +46,7 @@ const navigation = [
       { name: "Sales", href: "/sales", icon: ShoppingCart },
       { name: "Customers", href: "/customers", icon: Users },
       { name: "Products", href: "/products", icon: Package },
+      { name: "Barcode Scanner", href: "/barcode-scanner", icon: ScanBarcode },
       { 
         name: "Contracts", 
         icon: FileText,
