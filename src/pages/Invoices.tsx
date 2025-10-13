@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, FileText, Calendar, DollarSign, User, Send, Eye, Download, Filter, Edit, Trash2 } from "lucide-react";
+import { Plus, FileText, Calendar, DollarSign, User, Send, Eye, Download, Filter, Edit, Trash2, Check } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO, addDays } from "date-fns";
 import * as XLSX from 'xlsx';
 import { PDFDocument, rgb } from 'pdf-lib';
@@ -952,34 +953,53 @@ export default function Invoices() {
                       </TableCell>
                       <TableCell className="text-right font-bold text-xs md:text-sm">${invoice.total.toFixed(2)}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => editInvoice(invoice)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          {invoice.status !== 'paid' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => updateInvoiceStatus(invoice.id, 'paid')}
-                              className="h-8 w-8 p-0"
-                            >
-                              <DollarSign className="h-3 w-3" />
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => deleteInvoice(invoice.id)}
-                            className="hover:bg-destructive hover:text-destructive-foreground h-8 w-8 p-0"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
+                        <TooltipProvider>
+                          <div className="flex items-center gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => editInvoice(invoice)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit Invoice</TooltipContent>
+                            </Tooltip>
+                            
+                            {invoice.status !== 'paid' && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => updateInvoiceStatus(invoice.id, 'paid')}
+                                    className="h-8 w-8 p-0 hover:bg-green-500/10 hover:text-green-600 hover:border-green-600"
+                                  >
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Mark as Paid</TooltipContent>
+                              </Tooltip>
+                            )}
+                            
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => deleteInvoice(invoice.id)}
+                                  className="hover:bg-destructive hover:text-destructive-foreground h-8 w-8 p-0"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Delete Invoice</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TooltipProvider>
                       </TableCell>
                     </TableRow>
                   ))}
