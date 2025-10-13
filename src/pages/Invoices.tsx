@@ -19,6 +19,7 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useProducts } from "@/hooks/useProducts";
+import { useSales } from "@/hooks/useSales";
 import invoiceTemplate from '@/assets/invoice-template.pdf';
 
 interface InvoiceItem {
@@ -80,6 +81,9 @@ export default function Invoices() {
 
   // Get products from Supabase
   const { products } = useProducts();
+  
+  // Get sales log from Supabase (renamed to avoid conflict with rental sales)
+  const { sales: salesLog, loading: salesLoading } = useSales();
 
   // Get rental agreements to show customer's rental items
   const [sales] = useLocalStorage<Array<{
@@ -1005,6 +1009,76 @@ export default function Invoices() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Sales Log */}
+      <Card className="dashboard-card">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-card-foreground">Sales Log</CardTitle>
+              <CardDescription>
+                Recent sales transactions
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {salesLoading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Loading sales...</p>
+            </div>
+          ) : salesLog.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Items</TableHead>
+                  <TableHead>Sales Rep</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {salesLog.slice(0, 10).map(sale => (
+                  <TableRow key={sale.id}>
+                    <TableCell className="font-medium">{sale.customer_name}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {sale.items.map((item, idx) => (
+                          <div key={idx} className="text-sm">
+                            {item.quantity}x {item.product_name}
+                          </div>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{sale.rep_name}</TableCell>
+                    <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{sale.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      ${sale.total.toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-12">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
+                <FileText className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                No sales logged yet
+              </h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                Sales transactions will appear here once logged in the system.
+              </p>
             </div>
           )}
         </CardContent>
