@@ -73,7 +73,6 @@ export const useProducts = () => {
         }
       }
       
-      setProducts(prev => [data, ...prev]);
       toast({
         title: 'Product added',
         description: 'Product has been added successfully.',
