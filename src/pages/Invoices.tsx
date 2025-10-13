@@ -299,16 +299,16 @@ export default function Invoices() {
         }
       };
 
-      // Customer details - now three separate fields
+      // Customer details
       const customer = customers.find(c => c.id === invoice.customerId);
-      console.log('Customer found:', customer);
-      console.log('Customer company:', customer?.company);
-      console.log('Customer address:', customer?.address);
       
       setField('Customer Name', invoice.customerName);
-      setField('Company Name', customer?.company || '');
-      setField('Company Address', customer?.address || '');
-      console.log('Bill To fields set separately');
+      
+      // Format company name and address - company on first line, address on second (if available)
+      const companyInfo = customer?.company || '';
+      const addressInfo = customer?.address || '';
+      const billToText = addressInfo ? `${companyInfo}\n${addressInfo}` : companyInfo;
+      setField('Company Name, Address', billToText);
 
       // Header fields (from template: Text17, Text18)
       setField('Text17', format(parseISO(invoice.issueDate), 'dd/MM/yyyy')); // Invoice Date
