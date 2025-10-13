@@ -307,9 +307,9 @@ export default function Invoices() {
       
       setField('Customer Name', invoice.customerName);
       
-      // Format Bill To address properly - use comma with space instead of newline
+      // Format Bill To address - company name on first line, address on new line
       const billToText = customer?.address 
-        ? `${customer.company}, ${customer.address}` 
+        ? `${customer.company}\n${customer.address}` 
         : customer?.company || '';
       console.log('Bill To text:', billToText);
       setField('Company Name, Address', billToText);
