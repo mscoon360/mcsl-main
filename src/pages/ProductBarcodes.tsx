@@ -32,6 +32,7 @@ export default function ProductBarcodes() {
   const [product, setProduct] = useState<Product | null>(null);
   const [items, setItems] = useState<ProductItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openItems, setOpenItems] = useState<Set<string>>(new Set());
   const canvasRefs = useRef<{ [key: string]: HTMLCanvasElement | null }>({});
 
   useEffect(() => {
@@ -69,27 +70,36 @@ export default function ProductBarcodes() {
     }
   };
 
-  useEffect(() => {
-    if (items.length > 0) {
-      items.forEach((item) => {
-        const canvas = canvasRefs.current[item.id];
-        if (canvas) {
-          try {
-            bwipjs.toCanvas(canvas, {
-              bcid: 'code128',
-              text: item.barcode,
-              scale: 3,
-              height: 10,
-              includetext: true,
-              textxalign: 'center',
-            });
-          } catch (error) {
-            console.error('Error generating barcode:', error);
-          }
-        }
-      });
+  const generateBarcode = (itemId: string, barcode: string) => {
+    const canvas = canvasRefs.current[itemId];
+    if (canvas) {
+      try {
+        bwipjs.toCanvas(canvas, {
+          bcid: 'code128',
+          text: barcode,
+          scale: 3,
+          height: 10,
+          includetext: true,
+          textxalign: 'center',
+        });
+      } catch (error) {
+        console.error('Error generating barcode:', error);
+      }
     }
-  }, [items]);
+  };
+
+  const handleOpenChange = (itemId: string, isOpen: boolean) => {
+    if (isOpen && !openItems.has(itemId)) {
+      setOpenItems(prev => new Set(prev).add(itemId));
+      // Generate barcode after a small delay to ensure canvas is rendered
+      setTimeout(() => {
+        const item = items.find(i => i.id === itemId);
+        if (item) {
+          generateBarcode(itemId, item.barcode);
+        }
+      }, 10);
+    }
+  };
 
   const handlePrint = () => {
     window.print();
@@ -151,7 +161,10 @@ export default function ProductBarcodes() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((item) => (
-              <Collapsible key={item.id}>
+              <Collapsible 
+                key={item.id}
+                onOpenChange={(isOpen) => handleOpenChange(item.id, isOpen)}
+              >
                 <div className="border rounded-lg bg-card">
                   <CollapsibleTrigger className="w-full p-4 hover:bg-accent transition-colors">
                     <div className="flex items-center justify-between">
