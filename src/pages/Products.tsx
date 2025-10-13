@@ -105,7 +105,7 @@ export default function Products() {
           newBarcodes.push({
             product_id: editingProduct.id,
             barcode: barcode,
-            status: 'available',
+            status: 'in storage',
           });
         }
 
