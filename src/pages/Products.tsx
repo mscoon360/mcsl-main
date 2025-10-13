@@ -260,8 +260,8 @@ export default function Products() {
                   <Input id="stock" name="stock" type="number" required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="units">Units *</Label>
-                  <Input id="units" name="units" placeholder="e.g., cases, ml, litres" required />
+                  <Label htmlFor="units">Units</Label>
+                  <Input id="units" name="units" placeholder="e.g., cases, ml, litres" />
                 </div>
               </div>
 
@@ -394,8 +394,8 @@ export default function Products() {
                   <Input id="edit-stock" name="stock" type="number" defaultValue={editingProduct.stock} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-units">Units *</Label>
-                  <Input id="edit-units" name="units" defaultValue={editingProduct.units} placeholder="e.g., cases, ml, litres" required />
+                  <Label htmlFor="edit-units">Units</Label>
+                  <Input id="edit-units" name="units" defaultValue={editingProduct.units} placeholder="e.g., cases, ml, litres" />
                 </div>
               </div>
 
