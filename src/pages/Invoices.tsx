@@ -299,16 +299,21 @@ export default function Invoices() {
         }
       };
 
-      // Customer details
+      // Customer details - fill multiple possible field names for compatibility
       const customer = customers.find(c => c.id === invoice.customerId);
-      
+
       setField('Customer Name', invoice.customerName);
-      
-      // Format company name and address - company on first line, address on second (if available)
+
       const companyInfo = customer?.company || '';
       const addressInfo = customer?.address || '';
-      const billToText = addressInfo ? `${companyInfo}\n${addressInfo}` : companyInfo;
-      setField('Company Name, Address', billToText);
+
+      // If separate fields exist, set them
+      setField('Company Name', companyInfo);
+      setField('Company Address', addressInfo); // blank if missing
+
+      // If a combined field exists, set company on first line and address on second (only if present)
+      const billToCombined = addressInfo ? `${companyInfo}\n${addressInfo}` : companyInfo;
+      setField('Company Name, Address', billToCombined);
 
       // Header fields (from template: Text17, Text18)
       setField('Text17', format(parseISO(invoice.issueDate), 'dd/MM/yyyy')); // Invoice Date
