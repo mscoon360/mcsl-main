@@ -6,20 +6,33 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, CreditCard, Calendar, DollarSign, User, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import { Search, CreditCard, Calendar, DollarSign, User, CheckCircle, AlertCircle, Clock, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, addMonths, addDays, differenceInDays, parseISO, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 import { useSales } from "@/hooks/useSales";
 import { usePaymentSchedules } from "@/hooks/usePaymentSchedules";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function RentalPayments() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<'date' | 'month' | 'year'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [showClearDialog, setShowClearDialog] = useState(false);
+  const [clearPassword, setClearPassword] = useState("");
 
   const { sales: supabaseSales } = useSales();
   const { paymentSchedules: supabasePaymentSchedules, addPaymentSchedule, updatePaymentSchedule } = usePaymentSchedules();
@@ -241,6 +254,55 @@ export default function RentalPayments() {
     }
   };
 
+  const handleClearAllPayments = async () => {
+    if (!clearPassword) {
+      toast({
+        title: "Password Required",
+        description: "Please enter your password to confirm.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: clearPassword
+      });
+
+      if (authError) {
+        toast({
+          title: "Authentication Failed",
+          description: "Incorrect password. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('payment_schedules')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+
+      if (error) throw error;
+
+      toast({
+        title: "All Payments Cleared",
+        description: "All rental payment schedules have been deleted successfully."
+      });
+
+      setShowClearDialog(false);
+      setClearPassword("");
+    } catch (error) {
+      console.error('Error clearing payments:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clear payment schedules. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Calculate statistics
   const totalPayments = supabasePaymentSchedules.length;
   const paidPayments = supabasePaymentSchedules.filter(p => p.status === 'paid').length;
@@ -297,6 +359,16 @@ export default function RentalPayments() {
           <h1 className="text-3xl font-bold text-foreground">Rental Payments</h1>
           <p className="text-muted-foreground">Track and manage rental payment schedules</p>
         </div>
+        {isAdmin && (
+          <Button
+            variant="destructive"
+            onClick={() => setShowClearDialog(true)}
+            className="gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            Clear All Payments
+          </Button>
+        )}
       </div>
 
       {/* Statistics */}
@@ -644,6 +716,34 @@ export default function RentalPayments() {
           ))
         )}
       </div>
+
+      <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear All Payment Schedules</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will permanently delete all rental payment schedules. This cannot be undone.
+              Please enter your password to confirm.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="clear-password">Password</Label>
+            <Input
+              id="clear-password"
+              type="password"
+              value={clearPassword}
+              onChange={(e) => setClearPassword(e.target.value)}
+              placeholder="Enter your password"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setClearPassword("")}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearAllPayments} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Clear All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
