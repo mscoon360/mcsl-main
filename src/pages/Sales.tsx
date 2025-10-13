@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package, CalendarIcon, Filter, Trash2 } from "lucide-react";
+import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package, CalendarIcon, Filter, Trash2, Check, ChevronsUpDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -20,6 +20,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomers } from "@/hooks/useCustomers";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 export default function Sales() {
   const { toast } = useToast();
@@ -36,6 +37,8 @@ export default function Sales() {
   const [showFilters, setShowFilters] = useState(false);
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [clearPassword, setClearPassword] = useState("");
+  const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
+  const [customerSearchValue, setCustomerSearchValue] = useState("");
 
   // Use products from Supabase instead of localStorage
   const products = supabaseProducts;
@@ -386,23 +389,64 @@ export default function Sales() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="customer">Customer</Label>
-                  <Select 
-                    value={selectedCustomer} 
-                    onValueChange={setSelectedCustomer} 
-                    required 
-                    disabled={customers.length === 0}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={customers.length === 0 ? "Add customers first" : "Select customer"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map(customer => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name} - {customer.company}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={customerSearchOpen}
+                        className="w-full justify-between"
+                        disabled={customers.length === 0}
+                      >
+                        {selectedCustomer
+                          ? customers.find((customer) => customer.id === selectedCustomer)?.name
+                          : customers.length === 0 ? "Add customers first" : "Search customer..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0 bg-popover z-50" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search customer..." 
+                          value={customerSearchValue}
+                          onValueChange={setCustomerSearchValue}
+                        />
+                        <CommandList>
+                          <CommandEmpty>No customer found.</CommandEmpty>
+                          <CommandGroup>
+                            {customers
+                              .filter(customer => 
+                                customer.name.toLowerCase().includes(customerSearchValue.toLowerCase()) ||
+                                customer.company?.toLowerCase().includes(customerSearchValue.toLowerCase()) ||
+                                customer.email?.toLowerCase().includes(customerSearchValue.toLowerCase())
+                              )
+                              .map((customer) => (
+                                <CommandItem
+                                  key={customer.id}
+                                  value={customer.id}
+                                  onSelect={() => {
+                                    setSelectedCustomer(customer.id);
+                                    setCustomerSearchOpen(false);
+                                    setCustomerSearchValue("");
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      selectedCustomer === customer.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">{customer.name}</span>
+                                    <span className="text-sm text-muted-foreground">{customer.company}</span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   {customers.length === 0 && (
                     <p className="text-sm text-muted-foreground">
                       <Link to="/customers" className="text-primary hover:underline">
