@@ -3,9 +3,11 @@ import { BrowserMultiFormatReader } from "@zxing/library";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Camera, CameraOff, RotateCcw, AlertCircle } from "lucide-react";
+import { Camera, CameraOff, RotateCcw, AlertCircle, MapPin } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ScannedProduct {
@@ -16,6 +18,8 @@ interface ScannedProduct {
   stock: number;
   status: string;
   scannedAt: Date;
+  itemId: string;
+  destinationAddress: string | null;
 }
 
 export default function BarcodeScanner() {
@@ -24,6 +28,8 @@ export default function BarcodeScanner() {
   const [scanHistory, setScanHistory] = useState<ScannedProduct[]>([]);
   const [error, setError] = useState<string>("");
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [destinationAddress, setDestinationAddress] = useState<string>("");
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
@@ -137,7 +143,11 @@ export default function BarcodeScanner() {
         stock: itemData.products.stock,
         status: itemData.status,
         scannedAt: new Date(),
+        itemId: itemData.id,
+        destinationAddress: itemData.destination_address,
       };
+
+      setDestinationAddress(itemData.destination_address || "");
 
       setScannedProduct(product);
       setScanHistory(prev => [product, ...prev.slice(0, 9)]); // Keep last 10
@@ -155,6 +165,40 @@ export default function BarcodeScanner() {
         description: "Failed to retrieve product information",
         variant: "destructive",
       });
+    }
+  };
+
+  const saveDestinationAddress = async () => {
+    if (!scannedProduct) return;
+
+    setIsSavingAddress(true);
+    try {
+      const { error: updateError } = await supabase
+        .from('product_items')
+        .update({ destination_address: destinationAddress })
+        .eq('id', scannedProduct.itemId);
+
+      if (updateError) throw updateError;
+
+      setScannedProduct({
+        ...scannedProduct,
+        destinationAddress: destinationAddress,
+      });
+
+      toast({
+        title: "Address Updated",
+        description: "Destination address has been saved successfully.",
+      });
+
+    } catch (err: any) {
+      console.error("Address save error:", err);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save destination address.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingAddress(false);
     }
   };
 
@@ -271,6 +315,33 @@ export default function BarcodeScanner() {
                     <p className="text-muted-foreground">Stock</p>
                     <p className="font-semibold">{scannedProduct.stock} units</p>
                   </div>
+                </div>
+
+                {/* Destination Address Section */}
+                <div className="space-y-2 pt-4 border-t">
+                  <Label htmlFor="destination-address" className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Destination Address
+                  </Label>
+                  <Input
+                    id="destination-address"
+                    placeholder="Enter destination address..."
+                    value={destinationAddress}
+                    onChange={(e) => setDestinationAddress(e.target.value)}
+                  />
+                  <Button 
+                    onClick={saveDestinationAddress} 
+                    disabled={isSavingAddress}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    {isSavingAddress ? "Saving..." : "Save Address"}
+                  </Button>
+                  {scannedProduct.destinationAddress && (
+                    <p className="text-sm text-muted-foreground">
+                      Current: {scannedProduct.destinationAddress}
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (

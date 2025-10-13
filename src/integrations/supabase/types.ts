@@ -382,6 +382,7 @@ export type Database = {
         Row: {
           barcode: string
           created_at: string
+          destination_address: string | null
           id: string
           product_id: string
           status: string
@@ -390,6 +391,7 @@ export type Database = {
         Insert: {
           barcode: string
           created_at?: string
+          destination_address?: string | null
           id?: string
           product_id: string
           status?: string
@@ -398,6 +400,7 @@ export type Database = {
         Update: {
           barcode?: string
           created_at?: string
+          destination_address?: string | null
           id?: string
           product_id?: string
           status?: string
