@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package, CalendarIcon, Filter } from "lucide-react";
+import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package, CalendarIcon, Filter, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -19,10 +19,11 @@ import { useSales } from "@/hooks/useSales";
 import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomers } from "@/hooks/useCustomers";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function Sales() {
   const { toast } = useToast();
-  const { userDepartment, user } = useAuth();
+  const { userDepartment, user, isAdmin } = useAuth();
   const { sales, loading, refetch } = useSales();
   const { products: supabaseProducts, updateProduct } = useProducts();
   const { customers } = useCustomers();
@@ -33,6 +34,8 @@ export default function Sales() {
   const [dateFrom, setDateFrom] = useState<Date>();
   const [dateTo, setDateTo] = useState<Date>();
   const [showFilters, setShowFilters] = useState(false);
+  const [showClearDialog, setShowClearDialog] = useState(false);
+  const [clearPassword, setClearPassword] = useState("");
 
   // Use products from Supabase instead of localStorage
   const products = supabaseProducts;
@@ -205,6 +208,58 @@ export default function Sales() {
     setDateTo(today);
   };
 
+  const handleClearAllSales = async () => {
+    if (!clearPassword || !user?.email) {
+      toast({
+        title: "Password Required",
+        description: "Please enter your password to confirm.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Verify password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: clearPassword
+      });
+
+      if (signInError) {
+        toast({
+          title: "Authentication Failed",
+          description: "Incorrect password. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Delete all sales and their items
+      const { error: deleteError } = await supabase
+        .from('sales')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (deleteError) throw deleteError;
+
+      toast({
+        title: "Sales Cleared",
+        description: "All sales have been successfully deleted."
+      });
+
+      setShowClearDialog(false);
+      setClearPassword("");
+      refetch();
+    } catch (error) {
+      console.error('Error clearing sales:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clear sales. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Filter products to exclude rental-only products for sales
   const availableProducts = products.filter(p => p.is_rental_only !== true);
 
@@ -216,6 +271,16 @@ export default function Sales() {
           <h1 className="text-3xl font-bold text-foreground">Sales Management</h1>
         </div>
         <div className="flex gap-2">
+          {isAdmin && (
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowClearDialog(true)}
+              disabled={sales.length === 0}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Clear All Sales
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
             <Filter className="h-4 w-4 mr-2" />
             Filters
@@ -548,6 +613,35 @@ export default function Sales() {
           )}
         </CardContent>
       </Card>
+
+      {/* Clear All Confirmation Dialog */}
+      <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear All Sales</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete all sales records from the database.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="clear-password">Enter your password to confirm</Label>
+            <Input
+              id="clear-password"
+              type="password"
+              placeholder="Your password"
+              value={clearPassword}
+              onChange={(e) => setClearPassword(e.target.value)}
+              className="mt-2"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setClearPassword("")}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearAllSales} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Clear All Sales
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

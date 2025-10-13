@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, FileText, Calendar, DollarSign, User, Plus, CalendarIcon } from "lucide-react";
+import { Search, FileText, Calendar, DollarSign, User, Plus, CalendarIcon, Trash2 } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { format, differenceInMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +19,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useCustomers } from "@/hooks/useCustomers";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface RentalAgreement {
   id: string;
@@ -37,7 +38,7 @@ interface RentalAgreement {
 
 export default function RentalAgreements() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { products: supabaseProducts, updateProduct } = useProducts();
   const { sales: supabaseSales, refetch } = useSales();
   const { customers } = useCustomers();
@@ -47,6 +48,8 @@ export default function RentalAgreements() {
   const [contractLength, setContractLength] = useState("");
   const [paymentPeriod, setPaymentPeriod] = useState("monthly");
   const [startDate, setStartDate] = useState<Date>();
+  const [showClearDialog, setShowClearDialog] = useState(false);
+  const [clearPassword, setClearPassword] = useState("");
 
   // Support multiple rental items
   const [rentalItems, setRentalItems] = useState([{
@@ -300,6 +303,65 @@ export default function RentalAgreements() {
     }
   };
 
+  const handleClearAllRentals = async () => {
+    if (!clearPassword || !user?.email) {
+      toast({
+        title: "Password Required",
+        description: "Please enter your password to confirm.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Verify password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: clearPassword
+      });
+
+      if (signInError) {
+        toast({
+          title: "Authentication Failed",
+          description: "Incorrect password. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Get all sales with rental items
+      const rentalSaleIds = sales
+        .filter(sale => sale.items.some(item => item.is_rental))
+        .map(sale => sale.id);
+
+      if (rentalSaleIds.length > 0) {
+        // Delete rental sales
+        const { error: deleteError } = await supabase
+          .from('sales')
+          .delete()
+          .in('id', rentalSaleIds);
+
+        if (deleteError) throw deleteError;
+      }
+
+      toast({
+        title: "Rentals Cleared",
+        description: "All rental agreements have been successfully deleted."
+      });
+
+      setShowClearDialog(false);
+      setClearPassword("");
+      refetch();
+    } catch (error) {
+      console.error('Error clearing rentals:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clear rental agreements. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -308,10 +370,22 @@ export default function RentalAgreements() {
           <h1 className="text-3xl font-bold text-foreground">Rental Agreements</h1>
           <p className="text-muted-foreground">Manage and track all rental agreements</p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="h-4 w-4 mr-2" />
-          {showForm ? "Cancel" : "New Rental Agreement"}
-        </Button>
+        <div className="flex gap-2">
+          {isAdmin && (
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowClearDialog(true)}
+              disabled={rentalAgreements.length === 0}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Clear All Rentals
+            </Button>
+          )}
+          <Button onClick={() => setShowForm(!showForm)}>
+            <Plus className="h-4 w-4 mr-2" />
+            {showForm ? "Cancel" : "New Rental Agreement"}
+          </Button>
+        </div>
       </div>
 
       {/* New Rental Agreement Form */}
@@ -714,6 +788,35 @@ export default function RentalAgreements() {
           )}
         </CardContent>
       </Card>
+
+      {/* Clear All Confirmation Dialog */}
+      <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear All Rental Agreements</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete all rental agreements from the database.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="clear-password">Enter your password to confirm</Label>
+            <Input
+              id="clear-password"
+              type="password"
+              placeholder="Your password"
+              value={clearPassword}
+              onChange={(e) => setClearPassword(e.target.value)}
+              className="mt-2"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setClearPassword("")}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearAllRentals} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Clear All Rentals
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
