@@ -38,7 +38,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
-const navigation = [
+type NavigationItem = {
+  name: string;
+  icon: any;
+  href?: string;
+  subItems?: { name: string; href: string }[];
+};
+
+type NavigationSection = {
+  title: string;
+  items: NavigationItem[];
+};
+
+const navigation: NavigationSection[] = [
   {
     title: "Main",
     items: [
@@ -47,14 +59,7 @@ const navigation = [
       { name: "Customers", href: "/customers", icon: Users },
       { name: "Products", href: "/products", icon: Package },
       { name: "Barcode Scanner", href: "/barcode-scanner", icon: ScanBarcode },
-      { 
-        name: "Contracts", 
-        icon: FileText,
-        subItems: [
-          { name: "All Contracts", href: "/rental-agreements" },
-          { name: "Collections", href: "/rental-payments" }
-        ]
-      },
+      { name: "Contracts", href: "/rental-agreements", icon: FileText },
       { name: "Fulfillment", href: "/fulfillment", icon: Truck },
     ]
   },
@@ -65,6 +70,7 @@ const navigation = [
       { name: "Income", href: "/income", icon: DollarSign },
       { name: "Expenditure", href: "/expenditure", icon: Receipt },
       { name: "Invoices", href: "/invoices", icon: FileText },
+      { name: "Collections", href: "/rental-payments", icon: CreditCard },
     ]
   }
 ];
