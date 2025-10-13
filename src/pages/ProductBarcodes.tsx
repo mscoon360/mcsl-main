@@ -178,7 +178,23 @@ export default function ProductBarcodes() {
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
             <canvas
-              ref={canvasRef}
+              ref={(el) => {
+                canvasRef.current = el;
+                if (el && selectedItem) {
+                  try {
+                    bwipjs.toCanvas(el, {
+                      bcid: 'code128',
+                      text: selectedItem.barcode,
+                      scale: 4,
+                      height: 12,
+                      includetext: true,
+                      textxalign: 'center',
+                    });
+                  } catch (error) {
+                    console.error('Error generating barcode:', error);
+                  }
+                }
+              }}
               className="bg-white p-4 rounded border"
             />
             <p className="text-sm text-muted-foreground capitalize">
