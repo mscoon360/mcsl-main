@@ -610,57 +610,84 @@ export default function Income() {
     });
   };
   const handleExportIncomeReport = () => {
-    // Prepare income transactions for Excel
-    const transactionExport = filteredData.items.map(item => ({
-      Date: safeFormatDate(item.date, 'MM/dd/yyyy'),
-      Type: item.type === 'sale' ? 'Product Sale' : 'Rental Payment',
-      Customer: item.customer,
-      Description: item.description,
-      Amount: item.amount,
-      'Payment Method': item.type === 'collection' ? item.paymentMethod || 'N/A' : 'N/A'
-    }));
+    // Prepare income transactions for Excel - expand sale items into individual rows
+    const transactionExport: any[] = [];
+    
+    filteredData.items.forEach(item => {
+      if (item.type === 'sale' && item.items && item.items.length > 0) {
+        // Expand each sale into individual item rows
+        item.items.forEach(saleItem => {
+          transactionExport.push({
+            Date: safeFormatDate(item.date, 'MM/dd/yyyy'),
+            Customer: item.customer,
+            Quantity: saleItem.quantity,
+            'Item Name': saleItem.product,
+            'Revenue Type': saleItem.isRental ? 'Rental' : 'Purchase',
+            Amount: saleItem.price * saleItem.quantity,
+            'Payment Method': 'N/A'
+          });
+        });
+      } else if (item.type === 'collection') {
+        // Collection payments
+        transactionExport.push({
+          Date: safeFormatDate(item.date, 'MM/dd/yyyy'),
+          Customer: item.customer,
+          Quantity: 1,
+          'Item Name': item.description.replace('Payment for ', ''),
+          'Revenue Type': 'Rental Payment',
+          Amount: item.amount,
+          'Payment Method': item.paymentMethod || 'N/A'
+        });
+      }
+    });
 
     // Add summary data
     const summaryData = [{
       Date: '',
-      Type: '',
       Customer: '',
-      Description: '',
+      Quantity: '',
+      'Item Name': '',
+      'Revenue Type': '',
       Amount: '',
       'Payment Method': ''
     }, {
       Date: '',
-      Type: 'SUMMARY',
       Customer: '',
-      Description: '',
+      Quantity: '',
+      'Item Name': 'SUMMARY',
+      'Revenue Type': '',
       Amount: '',
       'Payment Method': ''
     }, {
       Date: '',
-      Type: 'Total Income',
       Customer: '',
-      Description: '',
+      Quantity: '',
+      'Item Name': 'Total Income',
+      'Revenue Type': '',
       Amount: incomeData.totalIncome,
       'Payment Method': ''
     }, {
       Date: '',
-      Type: 'Sales Income',
       Customer: '',
-      Description: '',
+      Quantity: '',
+      'Item Name': 'Sales Income',
+      'Revenue Type': '',
       Amount: incomeData.salesIncome,
       'Payment Method': ''
     }, {
       Date: '',
-      Type: 'Collection Income',
       Customer: '',
-      Description: '',
+      Quantity: '',
+      'Item Name': 'Collection Income',
+      'Revenue Type': '',
       Amount: incomeData.collectionIncome,
       'Payment Method': ''
     }, {
       Date: '',
-      Type: 'Total Contract Value',
       Customer: '',
-      Description: '',
+      Quantity: '',
+      'Item Name': 'Total Contract Value',
+      'Revenue Type': '',
       Amount: totalContractValue,
       'Payment Method': ''
     }];
@@ -671,29 +698,14 @@ export default function Income() {
     const ws = XLSX.utils.json_to_sheet(finalData);
 
     // Set column widths
-    ws['!cols'] = [{
-      width: 12
-    },
-    // Date
-    {
-      width: 18
-    },
-    // Type
-    {
-      width: 20
-    },
-    // Customer
-    {
-      width: 40
-    },
-    // Description
-    {
-      width: 12
-    },
-    // Amount
-    {
-      width: 15
-    } // Payment Method
+    ws['!cols'] = [
+      { width: 12 },  // Date
+      { width: 20 },  // Customer
+      { width: 10 },  // Quantity
+      { width: 30 },  // Item Name
+      { width: 18 },  // Revenue Type
+      { width: 12 },  // Amount
+      { width: 15 }   // Payment Method
     ];
 
     // Add worksheet to workbook
