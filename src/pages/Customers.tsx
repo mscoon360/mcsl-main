@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, User, Mail, Phone, Building, Users, Edit, Trash2, Lock, Clock, CheckCircle } from "lucide-react";
+import { Plus, Search, User, Mail, Phone, Building, Users, Edit, Trash2, Lock, Clock, CheckCircle, X, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Link } from "react-router-dom";
@@ -31,22 +31,25 @@ export default function Customers() {
   const { toast } = useToast();
   const { userDepartment, user } = useAuth();
   const { customers, loading, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
-  const [showForm, setShowForm] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCustomer, setEditingCustomer] = useState<string | null>(null);
-  const [accessStatus, setAccessStatus] = useState<{
-    hasAccess: boolean;
-    status: 'none' | 'pending' | 'approved' | 'expired';
-    expiresAt?: string;
-  }>({ hasAccess: false, status: 'none' });
+  const [formData, setFormData] = useState({
+    name: '', email: '', phone: '', company: '', address: '', city: ''
+  });
+  const [accessStatus, setAccessStatus] = useState<'none' | 'pending' | 'approved' | 'denied'>('none');
   const [requestingAccess, setRequestingAccess] = useState(false);
+
+  const department = userDepartment;
 
   // Check access for sales users
   useEffect(() => {
-    if (userDepartment === 'sales' && user) {
+    if (department === 'sales' && user) {
       checkAccessStatus();
+    } else if (department !== 'sales') {
+      setAccessStatus('approved'); // Non-sales have automatic access
     }
-  }, [userDepartment, user]);
+  }, [department, user]);
 
   const checkAccessStatus = async () => {
     if (!user) return;
@@ -60,33 +63,30 @@ export default function Customers() {
 
     if (error) {
       console.error('Failed to check access status:', error);
+      setAccessStatus('denied');
       return;
     }
 
     if (!data || data.length === 0) {
-      setAccessStatus({ hasAccess: false, status: 'none' });
+      setAccessStatus('denied');
       return;
     }
 
     const latestRequest = data[0];
     
     if (latestRequest.status === 'pending') {
-      setAccessStatus({ hasAccess: false, status: 'pending' });
+      setAccessStatus('pending');
     } else if (latestRequest.status === 'approved') {
       const expiresAt = new Date(latestRequest.expires_at);
       const now = new Date();
       
       if (now < expiresAt) {
-        setAccessStatus({ 
-          hasAccess: true, 
-          status: 'approved',
-          expiresAt: latestRequest.expires_at 
-        });
+        setAccessStatus('approved');
       } else {
-        setAccessStatus({ hasAccess: false, status: 'expired' });
+        setAccessStatus('denied');
       }
     } else {
-      setAccessStatus({ hasAccess: false, status: 'none' });
+      setAccessStatus('denied');
     }
   };
 
@@ -121,7 +121,7 @@ export default function Customers() {
   };
 
   const logActivity = async (action: 'created' | 'updated' | 'deleted', customerId: string, changes?: any) => {
-    if (!user || userDepartment !== 'sales') return;
+    if (!user || department !== 'sales') return;
 
     await supabase.from('customer_activity_log').insert({
       user_id: user.id,
@@ -182,32 +182,32 @@ export default function Customers() {
 
   const filteredCustomers = customersWithSales.filter(customer => 
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    customer.company.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+    customer.company?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.city?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const form = e.currentTarget;
-    const data = new FormData(form);
     
     try {
       const customerData = await addCustomer({
-        name: String(data.get("name") || ""),
-        email: String(data.get("email") || ""),
-        phone: String(data.get("phone") || ""),
-        company: String(data.get("company") || ""),
-        address: String(data.get("address") || ""),
-        city: String(data.get("city") || ""),
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || '',
+        company: formData.company || '',
+        address: formData.address || '',
+        city: formData.city || '',
         status: "active"
       });
       
       // Log activity for sales users
-      if (userDepartment === 'sales' && customerData) {
+      if (department === 'sales' && customerData) {
         await logActivity('created', customerData.id);
       }
       
-      form.reset();
-      setShowForm(false);
+      setFormData({ name: '', email: '', phone: '', company: '', address: '', city: '' });
+      setShowAddForm(false);
     } catch (error) {
       console.error('Failed to add customer:', error);
     }
@@ -249,157 +249,245 @@ export default function Customers() {
       }
     }
   };
-  // Show access control for sales users
-  if (userDepartment === 'sales' && !accessStatus.hasAccess) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Lock className="h-5 w-5" />
-              Customer Database Access
-            </CardTitle>
-            <CardDescription>
-              You need administrator approval to access the customer database
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {accessStatus.status === 'none' && (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">
-                  Request temporary access to view and add customers. Access will be valid until 4 PM.
-                </p>
-                <Button onClick={handleRequestAccess} disabled={requestingAccess}>
-                  {requestingAccess ? 'Requesting...' : 'Request Access'}
-                </Button>
-              </div>
-            )}
-            {accessStatus.status === 'pending' && (
-              <div className="text-center py-8">
-                <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="font-medium mb-2">Access Request Pending</p>
-                <p className="text-sm text-muted-foreground">
-                  Your request is waiting for administrator approval. You'll be notified once it's processed.
-                </p>
-              </div>
-            )}
-            {accessStatus.status === 'expired' && (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">
-                  Your access has expired (valid until 4 PM). Request new access to continue.
-                </p>
-                <Button onClick={handleRequestAccess} disabled={requestingAccess}>
-                  {requestingAccess ? 'Requesting...' : 'Request New Access'}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return <div className="space-y-6">
-      {/* Access Status Banner for Sales */}
-      {userDepartment === 'sales' && accessStatus.hasAccess && (
-        <Card className="border-green-500 bg-green-50 dark:bg-green-950">
-          <CardContent className="py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <p className="text-sm font-medium">
-                  You have temporary access until {accessStatus.expiresAt ? new Date(accessStatus.expiresAt).toLocaleTimeString() : '4 PM'}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
+  return (
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Customer Management</h1>
-          <p className="text-muted-foreground">
-            Manage your customer database and track their purchase history.
-          </p>
-        </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="h-4 w-4 mr-2" />
-          {showForm ? "Cancel" : "Add Customer"}
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
+        <p className="text-muted-foreground">
+          Manage your customer database and relationships
+        </p>
       </div>
 
-      {/* Add Customer Form */}
-      {showForm && <Card className="dashboard-card">
-          <CardHeader>
-            <CardTitle className="text-card-foreground">Add New Customer</CardTitle>
-            <CardDescription>
-              Enter the customer's information below.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Contact Name *</Label>
-                  <Input id="name" name="name" placeholder="John Doe" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
-                  <Input id="email" name="email" type="email" placeholder="john@company.com" required />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" name="phone" type="tel" placeholder="+1 (555) 123-4567" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="company">Company Name *</Label>
-                  <Input id="company" name="company" placeholder="ABC Corporation" required />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Input id="address" name="address" placeholder="123 Business Avenue, Suite 100" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes (Optional)</Label>
-                <Textarea id="notes" name="notes" placeholder="Any additional notes about this customer..." className="min-h-[100px]" />
-              </div>
-
-              <Button type="submit" className="w-full">
-                <User className="h-4 w-4 mr-2" />
-                Add Customer
-              </Button>
-            </form>
-          </CardContent>
-        </Card>}
-
-      {/* Customer List */}
-      <Card className="dashboard-card">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-card-foreground">Customer Database</CardTitle>
+        {/* Sales users can always add customers */}
+        {department === 'sales' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Add New Customer</CardTitle>
               <CardDescription>
-                {filteredCustomers.length} customers in your database
+                Add a new customer to the database. Viewing and editing existing customers requires access approval.
               </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Name *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="company">Company</Label>
+                    <Input
+                      id="company"
+                      value={formData.company}
+                      onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="address">Address</Label>
+                    <Input
+                      id="address"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <Button type="submit">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Customer
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Access status messages for sales users */}
+        {department === 'sales' && accessStatus === 'pending' && (
+          <Card className="border-yellow-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Access Request Pending
+              </CardTitle>
+              <CardDescription>
+                Your request to view and edit customers is awaiting admin approval.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
+
+        {department === 'sales' && accessStatus === 'denied' && (
+          <Card className="border-destructive">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="h-5 w-5" />
+                Access Required to View Customers
+              </CardTitle>
+              <CardDescription>
+                You need administrator approval to view and edit existing customers in the database.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={handleRequestAccess} className="w-full">
+                <Clock className="mr-2 h-4 w-4" />
+                Request Access to View Customers
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {department === 'sales' && accessStatus === 'approved' && (
+          <Card className="border-green-500 bg-green-50 dark:bg-green-950">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                <CheckCircle className="h-5 w-5" />
+                Access Granted to View/Edit Customers
+              </CardTitle>
+              <CardDescription className="text-green-600 dark:text-green-500">
+                You have temporary access to view and edit the customer database
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
+
+        {/* Main Content - Only show if user has access */}
+        {(department !== 'sales' || accessStatus === 'approved') && (
+          <>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Customer Database</h2>
+                <p className="text-muted-foreground text-sm">
+                  {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} found
+                </p>
+              </div>
+              {department !== 'sales' && (
+                <Button onClick={() => setShowAddForm(!showAddForm)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {showAddForm ? 'Cancel' : 'Add Customer'}
+                </Button>
+              )}
             </div>
+
+            {/* Add customer form for non-sales */}
+            {showAddForm && department !== 'sales' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Add New Customer</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="name-form">Name *</Label>
+                        <Input
+                          id="name-form"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="email-form">Email *</Label>
+                        <Input
+                          id="email-form"
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="phone-form">Phone</Label>
+                        <Input
+                          id="phone-form"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="company-form">Company</Label>
+                        <Input
+                          id="company-form"
+                          value={formData.company}
+                          onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="address-form">Address</Label>
+                        <Input
+                          id="address-form"
+                          value={formData.address}
+                          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="city-form">City</Label>
+                        <Input
+                          id="city-form"
+                          value={formData.city}
+                          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <Button type="submit">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Customer
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Search Bar */}
             <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search customers..." className="w-64" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search customers by name, email, company, or city..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              {searchTerm && (
+                <Button variant="ghost" size="icon" onClick={() => setSearchTerm('')}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-          </div>
-        </CardHeader>
+
+            <Card>
         <CardContent>
           {filteredCustomers.length > 0 ? <Table>
               <TableHeader>
@@ -560,7 +648,7 @@ export default function Customers() {
                 Start building your customer database by adding your first customer. All customer information will be stored securely.
               </p>
               <Button asChild>
-                <Link to="#" onClick={() => setShowForm(true)}>
+                <Link to="#" onClick={() => setShowAddForm(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Your First Customer
                 </Link>
@@ -568,5 +656,8 @@ export default function Customers() {
             </div>}
         </CardContent>
       </Card>
-    </div>;
+          </>
+        )}
+      </div>
+  );
 }
