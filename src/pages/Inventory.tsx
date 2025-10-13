@@ -22,6 +22,7 @@ interface Supply {
   last_restock_date: string | null;
   min_stock_level: number;
   status: string;
+  price: number | null;
 }
 export default function Inventory() {
   const {
@@ -78,6 +79,7 @@ export default function Inventory() {
         category: formData.get("category") as string,
         last_restock_date: formData.get("last_restock_date") as string || null,
         min_stock_level: parseInt(formData.get("min_stock_level") as string) || 0,
+        price: formData.get("price") ? parseFloat(formData.get("price") as string) : null,
         status: "in stock"
       });
       if (error) throw error;
@@ -109,7 +111,8 @@ export default function Inventory() {
         unit: formData.get("unit") as string,
         category: formData.get("category") as string,
         last_restock_date: formData.get("last_restock_date") as string || null,
-        min_stock_level: parseInt(formData.get("min_stock_level") as string) || 0
+        min_stock_level: parseInt(formData.get("min_stock_level") as string) || 0,
+        price: formData.get("price") ? parseFloat(formData.get("price") as string) : null
       }).eq("id", editingSupply.id);
       if (error) throw error;
       toast({
@@ -245,6 +248,10 @@ export default function Inventory() {
                     <Label htmlFor="last_restock_date">Last Restock Date</Label>
                     <Input id="last_restock_date" name="last_restock_date" type="date" />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price per Unit ($)</Label>
+                    <Input id="price" name="price" type="number" step="0.01" min="0" placeholder="0.00" />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
@@ -269,6 +276,7 @@ export default function Inventory() {
                   <TableHead>Category</TableHead>
                   <TableHead>Quantity</TableHead>
                   <TableHead>Unit</TableHead>
+                  <TableHead>Price/Unit</TableHead>
                   <TableHead>Min Level</TableHead>
                   <TableHead>Last Restock</TableHead>
                   <TableHead>Actions</TableHead>
@@ -276,7 +284,7 @@ export default function Inventory() {
               </TableHeader>
               <TableBody>
                 {supplies.length === 0 ? <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground">
                       No supplies found. Add your first supply to get started.
                     </TableCell>
                   </TableRow> : supplies.map(supply => <TableRow key={supply.id}>
@@ -288,6 +296,7 @@ export default function Inventory() {
                         </span>
                       </TableCell>
                       <TableCell>{supply.unit || "N/A"}</TableCell>
+                      <TableCell>{supply.price ? `$${supply.price.toFixed(2)}` : "N/A"}</TableCell>
                       <TableCell>{supply.min_stock_level}</TableCell>
                       <TableCell>
                         {supply.last_restock_date ? new Date(supply.last_restock_date).toLocaleDateString() : "N/A"}
@@ -343,6 +352,10 @@ export default function Inventory() {
                 <div className="space-y-2">
                   <Label htmlFor="edit-last_restock_date">Last Restock Date</Label>
                   <Input id="edit-last_restock_date" name="last_restock_date" type="date" defaultValue={editingSupply.last_restock_date || ""} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-price">Price per Unit ($)</Label>
+                  <Input id="edit-price" name="price" type="number" step="0.01" min="0" defaultValue={editingSupply.price || ""} placeholder="0.00" />
                 </div>
               </div>
               <div className="space-y-2">
