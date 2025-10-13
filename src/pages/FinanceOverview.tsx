@@ -351,16 +351,6 @@ export default function FinanceOverview() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="6-months">Last 6 Months</SelectItem>
-              <SelectItem value="12-months">Last 12 Months</SelectItem>
-              <SelectItem value="24-months">Last 24 Months</SelectItem>
-            </SelectContent>
-          </Select>
           <Button variant="outline" onClick={handleExportFinancialReport}>
             <Download className="h-4 w-4 mr-2" />
             Export Excel
@@ -554,10 +544,24 @@ export default function FinanceOverview() {
       {/* Performance Trend Chart */}
       <Card className="dashboard-card">
         <CardHeader>
-          <CardTitle className="text-card-foreground">Financial Performance Trend</CardTitle>
-          <CardDescription>
-            Income, expenses, and net profit over the selected period
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-card-foreground">Financial Performance Trend</CardTitle>
+              <CardDescription>
+                Income, expenses, and net profit over the selected period
+              </CardDescription>
+            </div>
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="6-months">Last 6 Months</SelectItem>
+                <SelectItem value="12-months">Last 12 Months</SelectItem>
+                <SelectItem value="24-months">Last 24 Months</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
