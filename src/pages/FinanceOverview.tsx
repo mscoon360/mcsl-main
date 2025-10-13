@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrendingUp, TrendingDown, DollarSign, Receipt, Calendar, BarChart3, PieChart, Download } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Receipt, Calendar, BarChart3, PieChart, Download, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, parseISO } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell, LineChart, Line, Pie } from "recharts";
@@ -177,6 +177,26 @@ export default function FinanceOverview() {
   const currentMonth = format(new Date(), 'yyyy-MM');
   const currentMonthData = calculateMonthlyFinancials(currentMonth);
   const performanceData = getPerformanceData();
+  
+  // Calculate previous month data for comparison
+  const previousMonth = format(subMonths(new Date(), 1), 'yyyy-MM');
+  const previousMonthData = calculateMonthlyFinancials(previousMonth);
+  
+  // Calculate month-over-month changes
+  const incomeChange = currentMonthData.totalIncome - previousMonthData.totalIncome;
+  const incomePercentage = previousMonthData.totalIncome > 0 
+    ? (incomeChange / previousMonthData.totalIncome) * 100 
+    : 0;
+  
+  const expenseChange = currentMonthData.totalExpenses - previousMonthData.totalExpenses;
+  const expensePercentage = previousMonthData.totalExpenses > 0 
+    ? (expenseChange / previousMonthData.totalExpenses) * 100 
+    : 0;
+  
+  const netChange = currentMonthData.netIncome - previousMonthData.netIncome;
+  const netPercentage = previousMonthData.netIncome !== 0 
+    ? (netChange / Math.abs(previousMonthData.netIncome)) * 100 
+    : 0;
 
   // Calculate totals for current period
   const periodTotals = performanceData.reduce((acc, month) => ({
@@ -334,6 +354,132 @@ export default function FinanceOverview() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Monthly Financial Performance Tracker */}
+      <Card className="dashboard-card border-2">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-card-foreground flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Monthly Financial Performance Tracker
+              </CardTitle>
+              <CardDescription>
+                Compare month-over-month financial performance
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            {/* Current Month Income */}
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Current Month Income</div>
+              <div className="text-3xl font-bold text-success">
+                ${currentMonthData.totalIncome.toFixed(2)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {format(new Date(), 'MMMM yyyy')}
+              </div>
+            </div>
+
+            {/* Current Month Expenses */}
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Current Month Expenses</div>
+              <div className="text-2xl font-semibold text-destructive">
+                ${currentMonthData.totalExpenses.toFixed(2)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Working + Fixed Capital
+              </div>
+            </div>
+
+            {/* Current Month Net */}
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Current Month Net</div>
+              <div className={`text-2xl font-semibold ${currentMonthData.netIncome >= 0 ? 'text-success' : 'text-destructive'}`}>
+                ${currentMonthData.netIncome.toFixed(2)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {currentMonthData.netIncome >= 0 ? 'Profit' : 'Loss'}
+              </div>
+            </div>
+
+            {/* Previous Month Net */}
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Previous Month Net</div>
+              <div className={`text-2xl font-semibold text-muted-foreground`}>
+                ${previousMonthData.netIncome.toFixed(2)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {format(subMonths(new Date(), 1), 'MMMM yyyy')}
+              </div>
+            </div>
+
+            {/* Month-over-Month Change */}
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Month-over-Month</div>
+              <div className={`flex items-center gap-2 ${netChange >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {netChange >= 0 ? <ArrowUpRight className="h-6 w-6" /> : <ArrowDownRight className="h-6 w-6" />}
+                <span className="text-2xl font-bold">
+                  {Math.abs(netPercentage).toFixed(1)}%
+                </span>
+              </div>
+              <div className={`text-sm ${netChange >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {netChange >= 0 ? '+' : '-'}${Math.abs(netChange).toFixed(2)} from last month
+              </div>
+            </div>
+          </div>
+
+          {/* Detailed breakdown row */}
+          <div className="mt-6 pt-6 border-t">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Income Change */}
+              <div className="space-y-2">
+                <div className="text-xs text-muted-foreground">Income Change</div>
+                <div className={`flex items-center gap-2 ${incomeChange >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {incomeChange >= 0 ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+                  <span className="text-lg font-bold">
+                    {incomeChange >= 0 ? '+' : '-'}${Math.abs(incomeChange).toFixed(2)}
+                  </span>
+                  <span className="text-sm">
+                    ({Math.abs(incomePercentage).toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+
+              {/* Expense Change */}
+              <div className="space-y-2">
+                <div className="text-xs text-muted-foreground">Expense Change</div>
+                <div className={`flex items-center gap-2 ${expenseChange <= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {expenseChange >= 0 ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+                  <span className="text-lg font-bold">
+                    {expenseChange >= 0 ? '+' : '-'}${Math.abs(expenseChange).toFixed(2)}
+                  </span>
+                  <span className="text-sm">
+                    ({Math.abs(expensePercentage).toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+
+              {/* Profit Margin Change */}
+              <div className="space-y-2">
+                <div className="text-xs text-muted-foreground">Profit Margin</div>
+                <div className="text-lg font-bold text-foreground">
+                  {currentMonthData.totalIncome > 0 
+                    ? ((currentMonthData.netIncome / currentMonthData.totalIncome) * 100).toFixed(1) 
+                    : '0.0'}%
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Previous: {previousMonthData.totalIncome > 0 
+                    ? ((previousMonthData.netIncome / previousMonthData.totalIncome) * 100).toFixed(1) 
+                    : '0.0'}%
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Performance Trend Chart */}
       <Card className="dashboard-card">
