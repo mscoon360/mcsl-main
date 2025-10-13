@@ -104,6 +104,98 @@ export default function ProductBarcodes() {
     window.print();
   };
 
+  const handlePrintSingle = (item: ProductItem) => {
+    const canvas = document.createElement('canvas');
+    try {
+      bwipjs.toCanvas(canvas, {
+        bcid: 'code128',
+        text: item.barcode,
+        scale: 3,
+        height: 12,
+        includetext: true,
+        textxalign: 'center',
+        paddingwidth: 10,
+        paddingheight: 10,
+      });
+
+      // Create print window
+      const printWindow = window.open('', '', 'width=400,height=300');
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Print Barcode - ${item.barcode}</title>
+              <style>
+                @media print {
+                  @page {
+                    size: 2in 1in;
+                    margin: 0;
+                  }
+                  body {
+                    margin: 0;
+                    padding: 0;
+                  }
+                }
+                body {
+                  font-family: Arial, sans-serif;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                  width: 2in;
+                  height: 1in;
+                  margin: 0;
+                  padding: 0;
+                }
+                .label-container {
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                  width: 100%;
+                  height: 100%;
+                  background: white;
+                }
+                .barcode-img {
+                  max-width: 90%;
+                  height: auto;
+                }
+                .price {
+                  font-size: 14px;
+                  font-weight: bold;
+                  margin-top: 2px;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="label-container">
+                <img src="${canvas.toDataURL()}" alt="Barcode" class="barcode-img" />
+                ${item.price ? `<div class="price">$${item.price.toFixed(2)}</div>` : ''}
+              </div>
+              <script>
+                window.onload = function() {
+                  window.print();
+                  window.onafterprint = function() {
+                    window.close();
+                  };
+                };
+              </script>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
+    } catch (error) {
+      console.error('Error generating barcode for print:', error);
+      toast({
+        title: 'Print error',
+        description: 'Failed to generate barcode for printing',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleDownloadAll = () => {
     toast({
       title: 'Feature coming soon',
@@ -226,6 +318,13 @@ export default function ProductBarcodes() {
                 Status: {selectedItem?.status}
               </p>
             </div>
+            <Button 
+              onClick={() => selectedItem && handlePrintSingle(selectedItem)}
+              className="w-full"
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              Print Label
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
