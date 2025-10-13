@@ -3,9 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Download, Printer } from 'lucide-react';
+import { ArrowLeft, Download, Printer, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import bwipjs from 'bwip-js';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface ProductItem {
   id: string;
@@ -144,25 +149,33 @@ export default function ProductBarcodes() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-col items-center p-4 border rounded-lg bg-white"
-              >
-                <canvas
-                  ref={(el) => {
-                    canvasRefs.current[item.id] = el;
-                  }}
-                  className="mb-2"
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  {item.barcode}
-                </p>
-                <p className="text-xs text-muted-foreground capitalize mt-1">
-                  Status: {item.status}
-                </p>
-              </div>
+              <Collapsible key={item.id}>
+                <div className="border rounded-lg bg-card">
+                  <CollapsibleTrigger className="w-full p-4 hover:bg-accent transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="text-left">
+                        <p className="font-medium text-sm">{item.barcode}</p>
+                        <p className="text-xs text-muted-foreground capitalize">
+                          Status: {item.status}
+                        </p>
+                      </div>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="p-4 pt-0 flex justify-center">
+                      <canvas
+                        ref={(el) => {
+                          canvasRefs.current[item.id] = el;
+                        }}
+                        className="bg-white p-2 rounded"
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
             ))}
           </div>
         </CardContent>
