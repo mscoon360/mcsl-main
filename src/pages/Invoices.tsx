@@ -302,7 +302,12 @@ export default function Invoices() {
       // Customer details
       const customer = customers.find(c => c.id === invoice.customerId);
       setField('Customer Name', invoice.customerName);
-      setField('Company Name, Address', [customer?.company, customer?.address].filter(Boolean).join(', '));
+      
+      // Format Bill To address properly
+      const billToText = customer?.address 
+        ? `${customer.company}\n${customer.address}` 
+        : customer?.company || '';
+      setField('Company Name, Address', billToText);
 
       // Header fields (from template: Text17, Text18)
       setField('Text17', format(parseISO(invoice.issueDate), 'dd/MM/yyyy')); // Invoice Date
