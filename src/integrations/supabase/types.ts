@@ -427,6 +427,7 @@ export type Database = {
           last_sold: string | null
           name: string
           price: number
+          rental_price: number | null
           sku: string
           status: string | null
           stock: number | null
@@ -444,6 +445,7 @@ export type Database = {
           last_sold?: string | null
           name: string
           price: number
+          rental_price?: number | null
           sku: string
           status?: string | null
           stock?: number | null
@@ -461,6 +463,7 @@ export type Database = {
           last_sold?: string | null
           name?: string
           price?: number
+          rental_price?: number | null
           sku?: string
           status?: string | null
           stock?: number | null

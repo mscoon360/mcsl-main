@@ -7,6 +7,7 @@ export interface Product {
   name: string;
   description?: string;
   price: number;
+  rental_price?: number;
   sku: string;
   category?: string;
   units?: string;

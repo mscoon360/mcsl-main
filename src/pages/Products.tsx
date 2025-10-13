@@ -34,13 +34,27 @@ export default function Products() {
     const category = formData.get('category') as string;
     const units = formData.get('units') as string;
     const stock = parseInt(formData.get('stock') as string) || 0;
-    const price = parseFloat(formData.get('price') as string) || 0;
+    
+    // Handle prices based on product type
+    let price = 0;
+    let rental_price = null;
+    
+    if (productType === 'both') {
+      price = parseFloat(formData.get('sale_price') as string) || 0;
+      rental_price = parseFloat(formData.get('rental_price') as string) || 0;
+    } else if (productType === 'rental_only') {
+      rental_price = parseFloat(formData.get('rental_price') as string) || 0;
+      price = rental_price; // Set price to rental_price for display purposes
+    } else {
+      price = parseFloat(formData.get('sale_price') as string) || 0;
+    }
 
     const newProduct = {
       name,
       sku,
       description,
       price,
+      rental_price,
       category,
       units,
       stock,
@@ -210,11 +224,33 @@ export default function Products() {
                 </RadioGroup>
               </div>
 
-              <div className="grid grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price *</Label>
-                  <Input id="price" name="price" type="number" step="0.01" required />
+              {productType === 'both' ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="sale_price">Sale Price *</Label>
+                    <Input id="sale_price" name="sale_price" type="number" step="0.01" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="rental_price">Rental Price *</Label>
+                    <Input id="rental_price" name="rental_price" type="number" step="0.01" required />
+                  </div>
                 </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor={productType === 'rental_only' ? 'rental_price' : 'sale_price'}>
+                    {productType === 'rental_only' ? 'Rental Price' : 'Sale Price'} *
+                  </Label>
+                  <Input 
+                    id={productType === 'rental_only' ? 'rental_price' : 'sale_price'} 
+                    name={productType === 'rental_only' ? 'rental_price' : 'sale_price'} 
+                    type="number" 
+                    step="0.01" 
+                    required 
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
                   <Input id="category" name="category" />
