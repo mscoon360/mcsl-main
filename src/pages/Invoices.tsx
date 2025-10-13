@@ -301,12 +301,17 @@ export default function Invoices() {
 
       // Customer details
       const customer = customers.find(c => c.id === invoice.customerId);
+      console.log('Customer found:', customer);
+      console.log('Customer company:', customer?.company);
+      console.log('Customer address:', customer?.address);
+      
       setField('Customer Name', invoice.customerName);
       
-      // Format Bill To address properly
+      // Format Bill To address properly - use comma with space instead of newline
       const billToText = customer?.address 
-        ? `${customer.company}\n${customer.address}` 
+        ? `${customer.company}, ${customer.address}` 
         : customer?.company || '';
+      console.log('Bill To text:', billToText);
       setField('Company Name, Address', billToText);
 
       // Header fields (from template: Text17, Text18)
