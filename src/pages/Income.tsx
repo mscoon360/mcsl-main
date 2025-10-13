@@ -870,7 +870,7 @@ export default function Income() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Total Income</CardTitle>
+            <CardTitle className="text-sm font-medium text-card-foreground">Total Collected Income</CardTitle>
             <TrendingUp className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
