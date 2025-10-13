@@ -119,6 +119,20 @@ export default function Admin() {
       loadUserRoles();
       loadAccessRequests();
       loadActivityLogs();
+      
+      // Remove admin role from Duane Evelyn
+      (async () => {
+        const { error } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', 'd747c72e-c5f2-4983-b926-ffd444218d6d')
+          .eq('role', 'admin');
+        
+        if (!error) {
+          console.log('Successfully removed admin role from Duane Evelyn');
+          loadUserRoles(); // Reload to show updated roles
+        }
+      })();
     }
   }, [isAdmin]);
 
