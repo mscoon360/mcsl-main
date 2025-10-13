@@ -309,7 +309,8 @@ export default function Invoices() {
 
       // If separate fields exist, set them
       setField('Company Name', companyInfo);
-      setField('Company Address', addressInfo); // blank if missing
+      setField('Company Address', addressInfo); // legacy template
+      setField('Address', addressInfo); // current template field name
 
       // If a combined field exists, set company on first line and address on second (only if present)
       const billToCombined = addressInfo ? `${companyInfo}\n${addressInfo}` : companyInfo;
