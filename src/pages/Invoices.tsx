@@ -18,6 +18,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomers } from "@/hooks/useCustomers";
+import { useProducts } from "@/hooks/useProducts";
 
 interface InvoiceItem {
   description: string;
@@ -76,13 +77,8 @@ export default function Invoices() {
   // Get customers from Supabase
   const { customers } = useCustomers();
 
-  // Get products for invoice items
-  const [products] = useLocalStorage<Array<{
-    id: string;
-    name: string;
-    price: number;
-    description: string;
-  }>>('dashboard-products', []);
+  // Get products from Supabase
+  const { products } = useProducts();
 
   // Get rental agreements to show customer's rental items
   const [sales] = useLocalStorage<Array<{
