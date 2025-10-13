@@ -13,7 +13,6 @@ import { useSales } from "@/hooks/useSales";
 import { usePaymentSchedules } from "@/hooks/usePaymentSchedules";
 import { supabase } from "@/integrations/supabase/client";
 import { useExpenditures } from "@/hooks/useExpenditures";
-
 interface MonthlyFinancials {
   month: string;
   salesIncome: number;
@@ -24,30 +23,36 @@ interface MonthlyFinancials {
   totalExpenses: number;
   netIncome: number;
 }
-
 export default function FinanceOverview() {
-  const { toast } = useToast();
-  const { user, isAdmin } = useAuth();
+  const {
+    toast
+  } = useToast();
+  const {
+    user,
+    isAdmin
+  } = useAuth();
   const navigate = useNavigate();
   const [periodLength, setPeriodLength] = useState<'1' | '3' | '6' | '12'>('1');
   const [periodEndDate, setPeriodEndDate] = useState(new Date());
-  const { sales: supabaseSales } = useSales();
-  const { paymentSchedules: supabasePaymentSchedules } = usePaymentSchedules();
-  const { expenditures } = useExpenditures();
+  const {
+    sales: supabaseSales
+  } = useSales();
+  const {
+    paymentSchedules: supabasePaymentSchedules
+  } = usePaymentSchedules();
+  const {
+    expenditures
+  } = useExpenditures();
 
   // Check access permissions
   useEffect(() => {
     const checkAccess = async () => {
       if (!user || isAdmin) return;
-      
-      const { data } = await supabase
-        .from('department_visibility')
-        .select('department')
-        .eq('user_id', user.id);
-      
+      const {
+        data
+      } = await supabase.from('department_visibility').select('department').eq('user_id', user.id);
       const allowedSections = data?.map(d => d.department) || [];
       const hasAccess = allowedSections.includes('Finance-Overview') || allowedSections.includes('Finance');
-      
       if (!hasAccess && allowedSections.length > 0) {
         navigate('/');
       }
@@ -71,20 +76,16 @@ export default function FinanceOverview() {
   }));
 
   // Map Supabase payment schedules to expected format
-  const paidPayments = supabasePaymentSchedules
-    .filter(p => p.status === 'paid' && p.paid_date)
-    .map(p => ({
-      id: p.id,
-      customer: p.customer,
-      product: p.product,
-      amount: p.amount,
-      dueDate: p.due_date,
-      paidDate: p.paid_date!,
-      paymentMethod: p.payment_method || 'cash',
-      status: 'paid' as const
-    }));
-
-
+  const paidPayments = supabasePaymentSchedules.filter(p => p.status === 'paid' && p.paid_date).map(p => ({
+    id: p.id,
+    customer: p.customer,
+    product: p.product,
+    amount: p.amount,
+    dueDate: p.due_date,
+    paidDate: p.paid_date!,
+    paymentMethod: p.payment_method || 'cash',
+    status: 'paid' as const
+  }));
   console.log('Finance Overview - Expenditures loaded:', expenditures.length);
 
   // Calculate period start and end dates
@@ -112,37 +113,31 @@ export default function FinanceOverview() {
 
   // Calculate financial data for the selected period
   const calculatePeriodFinancials = (): MonthlyFinancials => {
-    const salesIncome = sales
-      .filter(sale => {
-        const saleDate = parseISO(sale.date);
-        return isWithinInterval(saleDate, { start: periodStart, end: periodEnd }) &&
-               !sale.items.some(item => item.isRental);
-      })
-      .reduce((sum, sale) => sum + sale.total, 0);
-
-    const collectionIncome = paidPayments
-      .filter(payment => {
-        const paymentDate = parseISO(payment.paidDate);
-        return isWithinInterval(paymentDate, { start: periodStart, end: periodEnd });
-      })
-      .reduce((sum, payment) => sum + payment.amount, 0);
-
+    const salesIncome = sales.filter(sale => {
+      const saleDate = parseISO(sale.date);
+      return isWithinInterval(saleDate, {
+        start: periodStart,
+        end: periodEnd
+      }) && !sale.items.some(item => item.isRental);
+    }).reduce((sum, sale) => sum + sale.total, 0);
+    const collectionIncome = paidPayments.filter(payment => {
+      const paymentDate = parseISO(payment.paidDate);
+      return isWithinInterval(paymentDate, {
+        start: periodStart,
+        end: periodEnd
+      });
+    }).reduce((sum, payment) => sum + payment.amount, 0);
     const periodExpenses = expenditures.filter(expense => {
       const expenseDate = parseISO(expense.date);
-      return isWithinInterval(expenseDate, { start: periodStart, end: periodEnd });
+      return isWithinInterval(expenseDate, {
+        start: periodStart,
+        end: periodEnd
+      });
     });
-
-    const workingCapitalExpenses = periodExpenses
-      .filter(expense => expense.category === 'working-capital' || expense.type === 'supplies')
-      .reduce((sum, expense) => sum + expense.amount, 0);
-
-    const fixedCapitalExpenses = periodExpenses
-      .filter(expense => expense.category === 'fixed-capital')
-      .reduce((sum, expense) => sum + expense.amount, 0);
-
+    const workingCapitalExpenses = periodExpenses.filter(expense => expense.category === 'working-capital' || expense.type === 'supplies').reduce((sum, expense) => sum + expense.amount, 0);
+    const fixedCapitalExpenses = periodExpenses.filter(expense => expense.category === 'fixed-capital').reduce((sum, expense) => sum + expense.amount, 0);
     const totalIncome = salesIncome + collectionIncome;
     const totalExpenses = workingCapitalExpenses + fixedCapitalExpenses;
-
     return {
       month: format(periodEndDate, 'yyyy-MM'),
       salesIncome,
@@ -157,44 +152,39 @@ export default function FinanceOverview() {
 
   // Generate data for monthly breakdown chart
   const getPerformanceData = () => {
-    const months = eachMonthOfInterval({ start: periodStart, end: periodEnd });
-    
+    const months = eachMonthOfInterval({
+      start: periodStart,
+      end: periodEnd
+    });
     return months.map(date => {
       const monthStr = format(date, 'yyyy-MM');
       const monthStart = startOfMonth(date);
       const monthEnd = endOfMonth(date);
-
-      const salesIncome = sales
-        .filter(sale => {
-          const saleDate = parseISO(sale.date);
-          return isWithinInterval(saleDate, { start: monthStart, end: monthEnd }) &&
-                 !sale.items.some(item => item.isRental);
-        })
-        .reduce((sum, sale) => sum + sale.total, 0);
-
-      const collectionIncome = paidPayments
-        .filter(payment => {
-          const paymentDate = parseISO(payment.paidDate);
-          return isWithinInterval(paymentDate, { start: monthStart, end: monthEnd });
-        })
-        .reduce((sum, payment) => sum + payment.amount, 0);
-
+      const salesIncome = sales.filter(sale => {
+        const saleDate = parseISO(sale.date);
+        return isWithinInterval(saleDate, {
+          start: monthStart,
+          end: monthEnd
+        }) && !sale.items.some(item => item.isRental);
+      }).reduce((sum, sale) => sum + sale.total, 0);
+      const collectionIncome = paidPayments.filter(payment => {
+        const paymentDate = parseISO(payment.paidDate);
+        return isWithinInterval(paymentDate, {
+          start: monthStart,
+          end: monthEnd
+        });
+      }).reduce((sum, payment) => sum + payment.amount, 0);
       const monthExpenses = expenditures.filter(expense => {
         const expenseDate = parseISO(expense.date);
-        return isWithinInterval(expenseDate, { start: monthStart, end: monthEnd });
+        return isWithinInterval(expenseDate, {
+          start: monthStart,
+          end: monthEnd
+        });
       });
-
-      const workingCapitalExpenses = monthExpenses
-        .filter(expense => expense.category === 'working-capital' || expense.type === 'supplies')
-        .reduce((sum, expense) => sum + expense.amount, 0);
-
-      const fixedCapitalExpenses = monthExpenses
-        .filter(expense => expense.category === 'fixed-capital')
-        .reduce((sum, expense) => sum + expense.amount, 0);
-
+      const workingCapitalExpenses = monthExpenses.filter(expense => expense.category === 'working-capital' || expense.type === 'supplies').reduce((sum, expense) => sum + expense.amount, 0);
+      const fixedCapitalExpenses = monthExpenses.filter(expense => expense.category === 'fixed-capital').reduce((sum, expense) => sum + expense.amount, 0);
       const totalIncome = salesIncome + collectionIncome;
       const totalExpenses = workingCapitalExpenses + fixedCapitalExpenses;
-
       return {
         month: format(date, 'MMM yy'),
         income: totalIncome,
@@ -203,93 +193,88 @@ export default function FinanceOverview() {
       };
     });
   };
-
   const currentPeriodData = calculatePeriodFinancials();
   const performanceData = getPerformanceData();
-  
+
   // Calculate previous period data for comparison
   const previousPeriodStart = startOfMonth(subMonths(periodStart, parseInt(periodLength)));
   const previousPeriodEnd = endOfMonth(subMonths(periodEnd, parseInt(periodLength)));
-  
   const previousPeriodData = (() => {
-    const salesIncome = sales
-      .filter(sale => {
-        const saleDate = parseISO(sale.date);
-        return isWithinInterval(saleDate, { start: previousPeriodStart, end: previousPeriodEnd }) &&
-               !sale.items.some(item => item.isRental);
-      })
-      .reduce((sum, sale) => sum + sale.total, 0);
-
-    const collectionIncome = paidPayments
-      .filter(payment => {
-        const paymentDate = parseISO(payment.paidDate);
-        return isWithinInterval(paymentDate, { start: previousPeriodStart, end: previousPeriodEnd });
-      })
-      .reduce((sum, payment) => sum + payment.amount, 0);
-
+    const salesIncome = sales.filter(sale => {
+      const saleDate = parseISO(sale.date);
+      return isWithinInterval(saleDate, {
+        start: previousPeriodStart,
+        end: previousPeriodEnd
+      }) && !sale.items.some(item => item.isRental);
+    }).reduce((sum, sale) => sum + sale.total, 0);
+    const collectionIncome = paidPayments.filter(payment => {
+      const paymentDate = parseISO(payment.paidDate);
+      return isWithinInterval(paymentDate, {
+        start: previousPeriodStart,
+        end: previousPeriodEnd
+      });
+    }).reduce((sum, payment) => sum + payment.amount, 0);
     const prevExpenses = expenditures.filter(expense => {
       const expenseDate = parseISO(expense.date);
-      return isWithinInterval(expenseDate, { start: previousPeriodStart, end: previousPeriodEnd });
+      return isWithinInterval(expenseDate, {
+        start: previousPeriodStart,
+        end: previousPeriodEnd
+      });
     });
-
-    const workingCapitalExpenses = prevExpenses
-      .filter(expense => expense.category === 'working-capital' || expense.type === 'supplies')
-      .reduce((sum, expense) => sum + expense.amount, 0);
-
-    const fixedCapitalExpenses = prevExpenses
-      .filter(expense => expense.category === 'fixed-capital')
-      .reduce((sum, expense) => sum + expense.amount, 0);
-
+    const workingCapitalExpenses = prevExpenses.filter(expense => expense.category === 'working-capital' || expense.type === 'supplies').reduce((sum, expense) => sum + expense.amount, 0);
+    const fixedCapitalExpenses = prevExpenses.filter(expense => expense.category === 'fixed-capital').reduce((sum, expense) => sum + expense.amount, 0);
     const totalIncome = salesIncome + collectionIncome;
     const totalExpenses = workingCapitalExpenses + fixedCapitalExpenses;
-
     return {
       totalIncome,
       totalExpenses,
       netIncome: totalIncome - totalExpenses
     };
   })();
-  
   console.log('Current period data:', currentPeriodData);
   console.log('Expenses for current period:', currentPeriodData.totalExpenses);
-  
+
   // Calculate period-over-period changes
   const incomeChange = currentPeriodData.totalIncome - previousPeriodData.totalIncome;
-  const incomePercentage = previousPeriodData.totalIncome > 0 
-    ? (incomeChange / previousPeriodData.totalIncome) * 100 
-    : 0;
-  
+  const incomePercentage = previousPeriodData.totalIncome > 0 ? incomeChange / previousPeriodData.totalIncome * 100 : 0;
   const expenseChange = currentPeriodData.totalExpenses - previousPeriodData.totalExpenses;
-  const expensePercentage = previousPeriodData.totalExpenses > 0 
-    ? (expenseChange / previousPeriodData.totalExpenses) * 100 
-    : 0;
-  
+  const expensePercentage = previousPeriodData.totalExpenses > 0 ? expenseChange / previousPeriodData.totalExpenses * 100 : 0;
   const netChange = currentPeriodData.netIncome - previousPeriodData.netIncome;
-  const netPercentage = previousPeriodData.netIncome !== 0 
-    ? (netChange / Math.abs(previousPeriodData.netIncome)) * 100 
-    : 0;
+  const netPercentage = previousPeriodData.netIncome !== 0 ? netChange / Math.abs(previousPeriodData.netIncome) * 100 : 0;
 
   // Calculate totals for current period
   const periodTotals = performanceData.reduce((acc, month) => ({
     income: acc.income + month.income,
     expenses: acc.expenses + month.expenses,
     net: acc.net + month.net
-  }), { income: 0, expenses: 0, net: 0 });
+  }), {
+    income: 0,
+    expenses: 0,
+    net: 0
+  });
 
   // Pie chart data for income breakdown
-  const incomeBreakdown = [
-    { name: 'Sales', value: currentPeriodData.salesIncome, color: '#3b82f6' },
-    { name: 'Collections', value: currentPeriodData.collectionIncome, color: '#10b981' }
-  ].filter(item => item.value > 0);
+  const incomeBreakdown = [{
+    name: 'Sales',
+    value: currentPeriodData.salesIncome,
+    color: '#3b82f6'
+  }, {
+    name: 'Collections',
+    value: currentPeriodData.collectionIncome,
+    color: '#10b981'
+  }].filter(item => item.value > 0);
 
   // Pie chart data for expense breakdown
-  const expenseBreakdown = [
-    { name: 'Working Capital', value: currentPeriodData.workingCapitalExpenses, color: '#f59e0b' },
-    { name: 'Fixed Capital', value: currentPeriodData.fixedCapitalExpenses, color: '#ef4444' }
-  ].filter(item => item.value > 0);
-
+  const expenseBreakdown = [{
+    name: 'Working Capital',
+    value: currentPeriodData.workingCapitalExpenses,
+    color: '#f59e0b'
+  }, {
+    name: 'Fixed Capital',
+    value: currentPeriodData.fixedCapitalExpenses,
+    color: '#ef4444'
+  }].filter(item => item.value > 0);
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
-
   const handleExportFinancialReport = () => {
     try {
       // Prepare performance data for Excel
@@ -301,22 +286,63 @@ export default function FinanceOverview() {
       }));
 
       // Prepare summary data
-      const summaryData = [
-        { Month: '', Income: '', Expenses: '', 'Net Profit': '' },
-        { Month: 'SUMMARY', Income: '', Expenses: '', 'Net Profit': '' },
-        { Month: 'Total Income', Income: Number(periodTotals.income.toFixed(2)), Expenses: '', 'Net Profit': '' },
-        { Month: 'Total Expenses', Income: '', Expenses: Number(periodTotals.expenses.toFixed(2)), 'Net Profit': '' },
-        { Month: 'Net Profit/Loss', Income: '', Expenses: '', 'Net Profit': Number(periodTotals.net.toFixed(2)) },
-        { Month: '', Income: '', Expenses: '', 'Net Profit': '' },
-        { Month: 'Current Period Breakdown', Income: '', Expenses: '', 'Net Profit': '' },
-        { Month: 'Sales Income', Income: Number(currentPeriodData.salesIncome.toFixed(2)), Expenses: '', 'Net Profit': '' },
-        { Month: 'Collection Income', Income: Number(currentPeriodData.collectionIncome.toFixed(2)), Expenses: '', 'Net Profit': '' },
-        { Month: 'Working Capital Expenses', Income: '', Expenses: Number(currentPeriodData.workingCapitalExpenses.toFixed(2)), 'Net Profit': '' },
-        { Month: 'Fixed Capital Expenses', Income: '', Expenses: Number(currentPeriodData.fixedCapitalExpenses.toFixed(2)), 'Net Profit': '' }
-      ];
-
+      const summaryData = [{
+        Month: '',
+        Income: '',
+        Expenses: '',
+        'Net Profit': ''
+      }, {
+        Month: 'SUMMARY',
+        Income: '',
+        Expenses: '',
+        'Net Profit': ''
+      }, {
+        Month: 'Total Income',
+        Income: Number(periodTotals.income.toFixed(2)),
+        Expenses: '',
+        'Net Profit': ''
+      }, {
+        Month: 'Total Expenses',
+        Income: '',
+        Expenses: Number(periodTotals.expenses.toFixed(2)),
+        'Net Profit': ''
+      }, {
+        Month: 'Net Profit/Loss',
+        Income: '',
+        Expenses: '',
+        'Net Profit': Number(periodTotals.net.toFixed(2))
+      }, {
+        Month: '',
+        Income: '',
+        Expenses: '',
+        'Net Profit': ''
+      }, {
+        Month: 'Current Period Breakdown',
+        Income: '',
+        Expenses: '',
+        'Net Profit': ''
+      }, {
+        Month: 'Sales Income',
+        Income: Number(currentPeriodData.salesIncome.toFixed(2)),
+        Expenses: '',
+        'Net Profit': ''
+      }, {
+        Month: 'Collection Income',
+        Income: Number(currentPeriodData.collectionIncome.toFixed(2)),
+        Expenses: '',
+        'Net Profit': ''
+      }, {
+        Month: 'Working Capital Expenses',
+        Income: '',
+        Expenses: Number(currentPeriodData.workingCapitalExpenses.toFixed(2)),
+        'Net Profit': ''
+      }, {
+        Month: 'Fixed Capital Expenses',
+        Income: '',
+        Expenses: Number(currentPeriodData.fixedCapitalExpenses.toFixed(2)),
+        'Net Profit': ''
+      }];
       const finalData = [...performanceExport, ...summaryData];
-
       if (finalData.length === 0) {
         toast({
           title: "Export Error",
@@ -331,11 +357,21 @@ export default function FinanceOverview() {
       const ws = XLSX.utils.json_to_sheet(finalData);
 
       // Set column widths
-      ws['!cols'] = [
-        { width: 25 }, // Month
-        { width: 15 }, // Income
-        { width: 15 }, // Expenses
-        { width: 15 }  // Net Profit
+      ws['!cols'] = [{
+        width: 25
+      },
+      // Month
+      {
+        width: 15
+      },
+      // Income
+      {
+        width: 15
+      },
+      // Expenses
+      {
+        width: 15
+      } // Net Profit
       ];
 
       // Add worksheet to workbook
@@ -347,7 +383,6 @@ export default function FinanceOverview() {
 
       // Save file
       XLSX.writeFile(wb, filename);
-
       toast({
         title: "Financial Report Exported",
         description: `Complete financial overview downloaded as ${filename}`
@@ -361,9 +396,7 @@ export default function FinanceOverview() {
       });
     }
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -389,12 +422,7 @@ export default function FinanceOverview() {
             <span className="text-sm font-medium min-w-[200px] text-center">
               {getPeriodLabel()}
             </span>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleNextPeriod}
-              disabled={periodEnd >= endOfMonth(new Date())}
-            >
+            <Button variant="ghost" size="icon" onClick={handleNextPeriod} disabled={periodEnd >= endOfMonth(new Date())}>
               <TrendingUp className="h-4 w-4 rotate-90" />
             </Button>
           </div>
@@ -455,7 +483,7 @@ export default function FinanceOverview() {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${currentPeriodData.netIncome >= 0 ? 'text-success' : 'text-destructive'}`}>
-              {currentPeriodData.totalIncome > 0 ? ((currentPeriodData.netIncome / currentPeriodData.totalIncome) * 100).toFixed(1) : '0.0'}%
+              {currentPeriodData.totalIncome > 0 ? (currentPeriodData.netIncome / currentPeriodData.totalIncome * 100).toFixed(1) : '0.0'}%
             </div>
             <p className="text-xs text-muted-foreground">Current period</p>
           </CardContent>
@@ -481,7 +509,7 @@ export default function FinanceOverview() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             {/* Current Period Income */}
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Current Period Income</div>
+              <div className="text-sm text-muted-foreground">Current Period Revenue</div>
               <div className="text-3xl font-bold text-success">
                 ${currentPeriodData.totalIncome.toFixed(2)}
               </div>
@@ -573,14 +601,10 @@ export default function FinanceOverview() {
               <div className="space-y-2">
                 <div className="text-xs text-muted-foreground">Profit Margin</div>
                 <div className="text-lg font-bold text-foreground">
-                  {currentPeriodData.totalIncome > 0 
-                    ? ((currentPeriodData.netIncome / currentPeriodData.totalIncome) * 100).toFixed(1) 
-                    : '0.0'}%
+                  {currentPeriodData.totalIncome > 0 ? (currentPeriodData.netIncome / currentPeriodData.totalIncome * 100).toFixed(1) : '0.0'}%
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Previous: {previousPeriodData.totalIncome > 0 
-                    ? ((previousPeriodData.netIncome / previousPeriodData.totalIncome) * 100).toFixed(1) 
-                    : '0.0'}%
+                  Previous: {previousPeriodData.totalIncome > 0 ? (previousPeriodData.netIncome / previousPeriodData.totalIncome * 100).toFixed(1) : '0.0'}%
                 </div>
               </div>
             </div>
@@ -618,15 +642,21 @@ export default function FinanceOverview() {
             {/* Color Legend */}
             <div className="flex justify-center gap-6">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: '#10b981' }}></div>
+                <div className="w-4 h-4 rounded" style={{
+                backgroundColor: '#10b981'
+              }}></div>
                 <span className="text-sm font-medium">Income</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: '#ef4444' }}></div>
+                <div className="w-4 h-4 rounded" style={{
+                backgroundColor: '#ef4444'
+              }}></div>
                 <span className="text-sm font-medium">Expenses</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: '#3b82f6' }}></div>
+                <div className="w-4 h-4 rounded" style={{
+                backgroundColor: '#3b82f6'
+              }}></div>
                 <span className="text-sm font-medium">Net Profit</span>
               </div>
             </div>
@@ -642,23 +672,12 @@ export default function FinanceOverview() {
             <CardDescription>Distribution of income sources</CardDescription>
           </CardHeader>
           <CardContent>
-            {incomeBreakdown.length > 0 ? (
-              <div className="space-y-4">
+            {incomeBreakdown.length > 0 ? <div className="space-y-4">
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <RechartsPieChart>
-                      <Pie
-                        data={incomeBreakdown}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {incomeBreakdown.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
+                      <Pie data={incomeBreakdown} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
+                        {incomeBreakdown.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                       </Pie>
                       <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '']} />
                     </RechartsPieChart>
@@ -666,26 +685,20 @@ export default function FinanceOverview() {
                 </div>
                 {/* Color Legend */}
                 <div className="flex justify-center gap-6">
-                  {incomeBreakdown.map((entry, index) => (
-                    <div key={entry.name} className="flex items-center gap-2">
-                      <div 
-                        className="w-4 h-4 rounded" 
-                        style={{ backgroundColor: entry.color }}
-                      ></div>
+                  {incomeBreakdown.map((entry, index) => <div key={entry.name} className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded" style={{
+                  backgroundColor: entry.color
+                }}></div>
                       <span className="text-sm font-medium">{entry.name}</span>
                       <span className="text-sm text-muted-foreground">${entry.value.toFixed(2)}</span>
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
-              </div>
-            ) : (
-              <div className="h-64 flex items-center justify-center text-muted-foreground">
+              </div> : <div className="h-64 flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
                   <PieChart className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p>No income data for current period</p>
                 </div>
-              </div>
-            )}
+              </div>}
           </CardContent>
         </Card>
 
@@ -695,23 +708,12 @@ export default function FinanceOverview() {
             <CardDescription>Distribution of expense categories</CardDescription>
           </CardHeader>
           <CardContent>
-            {expenseBreakdown.length > 0 ? (
-              <div className="space-y-4">
+            {expenseBreakdown.length > 0 ? <div className="space-y-4">
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <RechartsPieChart>
-                      <Pie
-                        data={expenseBreakdown}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {expenseBreakdown.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
+                      <Pie data={expenseBreakdown} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
+                        {expenseBreakdown.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                       </Pie>
                       <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '']} />
                     </RechartsPieChart>
@@ -719,26 +721,20 @@ export default function FinanceOverview() {
                 </div>
                 {/* Color Legend */}
                 <div className="flex justify-center gap-6">
-                  {expenseBreakdown.map((entry, index) => (
-                    <div key={entry.name} className="flex items-center gap-2">
-                      <div 
-                        className="w-4 h-4 rounded" 
-                        style={{ backgroundColor: entry.color }}
-                      ></div>
+                  {expenseBreakdown.map((entry, index) => <div key={entry.name} className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded" style={{
+                  backgroundColor: entry.color
+                }}></div>
                       <span className="text-sm font-medium">{entry.name}</span>
                       <span className="text-sm text-muted-foreground">${entry.value.toFixed(2)}</span>
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
-              </div>
-            ) : (
-              <div className="h-64 flex items-center justify-center text-muted-foreground">
+              </div> : <div className="h-64 flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
                   <PieChart className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p>No expense data for current month</p>
                 </div>
-              </div>
-            )}
+              </div>}
           </CardContent>
         </Card>
       </div>
@@ -772,6 +768,5 @@ export default function FinanceOverview() {
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 }
