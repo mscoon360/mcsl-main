@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Camera, CameraOff, RotateCcw, AlertCircle, MapPin } from "lucide-react";
@@ -30,6 +31,8 @@ export default function BarcodeScanner() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [destinationAddress, setDestinationAddress] = useState<string>("");
   const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
@@ -148,6 +151,7 @@ export default function BarcodeScanner() {
       };
 
       setDestinationAddress(itemData.destination_address || "");
+      setSelectedStatus(itemData.status || "");
 
       setScannedProduct(product);
       setScanHistory(prev => [product, ...prev.slice(0, 9)]); // Keep last 10
@@ -199,6 +203,42 @@ export default function BarcodeScanner() {
       });
     } finally {
       setIsSavingAddress(false);
+    }
+  };
+
+  const saveStatus = async (newStatus: string) => {
+    if (!scannedProduct) return;
+
+    setIsSavingStatus(true);
+    try {
+      const { error: updateError } = await supabase
+        .from('product_items')
+        .update({ status: newStatus })
+        .eq('id', scannedProduct.itemId);
+
+      if (updateError) throw updateError;
+
+      setScannedProduct({
+        ...scannedProduct,
+        status: newStatus,
+      });
+
+      setSelectedStatus(newStatus);
+
+      toast({
+        title: "Status Updated",
+        description: `Status changed to "${newStatus}"`,
+      });
+
+    } catch (err: any) {
+      console.error("Status save error:", err);
+      toast({
+        title: "Save Failed",
+        description: "Failed to update status.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingStatus(false);
     }
   };
 
@@ -315,6 +355,25 @@ export default function BarcodeScanner() {
                     <p className="text-muted-foreground">Stock</p>
                     <p className="font-semibold">{scannedProduct.stock} units</p>
                   </div>
+                </div>
+
+                {/* Status Update Section */}
+                <div className="space-y-2 pt-4 border-t">
+                  <Label htmlFor="status-select">Update Status</Label>
+                  <Select 
+                    value={selectedStatus} 
+                    onValueChange={saveStatus}
+                    disabled={isSavingStatus}
+                  >
+                    <SelectTrigger id="status-select">
+                      <SelectValue placeholder="Select status..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="in storage">In Storage</SelectItem>
+                      <SelectItem value="Out for delivery">Out for Delivery</SelectItem>
+                      <SelectItem value="Delivered">Delivered</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Destination Address Section */}

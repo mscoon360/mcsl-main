@@ -20,6 +20,7 @@ interface ProductItem {
   created_at: string;
   product_id: string;
   price?: number;
+  destination_address?: string | null;
 }
 
 interface Product {
@@ -163,11 +164,16 @@ export default function ProductBarcodes() {
                 key={item.id}
                 className="border rounded-lg bg-card p-4 flex items-center justify-between"
               >
-                <div>
+                <div className="flex-1">
                   <p className="font-medium text-sm">{item.barcode}</p>
                   <p className="text-xs text-muted-foreground capitalize">
                     Status: {item.status}
                   </p>
+                  {item.destination_address && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      📍 {item.destination_address}
+                    </p>
+                  )}
                 </div>
                 <Button
                   variant="outline"
