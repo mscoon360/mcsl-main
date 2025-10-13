@@ -21,6 +21,8 @@ interface ScannedProduct {
   scannedAt: Date;
   itemId: string;
   destinationAddress: string | null;
+  isRental: boolean;
+  isRentalOnly: boolean;
 }
 
 export default function BarcodeScanner() {
@@ -118,7 +120,9 @@ export default function BarcodeScanner() {
             name,
             sku,
             price,
-            stock
+            stock,
+            is_rental,
+            is_rental_only
           )
         `)
         .eq('barcode', barcode)
@@ -148,6 +152,8 @@ export default function BarcodeScanner() {
         scannedAt: new Date(),
         itemId: itemData.id,
         destinationAddress: itemData.destination_address,
+        isRental: itemData.products.is_rental || false,
+        isRentalOnly: itemData.products.is_rental_only || false,
       };
 
       setDestinationAddress(itemData.destination_address || "");
@@ -370,8 +376,16 @@ export default function BarcodeScanner() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="in storage">In Storage</SelectItem>
-                      <SelectItem value="Out for delivery">Out for Delivery</SelectItem>
-                      <SelectItem value="Delivered">Delivered</SelectItem>
+                      {!scannedProduct.isRental && !scannedProduct.isRentalOnly && (
+                        <SelectItem value="sold">Sold</SelectItem>
+                      )}
+                      {(scannedProduct.isRental || scannedProduct.isRentalOnly) && (
+                        <>
+                          <SelectItem value="rented out">Rented Out</SelectItem>
+                          <SelectItem value="in transit">In Transit</SelectItem>
+                          <SelectItem value="returned">Returned</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
