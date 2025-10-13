@@ -758,6 +758,28 @@ export default function Admin() {
                       
                       <div className="flex items-center space-x-2">
                         <Checkbox 
+                          id="nav-inventory"
+                          checked={selectedNavSections.includes('Inventory')}
+                          onCheckedChange={() => toggleNavSection('Inventory')}
+                        />
+                        <label htmlFor="nav-inventory" className="text-sm font-medium cursor-pointer">
+                          Inventory
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="nav-barcode-scanner"
+                          checked={selectedNavSections.includes('Barcode Scanner')}
+                          onCheckedChange={() => toggleNavSection('Barcode Scanner')}
+                        />
+                        <label htmlFor="nav-barcode-scanner" className="text-sm font-medium cursor-pointer">
+                          Barcode Scanner
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
                           id="nav-contracts"
                           checked={selectedNavSections.includes('Contracts')}
                           onCheckedChange={() => toggleNavSection('Contracts')}
@@ -830,6 +852,17 @@ export default function Admin() {
                         />
                         <label htmlFor="nav-finance-invoices" className="text-sm cursor-pointer">
                           Invoices
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 pl-6">
+                        <Checkbox 
+                          id="nav-finance-collections"
+                          checked={selectedNavSections.includes('Finance-Collections')}
+                          onCheckedChange={() => toggleNavSection('Finance-Collections')}
+                        />
+                        <label htmlFor="nav-finance-collections" className="text-sm cursor-pointer">
+                          Collections
                         </label>
                       </div>
                     </div>
