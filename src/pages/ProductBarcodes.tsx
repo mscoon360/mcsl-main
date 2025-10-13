@@ -3,14 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Download, Printer, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Download, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import bwipjs from 'bwip-js';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface ProductItem {
   id: string;
@@ -32,8 +33,8 @@ export default function ProductBarcodes() {
   const [product, setProduct] = useState<Product | null>(null);
   const [items, setItems] = useState<ProductItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openItems, setOpenItems] = useState<Set<string>>(new Set());
-  const canvasRefs = useRef<{ [key: string]: HTMLCanvasElement | null }>({});
+  const [selectedItem, setSelectedItem] = useState<ProductItem | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     fetchProductAndBarcodes();
@@ -70,13 +71,12 @@ export default function ProductBarcodes() {
     }
   };
 
-  const generateBarcode = (itemId: string, barcode: string) => {
-    const canvas = canvasRefs.current[itemId];
-    if (canvas) {
+  useEffect(() => {
+    if (selectedItem && canvasRef.current) {
       try {
-        bwipjs.toCanvas(canvas, {
+        bwipjs.toCanvas(canvasRef.current, {
           bcid: 'code128',
-          text: barcode,
+          text: selectedItem.barcode,
           scale: 3,
           height: 10,
           includetext: true,
@@ -86,20 +86,7 @@ export default function ProductBarcodes() {
         console.error('Error generating barcode:', error);
       }
     }
-  };
-
-  const handleOpenChange = (itemId: string, isOpen: boolean) => {
-    if (isOpen && !openItems.has(itemId)) {
-      setOpenItems(prev => new Set(prev).add(itemId));
-      // Generate barcode after a small delay to ensure canvas is rendered
-      setTimeout(() => {
-        const item = items.find(i => i.id === itemId);
-        if (item) {
-          generateBarcode(itemId, item.barcode);
-        }
-      }, 10);
-    }
-  };
+  }, [selectedItem]);
 
   const handlePrint = () => {
     window.print();
@@ -161,38 +148,45 @@ export default function ProductBarcodes() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((item) => (
-              <Collapsible 
+              <div
                 key={item.id}
-                onOpenChange={(isOpen) => handleOpenChange(item.id, isOpen)}
+                className="border rounded-lg bg-card p-4 flex items-center justify-between"
               >
-                <div className="border rounded-lg bg-card">
-                  <CollapsibleTrigger className="w-full p-4 hover:bg-accent transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="text-left">
-                        <p className="font-medium text-sm">{item.barcode}</p>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          Status: {item.status}
-                        </p>
-                      </div>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="p-4 pt-0 flex justify-center">
-                      <canvas
-                        ref={(el) => {
-                          canvasRefs.current[item.id] = el;
-                        }}
-                        className="bg-white p-2 rounded"
-                      />
-                    </div>
-                  </CollapsibleContent>
+                <div>
+                  <p className="font-medium text-sm">{item.barcode}</p>
+                  <p className="text-xs text-muted-foreground capitalize">
+                    Status: {item.status}
+                  </p>
                 </div>
-              </Collapsible>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedItem(item)}
+                >
+                  View Barcode
+                </Button>
+              </div>
             ))}
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Barcode: {selectedItem?.barcode}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <canvas
+              ref={canvasRef}
+              className="bg-white p-4 rounded border"
+            />
+            <p className="text-sm text-muted-foreground capitalize">
+              Status: {selectedItem?.status}
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
