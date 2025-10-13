@@ -320,8 +320,8 @@ export default function Invoices() {
       setField('Text42', invoice.taxAmount.toFixed(2));
       setField('Text43', invoice.total.toFixed(2));
       
-      // Optionally flatten to make entries non-editable
-      // form.flatten();
+      // Flatten to make entries non-editable
+      form.flatten();
 
       // Save the filled PDF
       const pdfBytes = await pdfDoc.save();
