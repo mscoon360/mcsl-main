@@ -11,7 +11,8 @@ import { format } from "date-fns";
 import { Link } from "react-router-dom";
 export function DashboardHeader() {
   const {
-    user
+    user,
+    signOut
   } = useAuth();
   const [userName, setUserName] = useState<string>("");
   const {
@@ -98,10 +99,7 @@ export function DashboardHeader() {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>{userName || user?.email || 'User Account'}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile Settings</DropdownMenuItem>
-              <DropdownMenuItem>Team Management</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem className="text-destructive cursor-pointer" onClick={() => signOut()}>
                 Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>
