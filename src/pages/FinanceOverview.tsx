@@ -138,8 +138,9 @@ export default function FinanceOverview() {
 
     const workingCapitalExpenses = monthExpenses
       .filter(expense => {
-        const isWorking = expense.category === 'working-capital';
-        console.log('Working capital check:', expense.category, isWorking, expense.amount);
+        // Check for both working-capital category AND supplies type (from inventory)
+        const isWorking = expense.category === 'working-capital' || expense.type === 'supplies';
+        console.log('Working capital check:', expense.category, expense.type, isWorking, expense.amount);
         return isWorking;
       })
       .reduce((sum, expense) => sum + expense.amount, 0);
