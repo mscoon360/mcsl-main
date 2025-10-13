@@ -14,11 +14,11 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO, addDays } from "date-fns";
 import * as XLSX from 'xlsx';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { PDFDocument, rgb } from 'pdf-lib';
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useProducts } from "@/hooks/useProducts";
+import invoiceTemplate from '@/assets/invoice-template.pdf';
 
 interface InvoiceItem {
   description: string;
@@ -277,104 +277,69 @@ export default function Invoices() {
     });
   };
 
-  const generateInvoicePDF = (invoice: Invoice) => {
+  const generateInvoicePDF = async (invoice: Invoice) => {
     try {
-      const doc = new jsPDF();
+      // Load the template PDF
+      const templateBytes = await fetch(invoiceTemplate).then(res => res.arrayBuffer());
+      const pdfDoc = await PDFDocument.load(templateBytes);
       
-      // Add logo at top left
-      const logoImg = new Image();
-      logoImg.src = '/src/assets/magic-care-logo.png';
-      logoImg.onload = () => {
-        doc.addImage(logoImg, 'PNG', 20, 10, 30, 30);
-      };
+      const pages = pdfDoc.getPages();
+      const firstPage = pages[0];
+      const { height } = firstPage.getSize();
       
-      // TAX INVOICE header - centered at top
-      doc.setFontSize(20);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text('TAX INVOICE', 105, 20, { align: 'center' });
+      // Define text positions (you can adjust these coordinates)
+      // Y coordinate is from bottom, so we convert from top: height - yFromTop
       
-      // VAT Registration number
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'normal');
-      doc.text('VAT REG. No. 317089', 105, 27, { align: 'center' });
+      // Add invoice items in the DESCRIPTION column (left side of table)
+      let itemYPosition = height - 240; // Starting position for first item
+      const lineHeight = 12;
       
-      // Company Name
-      doc.setFontSize(16);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text('MAGIC-CARE SOLUTIONS Ltd.', 105, 38, { align: 'center' });
-      
-      // Tagline
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'italic');
-      doc.setTextColor(100, 100, 100);
-      doc.text('"Caring for your Health"', 105, 45, { align: 'center' });
-      
-      // Create simple 2-column table with DESCRIPTION and AMOUNT
-      const tableStartY = 60;
-      const tableData = invoice.items.map(item => [
-        item.description,
-        ''  // Empty amount column - amounts go in the right box at bottom
-      ]);
-      
-      autoTable(doc, {
-        startY: tableStartY,
-        head: [['DESCRIPTION', 'AMOUNT']],
-        body: tableData,
-        theme: 'plain',
-        headStyles: {
-          fillColor: [255, 255, 255],
-          textColor: 0,
-          fontSize: 11,
-          fontStyle: 'bold',
-          halign: 'center',
-          lineWidth: 0.5,
-          lineColor: [0, 0, 0],
-          cellPadding: 3
-        },
-        bodyStyles: {
-          fontSize: 10,
-          textColor: 0,
-          cellPadding: 3,
-          lineWidth: 0.5,
-          lineColor: [0, 0, 0],
-          minCellHeight: 8
-        },
-        columnStyles: {
-          0: { cellWidth: 130, halign: 'left' },
-          1: { cellWidth: 60, halign: 'right' }
-        },
-        margin: { left: 15, right: 15 },
-        styles: {
-          lineColor: [0, 0, 0],
-          lineWidth: 0.5
-        }
+      invoice.items.forEach((item, index) => {
+        // Description on the left
+        firstPage.drawText(item.description, {
+          x: 50,
+          y: itemYPosition - (index * lineHeight),
+          size: 9,
+          color: rgb(0, 0, 0),
+        });
       });
       
-      // Calculate totals position
-      const finalY = (doc as any).lastAutoTable.finalY + 10;
+      // Add amounts in the AMOUNT column (right side of table)
+      itemYPosition = height - 240;
+      invoice.items.forEach((item, index) => {
+        firstPage.drawText(`${item.total.toFixed(2)}`, {
+          x: 500,
+          y: itemYPosition - (index * lineHeight),
+          size: 9,
+          color: rgb(0, 0, 0),
+        });
+      });
       
-      // Totals section - right aligned boxes like in template
-      const totalsX = 140;
-      const boxWidth = 50;
-      const boxHeight = 8;
+      // Add VAT amount in the VAT box
+      firstPage.drawText(`${invoice.taxAmount.toFixed(2)}`, {
+        x: 500,
+        y: height - 500, // Adjust this to match your template's VAT box
+        size: 10,
+        color: rgb(0, 0, 0),
+      });
       
-      // VAT box
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      doc.text('VAT:', totalsX - 10, finalY + 5);
-      doc.rect(totalsX, finalY, boxWidth, boxHeight);
-      doc.text(`${invoice.taxAmount.toFixed(2)}`, totalsX + boxWidth - 3, finalY + 5.5, { align: 'right' });
+      // Add TOTAL amount in the TOTAL box
+      firstPage.drawText(`${invoice.total.toFixed(2)}`, {
+        x: 500,
+        y: height - 520, // Adjust this to match your template's TOTAL box
+        size: 10,
+        color: rgb(0, 0, 0),
+      });
       
-      // TOTAL box
-      doc.text('TOTAL:', totalsX - 10, finalY + boxHeight + 5);
-      doc.rect(totalsX, finalY + boxHeight, boxWidth, boxHeight);
-      doc.setFont(undefined, 'bold');
-      doc.text(`${invoice.total.toFixed(2)}`, totalsX + boxWidth - 3, finalY + boxHeight + 5.5, { align: 'right' });
-      
-      // Save the PDF
-      doc.save(`Invoice_${invoice.invoiceNumber}.pdf`);
+      // Save the filled PDF
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Invoice_${invoice.invoiceNumber}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
       
       console.log('PDF generated successfully');
     } catch (error) {
