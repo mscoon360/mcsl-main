@@ -59,7 +59,7 @@ const navigation: NavigationSection[] = [
       { name: "Dashboard", href: "/", icon: BarChart3 },
       { name: "Sales", href: "/sales", icon: ShoppingCart },
       { name: "Customers", href: "/customers", icon: Users },
-      { name: "Products", href: "/products", icon: Package },
+      { name: "Product Listing", href: "/products", icon: Package },
       { name: "Inventory", href: "/inventory", icon: Warehouse },
       { name: "Barcode Scanner", href: "/barcode-scanner", icon: ScanBarcode },
       { name: "Data Extractor (Coming Soon)", href: "/data-extractor", icon: ScanText },
