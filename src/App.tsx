@@ -13,6 +13,7 @@ import Products from "./pages/Products";
 import Inventory from "./pages/Inventory";
 import ProductBarcodes from "./pages/ProductBarcodes";
 import BarcodeScanner from "./pages/BarcodeScanner";
+import DataExtractor from "./pages/DataExtractor";
 import RentalAgreements from "./pages/RentalAgreements";
 import RentalPayments from "./pages/RentalPayments";
 import Fulfillment from "./pages/Fulfillment";
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="inventory" element={<Inventory />} />
             <Route path="products/:productId/barcodes" element={<ProductBarcodes />} />
             <Route path="barcode-scanner" element={<BarcodeScanner />} />
+            <Route path="data-extractor" element={<DataExtractor />} />
             <Route path="rental-agreements" element={<RentalAgreements />} />
               <Route path="rental-payments" element={<RentalPayments />} />
               <Route path="fulfillment" element={<Fulfillment />} />
