@@ -39,6 +39,7 @@ export default function Sales() {
   const [clearPassword, setClearPassword] = useState("");
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [customerSearchValue, setCustomerSearchValue] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Use products from Supabase instead of localStorage
   const products = supabaseProducts;
@@ -87,6 +88,8 @@ export default function Sales() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isSubmitting) return;
+
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -95,6 +98,8 @@ export default function Sales() {
       });
       return;
     }
+
+    setIsSubmitting(true);
 
     // Check stock availability for all items, aggregated per product
     const qtyByProduct = salesItems.reduce((acc, item) => {
@@ -109,6 +114,7 @@ export default function Sales() {
     });
 
     if (stockErrors.length > 0) {
+      setIsSubmitting(false);
       toast({
         title: "Insufficient Stock",
         description: "Some products don't have enough stock available.",
@@ -187,6 +193,8 @@ export default function Sales() {
         description: "Failed to log sale. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -567,8 +575,8 @@ export default function Sales() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full">
-                Log Sale
+              <Button type="submit" className="w-full" disabled={availableProducts.length === 0 || isSubmitting}>
+                {isSubmitting ? "Logging Sale..." : "Log Sale"}
               </Button>
             </form>
           </CardContent>
