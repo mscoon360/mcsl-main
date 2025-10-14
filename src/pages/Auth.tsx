@@ -84,6 +84,7 @@ export default function Auth() {
                 id="email"
                 name="email"
                 type="email"
+                autoComplete="username email"
                 required
                 placeholder="you@example.com"
               />
@@ -93,6 +94,7 @@ export default function Auth() {
               <PasswordInput
                 id="password"
                 name="password"
+                autoComplete="current-password"
                 required
                 placeholder="••••••••"
               />
