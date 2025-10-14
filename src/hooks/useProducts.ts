@@ -62,7 +62,7 @@ export const useProducts = () => {
         const barcodeItems = Array.from({ length: product.stock }, (_, index) => ({
           product_id: data.id,
           barcode: `${data.sku}-${String(index + 1).padStart(6, '0')}`,
-          status: 'available',
+          status: 'in storage',
         }));
 
         const { error: barcodeError } = await supabase
@@ -71,6 +71,7 @@ export const useProducts = () => {
 
         if (barcodeError) {
           console.error('Error generating barcodes:', barcodeError);
+          throw new Error(`Failed to generate barcodes: ${barcodeError.message}`);
         }
       }
       
