@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { BrowserMultiFormatReader, DecodeHintType } from "@zxing/library";
+import { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat } from "@zxing/library";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +47,14 @@ export default function BarcodeScanner() {
     // Initialize code reader with hints for better performance
     const hints = new Map();
     hints.set(DecodeHintType.TRY_HARDER, true);
-    hints.set(DecodeHintType.POSSIBLE_FORMATS, ['CODE_128', 'EAN_13', 'EAN_8', 'UPC_A', 'UPC_E', 'CODE_39']);
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+      BarcodeFormat.CODE_128,
+      BarcodeFormat.EAN_13,
+      BarcodeFormat.EAN_8,
+      BarcodeFormat.UPC_A,
+      BarcodeFormat.UPC_E,
+      BarcodeFormat.CODE_39,
+    ]);
     
     codeReaderRef.current = new BrowserMultiFormatReader(hints);
     
@@ -60,60 +67,74 @@ export default function BarcodeScanner() {
     setError("");
     setScannedProduct(null);
     
+    const callback = async (result: any, error: any) => {
+      if (result) {
+        const barcodeText = result.getText();
+        console.log("Barcode detected:", barcodeText);
+        setIsScanning(false);
+        stopScanning();
+        await lookupProduct(barcodeText);
+      }
+      if (error && !(error.name === 'NotFoundException')) {
+        console.error("Scanning error:", error);
+      }
+    };
+
     try {
       if (!codeReaderRef.current || !videoRef.current) return;
 
-      // Enhanced video constraints for lower quality cameras
-      const constraints = {
+      const constraints: MediaStreamConstraints = {
         video: {
-          facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          focusMode: 'continuous',
-          zoom: 1.0
-        }
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
+          frameRate: { ideal: 30, max: 60 },
+          // @ts-ignore - non-standard but supported on many Android devices
+          advanced: [{ focusMode: 'continuous' }],
+        } as any,
       };
 
-      // Get media stream with constraints
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = stream;
-      
-      // Check for torch support
-      const track = stream.getVideoTracks()[0];
-      const capabilities = track.getCapabilities();
-      if ('torch' in capabilities) {
-        setTorchSupported(true);
-      }
-
-      // Request camera permission and start scanning
-      await codeReaderRef.current.decodeFromVideoDevice(
-        undefined, // Use default camera
+      await codeReaderRef.current.decodeFromConstraints(
+        constraints,
         videoRef.current,
-        async (result, error) => {
-          if (result) {
-            const barcodeText = result.getText();
-            console.log("Barcode detected:", barcodeText);
-            
-            // Stop scanning temporarily
-            setIsScanning(false);
-            stopScanning();
-            
-            // Look up the product
-            await lookupProduct(barcodeText);
-          }
-          
-          if (error && !(error.name === 'NotFoundException')) {
-            console.error("Scanning error:", error);
-          }
-        }
+        callback
       );
-      
+
       setIsScanning(true);
       setHasPermission(true);
-      
+
+      // After start, capture the stream from the video for torch support
+      setTimeout(() => {
+        const stream = (videoRef.current?.srcObject as MediaStream) || null;
+        if (stream) {
+          streamRef.current = stream;
+          const track = stream.getVideoTracks()[0];
+          const capabilities = track.getCapabilities?.();
+          if (capabilities && 'torch' in capabilities) {
+            setTorchSupported(true);
+          }
+        }
+      }, 200);
+
     } catch (err: any) {
       console.error("Camera error:", err);
       setHasPermission(false);
+
+      // Fallback with simpler constraints (Android compatibility)
+      if (codeReaderRef.current && videoRef.current) {
+        try {
+          await codeReaderRef.current.decodeFromConstraints(
+            { video: { facingMode: 'environment' } },
+            videoRef.current,
+            callback
+          );
+          setIsScanning(true);
+          setHasPermission(true);
+          return;
+        } catch (e2) {
+          console.error('Fallback start failed:', e2);
+        }
+      }
       
       if (err.name === 'NotAllowedError') {
         setError("Camera permission denied. Please allow camera access to scan barcodes.");
@@ -340,6 +361,8 @@ export default function BarcodeScanner() {
                 ref={videoRef}
                 className="w-full h-full object-cover"
                 playsInline
+                muted
+                autoPlay
               />
               {!isScanning && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
