@@ -94,12 +94,17 @@ export const useProducts = () => {
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('products')
         .update(updates)
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
       if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        throw new Error('Permission denied: You can only update your own products or you need admin access.');
+      }
       
       setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
       toast({
