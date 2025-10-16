@@ -37,10 +37,12 @@ export default function BarcodeScanner() {
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [torchEnabled, setTorchEnabled] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
+  const [isImageDecoding, setIsImageDecoding] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -182,6 +184,41 @@ export default function BarcodeScanner() {
         variant: "destructive",
       });
     }
+  };
+
+  const decodeFromImageFile = async (file: File) => {
+    if (!codeReaderRef.current) return;
+    setIsImageDecoding(true);
+    try {
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = URL.createObjectURL(file);
+      });
+      const result = await codeReaderRef.current.decodeFromImage(img as HTMLImageElement);
+      if (result) {
+        const text = result.getText();
+        setIsScanning(false);
+        stopScanning();
+        await lookupProduct(text);
+        toast({ title: 'Photo scanned', description: 'Barcode detected from image.' });
+      } else {
+        toast({ title: 'No barcode found', description: 'Try a clearer photo.', variant: 'destructive' });
+      }
+    } catch (e: any) {
+      console.error('Image decode error:', e);
+      toast({ title: 'Scan failed', description: 'Could not read barcode from photo.', variant: 'destructive' });
+    } finally {
+      setIsImageDecoding(false);
+    }
+  };
+
+  const onPhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) await decodeFromImageFile(file);
+    // reset input so selecting same file works again
+    e.currentTarget.value = '';
   };
 
   const lookupProduct = async (barcode: string) => {
@@ -380,15 +417,15 @@ export default function BarcodeScanner() {
             )}
 
             {/* Control Buttons */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
               {!isScanning ? (
-                <Button onClick={startScanning} className="flex-1">
+                <Button onClick={startScanning} className="flex-1 min-w-[160px]">
                   <Camera className="w-4 h-4 mr-2" />
                   Start Scanning
                 </Button>
               ) : (
                 <>
-                  <Button onClick={stopScanning} variant="destructive" className="flex-1">
+                  <Button onClick={stopScanning} variant="destructive" className="flex-1 min-w-[160px]">
                     <CameraOff className="w-4 h-4 mr-2" />
                     Stop Scanning
                   </Button>
@@ -397,13 +434,24 @@ export default function BarcodeScanner() {
                       onClick={toggleTorch} 
                       variant={torchEnabled ? "default" : "outline"}
                       size="icon"
+                      title={torchEnabled ? 'Turn off flashlight' : 'Turn on flashlight'}
                     >
                       <Flashlight className="w-4 h-4" />
                     </Button>
                   )}
                 </>
               )}
-              
+
+              <Button 
+                variant="outline" 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isImageDecoding}
+                className="min-w-[140px]"
+                title="Use photo scan (Android fallback)"
+              >
+                {isImageDecoding ? 'Scanning...' : 'Photo Scan'}
+              </Button>
+
               {scannedProduct && (
                 <Button onClick={startScanning} variant="outline">
                   <RotateCcw className="w-4 h-4 mr-2" />
@@ -411,6 +459,14 @@ export default function BarcodeScanner() {
                 </Button>
               )}
             </div>
+            <input 
+              ref={fileInputRef}
+              type="file" 
+              accept="image/*"
+              capture="environment"
+              onChange={onPhotoFileChange}
+              className="hidden"
+            />
             
             {isScanning && (
               <Alert>
