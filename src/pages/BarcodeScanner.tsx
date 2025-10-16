@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { BrowserMultiFormatReader } from "@zxing/library";
+import { BrowserMultiFormatReader, DecodeHintType } from "@zxing/library";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Camera, CameraOff, RotateCcw, AlertCircle, MapPin } from "lucide-react";
+import { Camera, CameraOff, RotateCcw, AlertCircle, MapPin, Flashlight } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ScannedProduct {
@@ -35,14 +35,21 @@ export default function BarcodeScanner() {
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [isSavingStatus, setIsSavingStatus] = useState(false);
+  const [torchEnabled, setTorchEnabled] = useState(false);
+  const [torchSupported, setTorchSupported] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Initialize code reader
-    codeReaderRef.current = new BrowserMultiFormatReader();
+    // Initialize code reader with hints for better performance
+    const hints = new Map();
+    hints.set(DecodeHintType.TRY_HARDER, true);
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, ['CODE_128', 'EAN_13', 'EAN_8', 'UPC_A', 'UPC_E', 'CODE_39']);
+    
+    codeReaderRef.current = new BrowserMultiFormatReader(hints);
     
     return () => {
       stopScanning();
@@ -55,6 +62,28 @@ export default function BarcodeScanner() {
     
     try {
       if (!codeReaderRef.current || !videoRef.current) return;
+
+      // Enhanced video constraints for lower quality cameras
+      const constraints = {
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          focusMode: 'continuous',
+          zoom: 1.0
+        }
+      };
+
+      // Get media stream with constraints
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+      
+      // Check for torch support
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track.getCapabilities();
+      if ('torch' in capabilities) {
+        setTorchSupported(true);
+      }
 
       // Request camera permission and start scanning
       await codeReaderRef.current.decodeFromVideoDevice(
@@ -106,7 +135,32 @@ export default function BarcodeScanner() {
     if (codeReaderRef.current) {
       codeReaderRef.current.reset();
     }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
     setIsScanning(false);
+    setTorchEnabled(false);
+  };
+
+  const toggleTorch = async () => {
+    if (!streamRef.current || !torchSupported) return;
+    
+    try {
+      const track = streamRef.current.getVideoTracks()[0];
+      await track.applyConstraints({
+        // @ts-ignore - torch is not in TypeScript types yet
+        advanced: [{ torch: !torchEnabled }]
+      });
+      setTorchEnabled(!torchEnabled);
+    } catch (err) {
+      console.error("Torch error:", err);
+      toast({
+        title: "Flashlight Error",
+        description: "Unable to toggle flashlight",
+        variant: "destructive",
+      });
+    }
   };
 
   const lookupProduct = async (barcode: string) => {
@@ -310,10 +364,21 @@ export default function BarcodeScanner() {
                   Start Scanning
                 </Button>
               ) : (
-                <Button onClick={stopScanning} variant="destructive" className="flex-1">
-                  <CameraOff className="w-4 h-4 mr-2" />
-                  Stop Scanning
-                </Button>
+                <>
+                  <Button onClick={stopScanning} variant="destructive" className="flex-1">
+                    <CameraOff className="w-4 h-4 mr-2" />
+                    Stop Scanning
+                  </Button>
+                  {torchSupported && (
+                    <Button 
+                      onClick={toggleTorch} 
+                      variant={torchEnabled ? "default" : "outline"}
+                      size="icon"
+                    >
+                      <Flashlight className="w-4 h-4" />
+                    </Button>
+                  )}
+                </>
               )}
               
               {scannedProduct && (
@@ -323,6 +388,15 @@ export default function BarcodeScanner() {
                 </Button>
               )}
             </div>
+            
+            {isScanning && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  Hold the barcode steady and ensure good lighting. {torchSupported && "Use the flashlight button if needed."}
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
 
