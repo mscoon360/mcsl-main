@@ -104,6 +104,7 @@ export default function Products() {
       category: formData.get('category') as string,
       units: formData.get('units') as string,
       stock: newStock,
+      status: newStock > 10 ? 'active' : newStock > 0 ? 'low_stock' : 'out_of_stock',
       price: parseFloat(formData.get('price') as string) || 0,
     };
 
