@@ -6,7 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, User, Mail, Phone, Building, Users, Edit, Trash2, Lock, Clock, CheckCircle, X, AlertCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Search, User, Mail, Phone, Building, Users, Edit, Trash2, Lock, Clock, CheckCircle, X, AlertCircle, FileText, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Link } from "react-router-dom";
@@ -39,6 +41,13 @@ export default function Customers() {
   });
   const [accessStatus, setAccessStatus] = useState<'none' | 'pending' | 'approved' | 'denied'>('none');
   const [requestingAccess, setRequestingAccess] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [customerDetails, setCustomerDetails] = useState<{
+    salesRep: string;
+    contracts: any[];
+    purchases: any[];
+  }>({ salesRep: '', contracts: [], purchases: [] });
 
   const department = userDepartment;
 
@@ -248,6 +257,44 @@ export default function Customers() {
         console.error('Failed to delete customer:', error);
       }
     }
+  };
+
+  const handleCustomerClick = async (customer: any) => {
+    setSelectedCustomer(customer);
+    setIsDetailsDialogOpen(true);
+
+    // Fetch sales rep who added this customer
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('name, username')
+      .eq('id', customer.user_id)
+      .single();
+
+    // Fetch contracts (rental agreements with this customer)
+    const { data: contractsData } = await supabase
+      .from('sale_items')
+      .select(`
+        *,
+        sales!inner(customer_name, date, total)
+      `)
+      .eq('sales.customer_name', customer.name)
+      .eq('is_rental', true);
+
+    // Fetch purchases (all sales for this customer)
+    const { data: purchasesData } = await supabase
+      .from('sales')
+      .select(`
+        *,
+        sale_items(product_name, quantity, price)
+      `)
+      .eq('customer_name', customer.name)
+      .order('date', { ascending: false });
+
+    setCustomerDetails({
+      salesRep: profileData?.name || profileData?.username || 'Unknown',
+      contracts: contractsData || [],
+      purchases: purchasesData || []
+    });
   };
   return (
     <div className="space-y-6">
@@ -583,7 +630,12 @@ export default function Customers() {
                             <User className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className="font-semibold">{customer.name}</p>
+                            <button 
+                              onClick={() => handleCustomerClick(customer)}
+                              className="font-semibold hover:underline text-left cursor-pointer"
+                            >
+                              {customer.name}
+                            </button>
                             <p className="text-sm text-muted-foreground">{customer.city}</p>
                           </div>
                         </div>
@@ -658,6 +710,149 @@ export default function Customers() {
       </Card>
           </>
         )}
+
+      {/* Customer Details Dialog */}
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Customer Details</DialogTitle>
+            <DialogDescription>Complete information about this customer</DialogDescription>
+          </DialogHeader>
+
+          {selectedCustomer && (
+            <div className="space-y-6">
+              {/* Customer Info */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Customer Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4 bg-muted/50 p-4 rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Name</p>
+                    <p className="font-medium">{selectedCustomer.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium">{selectedCustomer.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Phone</p>
+                    <p className="font-medium">{selectedCustomer.phone || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Company</p>
+                    <p className="font-medium">{selectedCustomer.company || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Address</p>
+                    <p className="font-medium">{selectedCustomer.address || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">City</p>
+                    <p className="font-medium">{selectedCustomer.city || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Sales</p>
+                    <p className="font-medium text-success">${selectedCustomer.totalSales?.toFixed(2) || '0.00'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    <Badge variant={selectedCustomer.status === 'active' ? 'default' : 'secondary'}>
+                      {selectedCustomer.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Sales Rep */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Added By
+                </h3>
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <p className="font-medium">{customerDetails.salesRep}</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Contracts */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Rental Contracts ({customerDetails.contracts.length})
+                </h3>
+                {customerDetails.contracts.length > 0 ? (
+                  <div className="space-y-2">
+                    {customerDetails.contracts.map((contract, idx) => (
+                      <div key={idx} className="bg-muted/50 p-3 rounded-lg flex justify-between items-center">
+                        <div>
+                          <p className="font-medium">{contract.product_name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {contract.start_date ? new Date(contract.start_date).toLocaleDateString() : 'N/A'} - {contract.end_date ? new Date(contract.end_date).toLocaleDateString() : 'Ongoing'}
+                          </p>
+                        </div>
+                        <p className="font-semibold">${contract.price?.toFixed(2) || '0.00'}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm bg-muted/50 p-4 rounded-lg">No rental contracts found</p>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Purchases */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5" />
+                  Purchase History ({customerDetails.purchases.length})
+                </h3>
+                {customerDetails.purchases.length > 0 ? (
+                  <div className="space-y-3">
+                    {customerDetails.purchases.map((purchase) => (
+                      <div key={purchase.id} className="bg-muted/50 p-3 rounded-lg">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-medium">Sale #{purchase.id.slice(0, 8)}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(purchase.date).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Badge>{purchase.status}</Badge>
+                        </div>
+                        {purchase.sale_items && purchase.sale_items.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {purchase.sale_items.map((item: any, idx: number) => (
+                              <div key={idx} className="text-sm flex justify-between">
+                                <span>{item.product_name} x{item.quantity}</span>
+                                <span className="text-muted-foreground">${item.price?.toFixed(2) || '0.00'}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="mt-2 pt-2 border-t border-border">
+                          <div className="flex justify-between font-semibold">
+                            <span>Total</span>
+                            <span className="text-success">${purchase.total?.toFixed(2) || '0.00'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm bg-muted/50 p-4 rounded-lg">No purchases found</p>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       </div>
   );
 }
