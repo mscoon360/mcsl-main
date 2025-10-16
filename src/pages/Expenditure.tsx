@@ -390,7 +390,7 @@ export default function Expenditure() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         <Card className="dashboard-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-center gap-2 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-card-foreground">Total Expenses</CardTitle>
             <TrendingDown className="h-4 w-4 text-destructive" />
           </CardHeader>
@@ -403,7 +403,7 @@ export default function Expenditure() {
         </Card>
 
         <Card className="dashboard-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-center gap-2 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-card-foreground">Working Capital</CardTitle>
             <Wrench className="h-4 w-4 text-orange-500" />
           </CardHeader>
@@ -416,7 +416,7 @@ export default function Expenditure() {
         </Card>
 
         <Card className="dashboard-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-center gap-2 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-card-foreground">Fixed Capital</CardTitle>
             <Building className="h-4 w-4 text-red-500" />
           </CardHeader>
@@ -429,7 +429,7 @@ export default function Expenditure() {
         </Card>
 
         <Card className="dashboard-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-center gap-2 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-card-foreground">Payroll</CardTitle>
             <DollarSign className="h-4 w-4 text-blue-500" />
           </CardHeader>
@@ -442,7 +442,7 @@ export default function Expenditure() {
         </Card>
 
         <Card className="dashboard-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-center gap-2 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-card-foreground">Tax</CardTitle>
             <Calendar className="h-4 w-4 text-purple-500" />
           </CardHeader>
@@ -455,7 +455,7 @@ export default function Expenditure() {
         </Card>
 
         <Card className="dashboard-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-center gap-2 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-card-foreground">Avg. Expense</CardTitle>
             <DollarSign className="h-4 w-4 text-gray-500" />
           </CardHeader>
