@@ -21,6 +21,9 @@ import FinanceOverview from "./pages/FinanceOverview";
 import Income from "./pages/Income";
 import Expenditure from "./pages/Expenditure";
 import ChartOfAccounts from "./pages/ChartOfAccounts";
+import AccountsPayable from "./pages/AccountsPayable";
+import AccountsReceivable from "./pages/AccountsReceivable";
+import Vendors from "./pages/Vendors";
 import Invoices from "./pages/Invoices";
 import Auth from "./pages/Auth";
 import ChangePassword from "./pages/ChangePassword";
@@ -55,6 +58,9 @@ const App = () => (
               <Route path="income" element={<Income />} />
               <Route path="expenditure" element={<Expenditure />} />
               <Route path="chart-of-accounts" element={<ChartOfAccounts />} />
+              <Route path="accounts-payable" element={<AccountsPayable />} />
+              <Route path="accounts-receivable" element={<AccountsReceivable />} />
+              <Route path="vendors" element={<Vendors />} />
               <Route path="invoices" element={<Invoices />} />
               <Route path="admin" element={<Admin />} />
             </Route>

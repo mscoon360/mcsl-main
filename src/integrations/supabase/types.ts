@@ -50,6 +50,146 @@ export type Database = {
         }
         Relationships: []
       }
+      accounts_payable: {
+        Row: {
+          amount: number
+          amount_paid: number | null
+          bill_date: string
+          bill_number: string
+          created_at: string | null
+          description: string | null
+          due_date: string
+          id: string
+          notes: string | null
+          payment_date: string | null
+          payment_method: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          vendor_id: string | null
+          vendor_name: string
+        }
+        Insert: {
+          amount: number
+          amount_paid?: number | null
+          bill_date: string
+          bill_number: string
+          created_at?: string | null
+          description?: string | null
+          due_date: string
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          vendor_id?: string | null
+          vendor_name: string
+        }
+        Update: {
+          amount?: number
+          amount_paid?: number | null
+          bill_date?: string
+          bill_number?: string
+          created_at?: string | null
+          description?: string | null
+          due_date?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          vendor_id?: string | null
+          vendor_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_payable_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accounts_receivable: {
+        Row: {
+          amount: number
+          amount_paid: number | null
+          created_at: string | null
+          customer_id: string | null
+          customer_name: string
+          description: string | null
+          due_date: string
+          id: string
+          invoice_date: string
+          invoice_id: string | null
+          invoice_number: string
+          notes: string | null
+          payment_date: string | null
+          payment_method: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          amount_paid?: number | null
+          created_at?: string | null
+          customer_id?: string | null
+          customer_name: string
+          description?: string | null
+          due_date: string
+          id?: string
+          invoice_date: string
+          invoice_id?: string | null
+          invoice_number: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          amount_paid?: number | null
+          created_at?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          invoice_date?: string
+          invoice_id?: string | null
+          invoice_number?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_receivable_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chart_of_accounts: {
         Row: {
           account_name: string
@@ -704,6 +844,54 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vendors: {
+        Row: {
+          address: string | null
+          city: string | null
+          contact_person: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          payment_terms: string | null
+          phone: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
