@@ -46,7 +46,7 @@ export default function BarcodeScanner() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Initialize code reader with hints for better performance
+    // Initialize code reader with hints for better performance and orientation handling
     const hints = new Map();
     hints.set(DecodeHintType.TRY_HARDER, true);
     hints.set(DecodeHintType.POSSIBLE_FORMATS, [
@@ -56,9 +56,12 @@ export default function BarcodeScanner() {
       BarcodeFormat.UPC_A,
       BarcodeFormat.UPC_E,
       BarcodeFormat.CODE_39,
+      BarcodeFormat.CODE_93,
+      BarcodeFormat.ITF,
     ]);
     
     codeReaderRef.current = new BrowserMultiFormatReader(hints);
+    codeReaderRef.current.timeBetweenDecodingAttempts = 200; // Try decode every 200ms for faster detection
     
     return () => {
       stopScanning();
@@ -472,7 +475,8 @@ export default function BarcodeScanner() {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-sm">
-                  Hold the barcode steady and ensure good lighting. {torchSupported && "Use the flashlight button if needed."}
+                  Hold the barcode steady and ensure good lighting. {torchSupported && "Use the flashlight button if needed. "}
+                  For best results, try landscape mode or rotate the barcode until it scans.
                 </AlertDescription>
               </Alert>
             )}
