@@ -388,20 +388,7 @@ export default function Expenditure() {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-        <Card className="dashboard-card">
-          <CardHeader className="flex flex-row items-center justify-center gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Total Expenses</CardTitle>
-            <TrendingDown className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent className="text-center">
-            <div className="text-2xl font-bold text-destructive">${totalExpenses.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">
-              {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
-            </p>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-center gap-2 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-card-foreground">Working Capital</CardTitle>
@@ -469,6 +456,20 @@ export default function Expenditure() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Total Expenses - Enlarged */}
+      <Card className="dashboard-card">
+        <CardHeader className="flex flex-row items-center justify-center gap-2 space-y-0 pb-4">
+          <CardTitle className="text-lg font-medium text-card-foreground">Total Expenses</CardTitle>
+          <TrendingDown className="h-6 w-6 text-destructive" />
+        </CardHeader>
+        <CardContent className="text-center">
+          <div className="text-4xl font-bold text-destructive">${totalExpenses.toFixed(2)}</div>
+          <p className="text-sm text-muted-foreground mt-2">
+            {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Filters and Controls */}
       <Card className="dashboard-card">
