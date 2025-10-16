@@ -18,6 +18,7 @@ import {
   ScanBarcode,
   Warehouse,
   ScanText,
+  BookOpen,
 } from "lucide-react";
 import magicCareLogo from "@/assets/magic-care-logo.png";
 import {
@@ -73,6 +74,7 @@ const navigation: NavigationSection[] = [
       { name: "Overview", href: "/finance", icon: BarChart3 },
       { name: "Income", href: "/income", icon: DollarSign },
       { name: "Expenditure", href: "/expenditure", icon: Receipt },
+      { name: "Chart of Accounts", href: "/chart-of-accounts", icon: BookOpen },
       { name: "Invoices", href: "/invoices", icon: FileText },
       { name: "Collections", href: "/rental-payments", icon: CreditCard },
     ]

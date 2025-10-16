@@ -20,6 +20,7 @@ import Fulfillment from "./pages/Fulfillment";
 import FinanceOverview from "./pages/FinanceOverview";
 import Income from "./pages/Income";
 import Expenditure from "./pages/Expenditure";
+import ChartOfAccounts from "./pages/ChartOfAccounts";
 import Invoices from "./pages/Invoices";
 import Auth from "./pages/Auth";
 import ChangePassword from "./pages/ChangePassword";
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="finance" element={<FinanceOverview />} />
               <Route path="income" element={<Income />} />
               <Route path="expenditure" element={<Expenditure />} />
+              <Route path="chart-of-accounts" element={<ChartOfAccounts />} />
               <Route path="invoices" element={<Invoices />} />
               <Route path="admin" element={<Admin />} />
             </Route>

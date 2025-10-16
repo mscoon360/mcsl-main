@@ -50,6 +50,59 @@ export type Database = {
         }
         Relationships: []
       }
+      chart_of_accounts: {
+        Row: {
+          account_name: string
+          account_number: string
+          account_subtype: Database["public"]["Enums"]["account_subtype"]
+          account_type: Database["public"]["Enums"]["account_type"]
+          balance: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          parent_account_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          account_subtype: Database["public"]["Enums"]["account_subtype"]
+          account_type: Database["public"]["Enums"]["account_type"]
+          balance?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          parent_account_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          account_subtype?: Database["public"]["Enums"]["account_subtype"]
+          account_type?: Database["public"]["Enums"]["account_type"]
+          balance?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          parent_account_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chart_of_accounts_parent_account_id_fkey"
+            columns: ["parent_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_activity_log: {
         Row: {
           action: string
@@ -669,6 +722,19 @@ export type Database = {
       }
     }
     Enums: {
+      account_subtype:
+        | "current-asset"
+        | "fixed-asset"
+        | "other-asset"
+        | "current-liability"
+        | "long-term-liability"
+        | "equity"
+        | "operating-revenue"
+        | "other-revenue"
+        | "cost-of-goods-sold"
+        | "operating-expense"
+        | "other-expense"
+      account_type: "asset" | "liability" | "equity" | "revenue" | "expense"
       app_role: "admin" | "user"
     }
     CompositeTypes: {
@@ -797,6 +863,20 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_subtype: [
+        "current-asset",
+        "fixed-asset",
+        "other-asset",
+        "current-liability",
+        "long-term-liability",
+        "equity",
+        "operating-revenue",
+        "other-revenue",
+        "cost-of-goods-sold",
+        "operating-expense",
+        "other-expense",
+      ],
+      account_type: ["asset", "liability", "equity", "revenue", "expense"],
       app_role: ["admin", "user"],
     },
   },
