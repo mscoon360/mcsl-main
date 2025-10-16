@@ -394,7 +394,7 @@ export default function Expenditure() {
             <CardTitle className="text-sm font-medium text-card-foreground">Total Expenses</CardTitle>
             <TrendingDown className="h-4 w-4 text-destructive" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="text-center">
             <div className="text-2xl font-bold text-destructive">${totalExpenses.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
               {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
@@ -407,7 +407,7 @@ export default function Expenditure() {
             <CardTitle className="text-sm font-medium text-card-foreground">Working Capital</CardTitle>
             <Wrench className="h-4 w-4 text-orange-500" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="text-center">
             <div className="text-2xl font-bold text-orange-600">${workingCapitalTotal.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
               {monthExpenses.filter(e => e.category === 'working-capital').length} expenses
@@ -420,7 +420,7 @@ export default function Expenditure() {
             <CardTitle className="text-sm font-medium text-card-foreground">Fixed Capital</CardTitle>
             <Building className="h-4 w-4 text-red-500" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="text-center">
             <div className="text-2xl font-bold text-red-600">${fixedCapitalTotal.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
               {monthExpenses.filter(e => e.category === 'fixed-capital').length} expenses
@@ -433,7 +433,7 @@ export default function Expenditure() {
             <CardTitle className="text-sm font-medium text-card-foreground">Payroll</CardTitle>
             <DollarSign className="h-4 w-4 text-blue-500" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="text-center">
             <div className="text-2xl font-bold text-blue-600">${payrollTotal.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
               Employee costs
@@ -446,7 +446,7 @@ export default function Expenditure() {
             <CardTitle className="text-sm font-medium text-card-foreground">Tax</CardTitle>
             <Calendar className="h-4 w-4 text-purple-500" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="text-center">
             <div className="text-2xl font-bold text-purple-600">${taxTotal.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
               Compliance costs
@@ -459,7 +459,7 @@ export default function Expenditure() {
             <CardTitle className="text-sm font-medium text-card-foreground">Avg. Expense</CardTitle>
             <DollarSign className="h-4 w-4 text-gray-500" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="text-center">
             <div className="text-2xl font-bold text-gray-600">
               ${monthExpenses.length > 0 ? (totalExpenses / monthExpenses.length).toFixed(2) : '0.00'}
             </div>
