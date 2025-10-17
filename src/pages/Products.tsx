@@ -377,20 +377,18 @@ export default function Products() {
                     <TableCell>{product.category || '-'}</TableCell>
                     <TableCell>${product.price.toFixed(2)}</TableCell>
                     <TableCell>
-                      <div className="space-y-1">
-                        <div>
-                          {product.stock === 0 ? (
-                            <span className="text-destructive font-semibold">No Stock</span>
-                          ) : (
-                            <span>{product.stock}</span>
+                      {product.stock === 0 ? (
+                        <span className="text-destructive font-semibold">No Stock</span>
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          <span>{product.stock}</span>
+                          {product.min_stock && product.stock <= product.min_stock && (
+                            <Badge variant="destructive" className="text-xs w-fit">
+                              Below Min
+                            </Badge>
                           )}
                         </div>
-                        {product.min_stock && product.stock <= product.min_stock && (
-                          <Badge variant="destructive" className="text-xs">
-                            Below Min
-                          </Badge>
-                        )}
-                      </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={product.stock === 0 || product.status === 'low_stock' ? 'destructive' : product.status === 'active' ? 'default' : 'secondary'}>
