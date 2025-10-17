@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProducts } from '@/hooks/useProducts';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Plus, Package, Barcode } from 'lucide-react';
+import { Pencil, Trash2, Plus, Package, Barcode, Info } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Separator } from '@/components/ui/separator';
 
 export default function Products() {
   const { products, loading, addProduct, updateProduct, deleteProduct } = useProducts();
@@ -20,7 +21,11 @@ export default function Products() {
   const navigate = useNavigate();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [productHistory, setProductHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [productType, setProductType] = useState<'sale_only' | 'rental_only' | 'both'>('sale_only');
 
   const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -34,6 +39,9 @@ export default function Products() {
     const category = formData.get('category') as string;
     const units = formData.get('units') as string;
     const stock = parseInt(formData.get('stock') as string) || 0;
+    const supplier_name = formData.get('supplier_name') as string;
+    const min_stock = parseInt(formData.get('min_stock') as string) || 0;
+    const cost_price = parseFloat(formData.get('cost_price') as string) || 0;
     
     // Handle prices based on product type
     let price = 0;
@@ -61,6 +69,9 @@ export default function Products() {
       status: stock > 10 ? 'active' : stock > 0 ? 'low_stock' : 'out_of_stock',
       is_rental: productType !== 'sale_only',
       is_rental_only: productType === 'rental_only',
+      supplier_name,
+      min_stock,
+      cost_price,
     };
 
     try {
@@ -162,6 +173,42 @@ export default function Products() {
   const handleEdit = (product: any) => {
     setEditingProduct(product);
     setIsEditDialogOpen(true);
+  };
+
+  const handleViewDetails = async (product: any) => {
+    setSelectedProduct(product);
+    setIsDetailsDialogOpen(true);
+    setLoadingHistory(true);
+
+    try {
+      // Fetch sale items for this product
+      const { data: saleItems, error } = await supabase
+        .from('sale_items')
+        .select(`
+          *,
+          sales:sale_id (
+            id,
+            date,
+            customer_name,
+            total,
+            status
+          )
+        `)
+        .eq('product_name', product.name)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProductHistory(saleItems || []);
+    } catch (error) {
+      console.error('Error fetching product history:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load product history',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingHistory(false);
+    }
   };
 
   if (loading) {
@@ -266,6 +313,21 @@ export default function Products() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="supplier_name">Supplier Name *</Label>
+                  <Input id="supplier_name" name="supplier_name" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="min_stock">Minimum Stock *</Label>
+                  <Input id="min_stock" name="min_stock" type="number" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cost_price">Cost Price *</Label>
+                  <Input id="cost_price" name="cost_price" type="number" step="0.01" required />
+                </div>
+              </div>
+
               <Button type="submit" className="w-full">
                 <Package className="mr-2 h-4 w-4" />
                 Add Product
@@ -292,9 +354,9 @@ export default function Products() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>SKU</TableHead>
+                  <TableHead>Supplier</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Price</TableHead>
-                  <TableHead>Units</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Type</TableHead>
@@ -304,17 +366,31 @@ export default function Products() {
               <TableBody>
                 {products.map((product) => (
                   <TableRow key={product.id}>
-                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell 
+                      className="font-medium text-primary cursor-pointer hover:underline"
+                      onClick={() => handleViewDetails(product)}
+                    >
+                      {product.name}
+                    </TableCell>
                     <TableCell>{product.sku}</TableCell>
+                    <TableCell>{product.supplier_name || '-'}</TableCell>
                     <TableCell>{product.category || '-'}</TableCell>
                     <TableCell>${product.price.toFixed(2)}</TableCell>
-                    <TableCell>{product.units || '-'}</TableCell>
                     <TableCell>
-                      {product.stock === 0 ? (
-                        <span className="text-destructive font-semibold">No Stock</span>
-                      ) : (
-                        product.stock
-                      )}
+                      <div className="space-y-1">
+                        <div>
+                          {product.stock === 0 ? (
+                            <span className="text-destructive font-semibold">No Stock</span>
+                          ) : (
+                            <span>{product.stock}</span>
+                          )}
+                        </div>
+                        {product.min_stock && product.stock <= product.min_stock && (
+                          <Badge variant="destructive" className="text-xs">
+                            Below Min
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={product.stock === 0 || product.status === 'low_stock' ? 'destructive' : product.status === 'active' ? 'default' : 'secondary'}>
@@ -326,6 +402,14 @@ export default function Products() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetails(product)}
+                          title="View Details"
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -404,6 +488,156 @@ export default function Products() {
                 Update Product
               </Button>
             </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Product Details</DialogTitle>
+          </DialogHeader>
+          {selectedProduct && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-muted-foreground">Product Name</Label>
+                    <p className="font-semibold">{selectedProduct.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">SKU</Label>
+                    <p className="font-semibold">{selectedProduct.sku}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Description</Label>
+                    <p className="font-semibold">{selectedProduct.description || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Category</Label>
+                    <p className="font-semibold">{selectedProduct.category || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Type</Label>
+                    <p className="font-semibold">
+                      {selectedProduct.is_rental_only ? 'Rental Only' : selectedProduct.is_rental ? 'Both Sale & Rental' : 'Sale Only'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-muted-foreground">Supplier</Label>
+                    <p className="font-semibold">{selectedProduct.supplier_name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Sale Price</Label>
+                    <p className="font-semibold">${selectedProduct.price.toFixed(2)}</p>
+                  </div>
+                  {selectedProduct.rental_price && (
+                    <div>
+                      <Label className="text-muted-foreground">Rental Price</Label>
+                      <p className="font-semibold">${selectedProduct.rental_price.toFixed(2)}</p>
+                    </div>
+                  )}
+                  <div>
+                    <Label className="text-muted-foreground">Cost Price</Label>
+                    <p className="font-semibold">${selectedProduct.cost_price?.toFixed(2) || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Current Stock</Label>
+                    <p className="font-semibold">{selectedProduct.stock} {selectedProduct.units || 'units'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Minimum Stock</Label>
+                    <p className="font-semibold">{selectedProduct.min_stock || 0} {selectedProduct.units || 'units'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Status</Label>
+                    <Badge variant={selectedProduct.stock === 0 || selectedProduct.status === 'low_stock' ? 'destructive' : 'default'}>
+                      {selectedProduct.status.replace(/_/g, ' ').split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="text-lg font-semibold mb-4">
+                  {selectedProduct.is_rental_only ? 'Rental History' : 'Purchase History'}
+                </h3>
+                {loadingHistory ? (
+                  <p className="text-center py-8 text-muted-foreground">Loading history...</p>
+                ) : productHistory.length === 0 ? (
+                  <p className="text-center py-8 text-muted-foreground">
+                    No {selectedProduct.is_rental_only ? 'rental' : 'purchase'} history available
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {selectedProduct.is_rental_only ? (
+                      // Rental history
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Customer</TableHead>
+                            <TableHead>Quantity</TableHead>
+                            <TableHead>Period</TableHead>
+                            <TableHead>Start Date</TableHead>
+                            <TableHead>End Date</TableHead>
+                            <TableHead>Amount</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {productHistory.filter(item => item.is_rental).map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell>{new Date(item.sales.date).toLocaleDateString()}</TableCell>
+                              <TableCell>{item.sales.customer_name}</TableCell>
+                              <TableCell>{item.quantity}</TableCell>
+                              <TableCell>{item.payment_period || 'N/A'}</TableCell>
+                              <TableCell>{item.start_date ? new Date(item.start_date).toLocaleDateString() : 'N/A'}</TableCell>
+                              <TableCell>{item.end_date ? new Date(item.end_date).toLocaleDateString() : 'N/A'}</TableCell>
+                              <TableCell>${(item.price * item.quantity).toFixed(2)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      // Purchase history
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Customer</TableHead>
+                            <TableHead>Quantity</TableHead>
+                            <TableHead>Unit Price</TableHead>
+                            <TableHead>Total</TableHead>
+                            <TableHead>Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {productHistory.filter(item => !item.is_rental).map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell>{new Date(item.sales.date).toLocaleDateString()}</TableCell>
+                              <TableCell>{item.sales.customer_name}</TableCell>
+                              <TableCell>{item.quantity}</TableCell>
+                              <TableCell>${item.price.toFixed(2)}</TableCell>
+                              <TableCell>${(item.price * item.quantity).toFixed(2)}</TableCell>
+                              <TableCell>
+                                <Badge variant={item.sales.status === 'completed' ? 'default' : 'secondary'}>
+                                  {item.sales.status}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

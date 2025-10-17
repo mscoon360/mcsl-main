@@ -612,54 +612,63 @@ export type Database = {
       products: {
         Row: {
           category: string | null
+          cost_price: number | null
           created_at: string | null
           description: string | null
           id: string
           is_rental: boolean | null
           is_rental_only: boolean | null
           last_sold: string | null
+          min_stock: number | null
           name: string
           price: number
           rental_price: number | null
           sku: string
           status: string | null
           stock: number | null
+          supplier_name: string | null
           units: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           category?: string | null
+          cost_price?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
           is_rental?: boolean | null
           is_rental_only?: boolean | null
           last_sold?: string | null
+          min_stock?: number | null
           name: string
           price: number
           rental_price?: number | null
           sku: string
           status?: string | null
           stock?: number | null
+          supplier_name?: string | null
           units?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           category?: string | null
+          cost_price?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
           is_rental?: boolean | null
           is_rental_only?: boolean | null
           last_sold?: string | null
+          min_stock?: number | null
           name?: string
           price?: number
           rental_price?: number | null
           sku?: string
           status?: string | null
           stock?: number | null
+          supplier_name?: string | null
           units?: string | null
           updated_at?: string | null
           user_id?: string

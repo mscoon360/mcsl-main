@@ -16,6 +16,9 @@ export interface Product {
   last_sold?: string;
   is_rental?: boolean;
   is_rental_only?: boolean;
+  supplier_name?: string;
+  min_stock?: number;
+  cost_price?: number;
 }
 
 export const useProducts = () => {
