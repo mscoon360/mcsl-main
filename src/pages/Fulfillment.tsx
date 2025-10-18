@@ -46,12 +46,13 @@ export default function Fulfillment() {
   // Get/set fulfillment data
   const [fulfillmentItems, setFulfillmentItems] = useLocalStorage<FulfillmentItem[]>('dashboard-fulfillment', []);
 
-  // Create fulfillment items from sales if not already created
+  // Create fulfillment items from completed sales only
   useState(() => {
     const existingFulfillmentIds = new Set(fulfillmentItems.map(item => item.saleId));
     const newFulfillmentItems: FulfillmentItem[] = [];
 
-    sales.forEach(sale => {
+    // Only create fulfillment items for completed sales
+    sales.filter(sale => sale.status === 'completed').forEach(sale => {
       if (!existingFulfillmentIds.has(sale.id)) {
         sale.items.forEach((item, index) => {
           newFulfillmentItems.push({

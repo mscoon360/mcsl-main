@@ -62,8 +62,10 @@ export default function Income() {
   }, [user, isAdmin, navigate]);
 
   // Map Supabase sales to expected format
-  // Admins and Finance users see all sales, regular users see only their own
-  const sales = (isAdmin || hasFinanceAccess ? supabaseSales : supabaseSales.filter(s => s.user_id === user?.id)).map(sale => ({
+  // Admins and Finance users see all sales, regular users see only their own - only completed sales
+  const sales = (isAdmin || hasFinanceAccess ? supabaseSales : supabaseSales.filter(s => s.user_id === user?.id))
+    .filter(sale => sale.status === 'completed')
+    .map(sale => ({
     id: sale.id,
     customer: sale.customer_name,
     total: sale.total,

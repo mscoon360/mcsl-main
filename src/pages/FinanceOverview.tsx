@@ -115,7 +115,7 @@ export default function FinanceOverview() {
   const calculatePeriodFinancials = (): MonthlyFinancials => {
     const salesIncome = sales.filter(sale => {
       const saleDate = parseISO(sale.date);
-      return isWithinInterval(saleDate, {
+      return sale.status === 'completed' && isWithinInterval(saleDate, {
         start: periodStart,
         end: periodEnd
       }) && !sale.items.some(item => item.isRental);
@@ -162,7 +162,7 @@ export default function FinanceOverview() {
       const monthEnd = endOfMonth(date);
       const salesIncome = sales.filter(sale => {
         const saleDate = parseISO(sale.date);
-        return isWithinInterval(saleDate, {
+        return sale.status === 'completed' && isWithinInterval(saleDate, {
           start: monthStart,
           end: monthEnd
         }) && !sale.items.some(item => item.isRental);
@@ -202,7 +202,7 @@ export default function FinanceOverview() {
   const previousPeriodData = (() => {
     const salesIncome = sales.filter(sale => {
       const saleDate = parseISO(sale.date);
-      return isWithinInterval(saleDate, {
+      return sale.status === 'completed' && isWithinInterval(saleDate, {
         start: previousPeriodStart,
         end: previousPeriodEnd
       }) && !sale.items.some(item => item.isRental);

@@ -27,8 +27,9 @@ export default function Dashboard() {
     status: string;
   }>>('dashboard-customers', []);
 
-  // Admins see all sales, regular users see only their own
-  const userSales = isAdmin ? sales : sales.filter(sale => sale.user_id === user?.id);
+  // Admins see all sales, regular users see only their own - only completed sales
+  const userSales = (isAdmin ? sales : sales.filter(sale => sale.user_id === user?.id))
+    .filter(sale => sale.status === 'completed');
 
   // Calculate real stats
   const totalSales = userSales.reduce((sum, sale) => sum + sale.total, 0);
