@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package, CalendarIcon, Filter, Trash2, Check, ChevronsUpDown } from "lucide-react";
+import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package, CalendarIcon, Filter, Trash2, Check, ChevronsUpDown, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -40,6 +40,7 @@ export default function Sales() {
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [customerSearchValue, setCustomerSearchValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showInProgress, setShowInProgress] = useState(true);
 
   // Use products from Supabase instead of localStorage
   const products = supabaseProducts;
@@ -135,7 +136,7 @@ export default function Sales() {
           customer_name: customerName,
           total: total,
           date: saleDate,
-          status: 'completed'
+          status: 'in_progress'
         })
         .select()
         .single();
@@ -156,21 +157,11 @@ export default function Sales() {
 
       if (itemsError) throw itemsError;
 
-      // Update product stock for all items in Supabase
-      for (const item of salesItems) {
-        const product = products.find(p => p.id === item.product);
-        if (product) {
-          const totalQtySold = salesItems.filter(i => i.product === product.id).reduce((sum, i) => sum + i.quantity, 0);
-          await updateProduct(product.id, {
-            stock: product.stock - totalQtySold,
-            last_sold: saleDate
-          });
-        }
-      }
+      // Stock will be updated when sale is marked as completed
       
       toast({
-        title: "Sale Logged Successfully!",
-        description: `Total sale amount: $${total.toFixed(2)}. Stock updated.`
+        title: "Sale Created!",
+        description: `Sale created with amount: $${total.toFixed(2)}. Mark as completed to update stock.`
       });
       
       // Reset form
@@ -198,7 +189,7 @@ export default function Sales() {
     }
   };
 
-  // Filter sales based on search and date period
+  // Filter sales based on search and date period - only show completed sales
   const filteredSales = sales.filter(sale => {
     const matchesSearch = searchTerm === "" || 
       sale.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -208,8 +199,52 @@ export default function Sales() {
     const matchesDateFrom = !dateFrom || saleDate >= dateFrom;
     const matchesDateTo = !dateTo || saleDate <= dateTo;
     
-    return matchesSearch && matchesDateFrom && matchesDateTo;
+    return sale.status === 'completed' && matchesSearch && matchesDateFrom && matchesDateTo;
   });
+
+  // Get in-progress sales
+  const inProgressSales = sales.filter(sale => sale.status === 'in_progress');
+
+  // Handler to mark sale as completed
+  const handleMarkComplete = async (saleId: string) => {
+    try {
+      const sale = sales.find(s => s.id === saleId);
+      if (!sale) return;
+
+      // Update sale status to completed
+      const { error: updateError } = await supabase
+        .from('sales')
+        .update({ status: 'completed' })
+        .eq('id', saleId);
+
+      if (updateError) throw updateError;
+
+      // Update product stock for all items
+      for (const item of sale.items) {
+        const product = products.find(p => p.name === item.product_name);
+        if (product) {
+          await updateProduct(product.id, {
+            stock: product.stock - item.quantity,
+            last_sold: sale.date
+          });
+        }
+      }
+
+      toast({
+        title: "Sale Completed!",
+        description: "Sale marked as completed and stock updated."
+      });
+
+      refetch();
+    } catch (error) {
+      console.error('Error completing sale:', error);
+      toast({
+        title: "Error",
+        description: "Failed to complete sale. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const setQuickDateRange = (days: number) => {
     const today = new Date();
@@ -580,6 +615,79 @@ export default function Sales() {
               </Button>
             </form>
           </CardContent>
+        </Card>
+      )}
+
+      {/* In Progress Sales */}
+      {inProgressSales.length > 0 && (
+        <Card className="dashboard-card border-warning">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-card-foreground flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  In Progress Sales
+                </CardTitle>
+                <CardDescription>
+                  Sales awaiting completion - mark as completed to update stock
+                </CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowInProgress(!showInProgress)}
+              >
+                {showInProgress ? "Hide" : "Show"} ({inProgressSales.length})
+              </Button>
+            </div>
+          </CardHeader>
+          {showInProgress && (
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead>Sales Rep</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {inProgressSales.map(sale => (
+                    <TableRow key={sale.id}>
+                      <TableCell className="font-medium">{sale.customer_name}</TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {sale.items.map((item, idx) => (
+                            <div key={idx} className="text-sm">
+                              {item.quantity}x {item.product_name}
+                            </div>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{sale.rep_name}</TableCell>
+                      <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        ${sale.total.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          onClick={() => handleMarkComplete(sale.id)}
+                          className="gap-2"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          Mark Complete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          )}
         </Card>
       )}
 
