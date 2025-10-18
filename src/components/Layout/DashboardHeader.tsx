@@ -7,8 +7,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useExpiringContracts } from "@/hooks/useExpiringContracts";
+import { useProducts } from "@/hooks/useProducts";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
+import { Package } from "lucide-react";
 export function DashboardHeader() {
   const {
     user,
@@ -19,6 +21,9 @@ export function DashboardHeader() {
     expiringContracts,
     count
   } = useExpiringContracts();
+  const { products } = useProducts();
+  const outOfStockProducts = products.filter(product => product.stock === 0);
+  const totalNotifications = count + outOfStockProducts.length;
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!user) return;
@@ -50,18 +55,30 @@ export function DashboardHeader() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-4 w-4 md:h-5 md:w-5" />
-                {count > 0 && <span className="absolute -top-1 -right-1 h-3 w-3 md:h-4 md:w-4 rounded-full bg-destructive text-[10px] text-destructive-foreground flex items-center justify-center font-medium">
-                    {count}
+                {totalNotifications > 0 && <span className="absolute -top-1 -right-1 h-3 w-3 md:h-4 md:w-4 rounded-full bg-destructive text-[10px] text-destructive-foreground flex items-center justify-center font-medium">
+                    {totalNotifications}
                   </span>}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Expiring Contracts</DropdownMenuLabel>
+              <DropdownMenuLabel>Expiring Contracts & Stock Alerts</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {count === 0 ? <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-                  No contracts expiring in the next 30 days
+              {totalNotifications === 0 ? <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                  No notifications
                 </div> : <>
                   <div className="max-h-80 overflow-y-auto">
+                    {outOfStockProducts.map(product => <DropdownMenuItem key={`stock-${product.id}`} className="flex flex-col items-start gap-1 p-3">
+                        <div className="flex items-start gap-2 w-full">
+                          <Package className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{product.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">SKU: {product.sku}</p>
+                            <span className="text-xs font-medium text-destructive mt-1 inline-block">
+                              Out of Stock
+                            </span>
+                          </div>
+                        </div>
+                      </DropdownMenuItem>)}
                     {expiringContracts.map(contract => <DropdownMenuItem key={contract.id} className="flex flex-col items-start gap-1 p-3">
                         <div className="flex items-start gap-2 w-full">
                           <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
@@ -81,11 +98,18 @@ export function DashboardHeader() {
                       </DropdownMenuItem>)}
                   </div>
                   <DropdownMenuSeparator />
-                  <Link to="/rental-agreements">
-                    <DropdownMenuItem className="justify-center font-medium cursor-pointer">
-                      View All Rental Agreements
-                    </DropdownMenuItem>
-                  </Link>
+                  <div className="flex flex-col gap-1">
+                    {outOfStockProducts.length > 0 && <Link to="/products">
+                      <DropdownMenuItem className="justify-center font-medium cursor-pointer">
+                        View All Products
+                      </DropdownMenuItem>
+                    </Link>}
+                    {count > 0 && <Link to="/rental-agreements">
+                      <DropdownMenuItem className="justify-center font-medium cursor-pointer">
+                        View All Rental Agreements
+                      </DropdownMenuItem>
+                    </Link>}
+                  </div>
                 </>}
             </DropdownMenuContent>
           </DropdownMenu>
