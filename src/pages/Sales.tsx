@@ -41,6 +41,7 @@ export default function Sales() {
   const [customerSearchValue, setCustomerSearchValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showInProgress, setShowInProgress] = useState(true);
+  const [catalogTimePeriod, setCatalogTimePeriod] = useState<'month' | 'quarter' | 'biannual' | 'annual'>('month');
 
   // Use products from Supabase instead of localStorage
   const products = supabaseProducts;
@@ -348,6 +349,60 @@ export default function Sales() {
 
   // Filter products to exclude rental-only products for sales
   const availableProducts = products.filter(p => p.is_rental_only !== true);
+
+  // Calculate product catalog sales for current user
+  const getTimePeriodStart = () => {
+    const now = new Date();
+    const start = new Date();
+    
+    switch (catalogTimePeriod) {
+      case 'month':
+        start.setMonth(now.getMonth() - 1);
+        break;
+      case 'quarter':
+        start.setMonth(now.getMonth() - 3);
+        break;
+      case 'biannual':
+        start.setMonth(now.getMonth() - 6);
+        break;
+      case 'annual':
+        start.setFullYear(now.getFullYear() - 1);
+        break;
+    }
+    
+    return start;
+  };
+
+  const productCatalogSales = products.map(product => {
+    const timePeriodStart = getTimePeriodStart();
+    
+    // Get sales for this product by the current user within the time period
+    const productSales = sales.filter(sale => 
+      sale.user_id === user?.id &&
+      sale.status === 'completed' &&
+      new Date(sale.date) >= timePeriodStart &&
+      sale.items.some(item => item.product_name === product.name)
+    );
+
+    const totalQuantity = productSales.reduce((sum, sale) => {
+      const items = sale.items.filter(item => item.product_name === product.name);
+      return sum + items.reduce((itemSum, item) => itemSum + item.quantity, 0);
+    }, 0);
+
+    const totalRevenue = productSales.reduce((sum, sale) => {
+      const items = sale.items.filter(item => item.product_name === product.name);
+      return sum + items.reduce((itemSum, item) => itemSum + (item.quantity * item.price), 0);
+    }, 0);
+
+    return {
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      category: product.category,
+      totalQuantity,
+      totalRevenue
+    };
+  }).filter(item => item.totalQuantity > 0); // Only show products with sales
 
   return (
     <div className="space-y-6">
@@ -821,6 +876,94 @@ export default function Sales() {
                   </Link>
                 </Button>
               </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Product Catalog Sales */}
+      <Card className="dashboard-card">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-card-foreground">My Product Sales</CardTitle>
+              <CardDescription>
+                Your total sales by product for the selected time period
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={catalogTimePeriod === 'month' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCatalogTimePeriod('month')}
+              >
+                Month
+              </Button>
+              <Button
+                variant={catalogTimePeriod === 'quarter' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCatalogTimePeriod('quarter')}
+              >
+                Quarter
+              </Button>
+              <Button
+                variant={catalogTimePeriod === 'biannual' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCatalogTimePeriod('biannual')}
+              >
+                6 Months
+              </Button>
+              <Button
+                variant={catalogTimePeriod === 'annual' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCatalogTimePeriod('annual')}
+              >
+                Year
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {productCatalogSales.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product Name</TableHead>
+                  <TableHead>SKU</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead className="text-right">Units Sold</TableHead>
+                  <TableHead className="text-right">Total Revenue</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {productCatalogSales
+                  .sort((a, b) => b.totalRevenue - a.totalRevenue)
+                  .map(item => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{item.sku}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{item.category || 'N/A'}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">{item.totalQuantity}</TableCell>
+                      <TableCell className="text-right font-medium text-success">
+                        ${item.totalRevenue.toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-12">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
+                <Package className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                No sales in this period
+              </h3>
+              <p className="text-muted-foreground">
+                You haven't made any completed sales in the selected time period.
+              </p>
             </div>
           )}
         </CardContent>
