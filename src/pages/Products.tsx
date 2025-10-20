@@ -405,14 +405,6 @@ export default function Products() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleViewDetails(product)}
-                          title="View Details"
-                        >
-                          <Info className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
                           onClick={() => navigate(`/products/${product.id}/barcodes`)}
                           title="View Barcodes"
                         >
