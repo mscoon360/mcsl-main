@@ -384,7 +384,7 @@ export default function Products() {
                       ) : (
                         <div className="flex flex-col gap-1">
                           <span>{product.stock}</span>
-                          {product.min_stock && product.stock <= product.min_stock && (
+                          {product.min_stock > 0 && product.stock <= product.min_stock && (
                             <Badge variant="destructive" className="text-xs w-fit">
                               Below Min
                             </Badge>
