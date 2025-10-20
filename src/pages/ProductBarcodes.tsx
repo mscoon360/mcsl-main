@@ -12,6 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { ChevronDown } from 'lucide-react';
 
 interface ProductItem {
   id: string;
@@ -354,56 +360,67 @@ export default function ProductBarcodes() {
       </div>
 
       <div className="space-y-6">
-        {Object.entries(groupedBarcodes).map(([date, batchItems], index) => (
-          <Card key={date}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <div>
-                <CardTitle className="text-lg">
-                  Batch #{Object.keys(groupedBarcodes).length - index} - {batchItems.length} Barcode{batchItems.length !== 1 ? 's' : ''}
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Created on {date}
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => handlePrintBatch(batchItems)}
-              >
-                <Printer className="mr-2 h-4 w-4" />
-                Print This Batch
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {batchItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="border rounded-lg bg-card p-4 flex items-center justify-between"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{item.barcode}</p>
-                      <p className="text-xs text-muted-foreground capitalize">
-                        Status: {item.status}
+        {Object.entries(groupedBarcodes).map(([date, batchItems], index) => {
+          const isFirstBatch = index === 0;
+          
+          return (
+            <Card key={date}>
+              <Collapsible defaultOpen={isFirstBatch}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                  <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                    <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=closed]:-rotate-90" />
+                    <div className="text-left">
+                      <CardTitle className="text-lg">
+                        Batch #{Object.keys(groupedBarcodes).length - index} - {batchItems.length} Barcode{batchItems.length !== 1 ? 's' : ''}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Created on {date}
                       </p>
-                      {item.destination_address && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          📍 {item.destination_address}
-                        </p>
-                      )}
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedItem(item)}
-                    >
-                      View
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                  </CollapsibleTrigger>
+                  <Button
+                    variant="outline"
+                    onClick={() => handlePrintBatch(batchItems)}
+                  >
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print This Batch
+                  </Button>
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {batchItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className="border rounded-lg bg-card p-4 flex items-center justify-between"
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{item.barcode}</p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              Status: {item.status}
+                            </p>
+                            {item.destination_address && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                📍 {item.destination_address}
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedItem(item)}
+                          >
+                            View
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </Card>
+          );
+        })}
       </div>
 
       <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
