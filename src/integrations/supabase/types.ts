@@ -383,6 +383,42 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_test_cases: {
+        Row: {
+          created_at: string
+          expected_entries: Json
+          id: string
+          last_run_at: string | null
+          last_run_error: string | null
+          last_run_status: string | null
+          payload: Json
+          test_name: string
+          test_type: string
+        }
+        Insert: {
+          created_at?: string
+          expected_entries: Json
+          id?: string
+          last_run_at?: string | null
+          last_run_error?: string | null
+          last_run_status?: string | null
+          payload: Json
+          test_name: string
+          test_type: string
+        }
+        Update: {
+          created_at?: string
+          expected_entries?: Json
+          id?: string
+          last_run_at?: string | null
+          last_run_error?: string | null
+          last_run_status?: string | null
+          payload?: Json
+          test_name?: string
+          test_type?: string
+        }
+        Relationships: []
+      }
       fulfillment_items: {
         Row: {
           created_at: string | null
@@ -522,6 +558,87 @@ export type Database = {
           tax_rate?: number
           total?: number
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ledger_backfill_logs: {
+        Row: {
+          batch_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          source_id: string
+          source_type: string
+          status: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          source_id: string
+          source_type: string
+          status: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          source_id?: string
+          source_type?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      ledger_entries: {
+        Row: {
+          balance_hash: string
+          created_at: string
+          entries: Json
+          id: string
+          meta: Json | null
+          posted_at: string
+          source_id: string
+          source_type: string
+          status: string
+          total_credit: number
+          total_debit: number
+          transaction_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance_hash: string
+          created_at?: string
+          entries: Json
+          id?: string
+          meta?: Json | null
+          posted_at?: string
+          source_id: string
+          source_type: string
+          status?: string
+          total_credit?: number
+          total_debit?: number
+          transaction_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance_hash?: string
+          created_at?: string
+          entries?: Json
+          id?: string
+          meta?: Json | null
+          posted_at?: string
+          source_id?: string
+          source_type?: string
+          status?: string
+          total_credit?: number
+          total_debit?: number
+          transaction_id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -910,6 +1027,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      compute_balance_hash: {
+        Args: { entries: Json }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
