@@ -76,10 +76,17 @@ const navigation: NavigationSection[] = [
     items: [
       { name: "Overview", href: "/finance", icon: BarChart3 },
       { name: "Income", href: "/income", icon: DollarSign },
-      { name: "Expenditure", href: "/expenditure", icon: Receipt },
+      { 
+        name: "Expenditure", 
+        icon: Receipt,
+        subItems: [
+          { name: "Overview", href: "/expenditure" },
+          { name: "Accounts Payable", href: "/accounts-payable" },
+          { name: "Vendors", href: "/vendors" }
+        ]
+      },
       { name: "Chart of Accounts", href: "/chart-of-accounts", icon: BookOpen },
       { name: "Trial Balance", href: "/trial-balance", icon: Scale },
-      { name: "Accounts Payable", href: "/accounts-payable", icon: FileInput },
       { 
         name: "Accounts Receivable", 
         icon: FileOutput,
@@ -88,7 +95,6 @@ const navigation: NavigationSection[] = [
           { name: "Invoices", href: "/invoices" }
         ]
       },
-      { name: "Vendors", href: "/vendors", icon: Building2 },
       { name: "Collections", href: "/rental-payments", icon: CreditCard },
     ]
   }
