@@ -809,7 +809,6 @@ export default function Sales() {
                   <TableHead>Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -832,17 +831,6 @@ export default function Sales() {
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       ${sale.total.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleMarkIncomplete(sale.id)}
-                        className="gap-2"
-                      >
-                        <X className="h-4 w-4" />
-                        Mark Incomplete
-                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
