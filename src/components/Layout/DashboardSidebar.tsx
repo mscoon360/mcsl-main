@@ -80,9 +80,15 @@ const navigation: NavigationSection[] = [
       { name: "Chart of Accounts", href: "/chart-of-accounts", icon: BookOpen },
       { name: "Trial Balance", href: "/trial-balance", icon: Scale },
       { name: "Accounts Payable", href: "/accounts-payable", icon: FileInput },
-      { name: "Accounts Receivable", href: "/accounts-receivable", icon: FileOutput },
+      { 
+        name: "Accounts Receivable", 
+        icon: FileOutput,
+        subItems: [
+          { name: "Overview", href: "/accounts-receivable" },
+          { name: "Invoices", href: "/invoices" }
+        ]
+      },
       { name: "Vendors", href: "/vendors", icon: Building2 },
-      { name: "Invoices", href: "/invoices", icon: FileText },
       { name: "Collections", href: "/rental-payments", icon: CreditCard },
     ]
   }
