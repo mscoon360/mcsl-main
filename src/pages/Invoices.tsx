@@ -21,7 +21,6 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { useProducts } from "@/hooks/useProducts";
 import { useSales } from "@/hooks/useSales";
 import invoiceTemplate from '@/assets/invoice-template.pdf';
-
 interface InvoiceItem {
   description: string;
   quantity: number;
@@ -29,7 +28,6 @@ interface InvoiceItem {
   total: number;
   productId?: string;
 }
-
 interface Invoice {
   id: string;
   invoiceNumber: string;
@@ -46,10 +44,14 @@ interface Invoice {
   notes?: string;
   paymentTerms: string;
 }
-
 export default function Invoices() {
-  const { toast } = useToast();
-  const { user, isAdmin } = useAuth();
+  const {
+    toast
+  } = useToast();
+  const {
+    user,
+    isAdmin
+  } = useAuth();
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
@@ -60,15 +62,11 @@ export default function Invoices() {
   useEffect(() => {
     const checkAccess = async () => {
       if (!user || isAdmin) return;
-      
-      const { data } = await supabase
-        .from('department_visibility')
-        .select('department')
-        .eq('user_id', user.id);
-      
+      const {
+        data
+      } = await supabase.from('department_visibility').select('department').eq('user_id', user.id);
       const allowedSections = data?.map(d => d.department) || [];
       const hasAccess = allowedSections.includes('Finance-Invoices') || allowedSections.includes('Finance');
-      
       if (!hasAccess && allowedSections.length > 0) {
         navigate('/');
       }
@@ -77,13 +75,20 @@ export default function Invoices() {
   }, [user, isAdmin, navigate]);
 
   // Get customers from Supabase
-  const { customers } = useCustomers();
+  const {
+    customers
+  } = useCustomers();
 
   // Get products from Supabase
-  const { products } = useProducts();
-  
+  const {
+    products
+  } = useProducts();
+
   // Get sales log from Supabase (renamed to avoid conflict with rental sales)
-  const { sales: salesLog, loading: salesLoading } = useSales();
+  const {
+    sales: salesLog,
+    loading: salesLoading
+  } = useSales();
 
   // Get rental agreements to show customer's rental items
   const [sales] = useLocalStorage<Array<{
@@ -103,15 +108,19 @@ export default function Invoices() {
     date: string;
     status: string;
   }>>('dashboard-sales', []);
-
   const [invoices, setInvoices] = useLocalStorage<Invoice[]>('invoices', []);
-
   const [newInvoice, setNewInvoice] = useState<Partial<Invoice>>({
     customerId: '',
     issueDate: format(new Date(), 'yyyy-MM-dd'),
     dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
     status: 'draft',
-      items: [{ description: '', quantity: 1, unitPrice: 0, total: 0, productId: 'custom' }],
+    items: [{
+      description: '',
+      quantity: 1,
+      unitPrice: 0,
+      total: 0,
+      productId: 'custom'
+    }],
     taxRate: 10,
     notes: '',
     paymentTerms: 'Net 30'
@@ -120,7 +129,7 @@ export default function Invoices() {
   // Get available items for the selected customer (products + rental items)
   const getAvailableItemsForCustomer = () => {
     const availableItems = [];
-    
+
     // Add all products
     products.forEach(product => {
       availableItems.push({
@@ -133,15 +142,12 @@ export default function Invoices() {
         paymentPeriod: null
       });
     });
-    
+
     // Add separator if we have both products and rentals
     if (products.length > 0 && newInvoice.customerId) {
       const customer = customers.find(c => c.id === newInvoice.customerId);
       if (customer) {
-        const hasRentals = sales.some(sale => 
-          sale.customer === customer.name && 
-          sale.items.some(item => item.isRental)
-        );
+        const hasRentals = sales.some(sale => sale.customer === customer.name && sale.items.some(item => item.isRental));
         if (hasRentals) {
           availableItems.push({
             id: 'separator',
@@ -155,56 +161,52 @@ export default function Invoices() {
         }
       }
     }
-    
+
     // Add rental items for the selected customer with proper payment due calculation
     if (newInvoice.customerId) {
       const customer = customers.find(c => c.id === newInvoice.customerId);
       if (customer) {
-        const customerRentals = sales
-          .filter(sale => sale.customer === customer.name)
-          .flatMap(sale => 
-            sale.items
-              .filter(item => item.isRental)
-              .map(item => {
-                // Calculate payment due: monthly price * months in payment period
-                const monthsInPeriod = getMonthsInPaymentPeriod(item.paymentPeriod || 'monthly');
-                const paymentDue = item.price * monthsInPeriod;
-                const periodDisplay = item.paymentPeriod ? `/${getPeriodShortLabel(item.paymentPeriod)}` : '';
-                
-                return {
-                  id: `rental-${sale.id}-${item.product}`,
-                  name: `${item.product} (Rental)`,
-                  price: paymentDue, // Use the calculated payment due amount
-                  type: 'rental',
-                  description: `Rental service for ${item.product}`,
-                  contractLength: item.contractLength,
-                  paymentPeriod: item.paymentPeriod,
-                  displayPrice: paymentDue,
-                  originalPrice: item.price
-                };
-              })
-          );
-        
+        const customerRentals = sales.filter(sale => sale.customer === customer.name).flatMap(sale => sale.items.filter(item => item.isRental).map(item => {
+          // Calculate payment due: monthly price * months in payment period
+          const monthsInPeriod = getMonthsInPaymentPeriod(item.paymentPeriod || 'monthly');
+          const paymentDue = item.price * monthsInPeriod;
+          const periodDisplay = item.paymentPeriod ? `/${getPeriodShortLabel(item.paymentPeriod)}` : '';
+          return {
+            id: `rental-${sale.id}-${item.product}`,
+            name: `${item.product} (Rental)`,
+            price: paymentDue,
+            // Use the calculated payment due amount
+            type: 'rental',
+            description: `Rental service for ${item.product}`,
+            contractLength: item.contractLength,
+            paymentPeriod: item.paymentPeriod,
+            displayPrice: paymentDue,
+            originalPrice: item.price
+          };
+        }));
         availableItems.push(...customerRentals);
       }
     }
-    
     return availableItems;
   };
 
   // Helper functions for payment period calculations
   const getMonthsInPaymentPeriod = (period: string) => {
     switch (period?.toLowerCase()) {
-      case 'monthly': return 1;
-      case 'quarterly': return 3;
+      case 'monthly':
+        return 1;
+      case 'quarterly':
+        return 3;
       case 'biannually':
-      case 'bi-annually': return 6;
+      case 'bi-annually':
+        return 6;
       case 'annually':
-      case 'yearly': return 12;
-      default: return 1;
+      case 'yearly':
+        return 12;
+      default:
+        return 1;
     }
   };
-
   const getPeriodShortLabel = (period: string) => {
     const p = period?.toLowerCase();
     if (p === 'monthly') return 'month';
@@ -217,27 +219,27 @@ export default function Invoices() {
   // Generate next invoice number
   const generateInvoiceNumber = () => {
     const currentYear = new Date().getFullYear();
-    const existingNumbers = invoices
-      .map(inv => parseInt(inv.invoiceNumber.split('-')[1]) || 0)
-      .filter(num => num > 0);
+    const existingNumbers = invoices.map(inv => parseInt(inv.invoiceNumber.split('-')[1]) || 0).filter(num => num > 0);
     const nextNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1;
     return `INV-${nextNumber.toString().padStart(4, '0')}-${currentYear}`;
   };
-
   const calculateInvoiceTotals = (items: InvoiceItem[], taxRate: number) => {
     const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-    const taxAmount = (subtotal * taxRate) / 100;
+    const taxAmount = subtotal * taxRate / 100;
     const total = subtotal + taxAmount;
-    return { subtotal, taxAmount, total };
+    return {
+      subtotal,
+      taxAmount,
+      total
+    };
   };
-
   const updateInvoiceItem = (index: number, field: string, value: any) => {
     const updatedItems = [...(newInvoice.items || [])];
     updatedItems[index] = {
       ...updatedItems[index],
       [field]: value
     };
-    
+
     // If selecting a product/service, auto-populate description and price
     if (field === 'productId' && value) {
       const availableItems = getAvailableItemsForCustomer();
@@ -250,19 +252,16 @@ export default function Invoices() {
           const product = products.find(p => p.id === productId);
           units = product?.units || '';
         }
-        
+
         // Format description as "quantity units productName" (e.g., "2 C/S test 1")
         const quantity = updatedItems[index].quantity || 1;
-        const formattedDescription = units 
-          ? `${quantity} ${units} ${selectedItem.name}`
-          : `${quantity} ${selectedItem.name}`;
-        
+        const formattedDescription = units ? `${quantity} ${units} ${selectedItem.name}` : `${quantity} ${selectedItem.name}`;
         updatedItems[index].description = formattedDescription;
         updatedItems[index].unitPrice = selectedItem.price;
         updatedItems[index].total = quantity * selectedItem.price;
       }
     }
-    
+
     // Update description when quantity changes
     if (field === 'quantity' && updatedItems[index].productId && updatedItems[index].productId !== 'custom') {
       const availableItems = getAvailableItemsForCustomer();
@@ -274,21 +273,18 @@ export default function Invoices() {
           const product = products.find(p => p.id === productId);
           units = product?.units || '';
         }
-        
-        const formattedDescription = units 
-          ? `${value} ${units} ${selectedItem.name}`
-          : `${value} ${selectedItem.name}`;
-        
+        const formattedDescription = units ? `${value} ${units} ${selectedItem.name}` : `${value} ${selectedItem.name}`;
         updatedItems[index].description = formattedDescription;
       }
     }
-    
     if (field === 'quantity' || field === 'unitPrice') {
       updatedItems[index].total = updatedItems[index].quantity * updatedItems[index].unitPrice;
     }
-    
-    const { subtotal, taxAmount, total } = calculateInvoiceTotals(updatedItems, newInvoice.taxRate || 0);
-    
+    const {
+      subtotal,
+      taxAmount,
+      total
+    } = calculateInvoiceTotals(updatedItems, newInvoice.taxRate || 0);
     setNewInvoice({
       ...newInvoice,
       items: updatedItems,
@@ -297,16 +293,26 @@ export default function Invoices() {
       total
     });
   };
-
   const addInvoiceItem = () => {
-    const updatedItems = [...(newInvoice.items || []), { description: '', quantity: 1, unitPrice: 0, total: 0, productId: 'custom' }];
-    setNewInvoice({ ...newInvoice, items: updatedItems });
+    const updatedItems = [...(newInvoice.items || []), {
+      description: '',
+      quantity: 1,
+      unitPrice: 0,
+      total: 0,
+      productId: 'custom'
+    }];
+    setNewInvoice({
+      ...newInvoice,
+      items: updatedItems
+    });
   };
-
   const removeInvoiceItem = (index: number) => {
     const updatedItems = (newInvoice.items || []).filter((_, i) => i !== index);
-    const { subtotal, taxAmount, total } = calculateInvoiceTotals(updatedItems, newInvoice.taxRate || 0);
-    
+    const {
+      subtotal,
+      taxAmount,
+      total
+    } = calculateInvoiceTotals(updatedItems, newInvoice.taxRate || 0);
     setNewInvoice({
       ...newInvoice,
       items: updatedItems,
@@ -315,17 +321,16 @@ export default function Invoices() {
       total
     });
   };
-
   const generateInvoicePDF = async (invoice: Invoice) => {
     try {
       // Load the template PDF
       const templateBytes = await fetch(invoiceTemplate).then(res => res.arrayBuffer());
       const pdfDoc = await PDFDocument.load(templateBytes);
-      
+
       // Get the form from the PDF
       const form = pdfDoc.getForm();
       const fields = form.getFields();
-      
+
       // Log all field names to help with debugging
       console.log('Available form fields:', fields.map(f => f.getName()));
 
@@ -340,9 +345,7 @@ export default function Invoices() {
 
       // Customer details - fill multiple possible field names for compatibility
       const customer = customers.find(c => c.id === invoice.customerId);
-
       setField('Customer Name', invoice.customerName);
-
       const companyInfo = customer?.company || '';
       const addressInfo = customer?.address || '';
 
@@ -370,20 +373,21 @@ export default function Invoices() {
       setField('Text41', invoice.subtotal.toFixed(2));
       setField('Text42', invoice.taxAmount.toFixed(2));
       setField('Text43', invoice.total.toFixed(2));
-      
+
       // Flatten to make entries non-editable
       form.flatten();
 
       // Save the filled PDF
       const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+      const blob = new Blob([new Uint8Array(pdfBytes)], {
+        type: 'application/pdf'
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `Invoice_${invoice.invoiceNumber}.pdf`;
       link.click();
       URL.revokeObjectURL(url);
-      
       console.log('PDF generated successfully');
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -394,10 +398,8 @@ export default function Invoices() {
       });
     }
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!newInvoice.customerId || !newInvoice.items?.length) {
       toast({
         title: "Missing Information",
@@ -406,10 +408,8 @@ export default function Invoices() {
       });
       return;
     }
-
     const customer = customers.find(c => c.id === newInvoice.customerId);
     if (!customer) return;
-
     const invoice: Invoice = {
       id: editingInvoice?.id || Date.now().toString(),
       invoiceNumber: editingInvoice?.invoiceNumber || generateInvoiceNumber(),
@@ -426,7 +426,6 @@ export default function Invoices() {
       notes: newInvoice.notes,
       paymentTerms: newInvoice.paymentTerms || 'Net 30'
     };
-
     if (editingInvoice) {
       setInvoices(prev => prev.map(inv => inv.id === editingInvoice.id ? invoice : inv));
       toast({
@@ -439,21 +438,25 @@ export default function Invoices() {
         title: "Invoice Created",
         description: `Invoice ${invoice.invoiceNumber} has been created and PDF downloaded.`
       });
-      
+
       // Generate and download PDF for new invoices
       generateInvoicePDF(invoice);
     }
-
     resetForm();
   };
-
   const resetForm = () => {
     setNewInvoice({
       customerId: '',
       issueDate: format(new Date(), 'yyyy-MM-dd'),
       dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
       status: 'draft',
-      items: [{ description: '', quantity: 1, unitPrice: 0, total: 0, productId: 'custom' }],
+      items: [{
+        description: '',
+        quantity: 1,
+        unitPrice: 0,
+        total: 0,
+        productId: 'custom'
+      }],
       taxRate: 10,
       notes: '',
       paymentTerms: 'Net 30'
@@ -461,7 +464,6 @@ export default function Invoices() {
     setShowForm(false);
     setEditingInvoice(null);
   };
-
   const editInvoice = (invoice: Invoice) => {
     setNewInvoice({
       customerId: invoice.customerId,
@@ -479,46 +481,44 @@ export default function Invoices() {
     setEditingInvoice(invoice);
     setShowForm(true);
   };
-
   const deleteInvoice = (invoiceId: string) => {
     const invoice = invoices.find(inv => inv.id === invoiceId);
     if (!invoice) return;
-
     setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
     toast({
       title: "Invoice Deleted",
       description: `Invoice ${invoice.invoiceNumber} has been deleted.`
     });
   };
-
   const updateInvoiceStatus = (invoiceId: string, status: Invoice['status']) => {
-    setInvoices(prev => prev.map(inv => 
-      inv.id === invoiceId ? { ...inv, status } : inv
-    ));
-    
+    setInvoices(prev => prev.map(inv => inv.id === invoiceId ? {
+      ...inv,
+      status
+    } : inv));
     const invoice = invoices.find(inv => inv.id === invoiceId);
     toast({
       title: "Status Updated",
       description: `Invoice ${invoice?.invoiceNumber} marked as ${status}.`
     });
   };
-
   const handleCreateInvoiceFromSale = (sale: typeof salesLog[0]) => {
     // Find customer by name
     const customer = customers.find(c => c.name === sale.customer_name);
-    
     if (customer) {
       // Convert sale items to invoice items
-      const invoiceItems = sale.items.map((item) => ({
+      const invoiceItems = sale.items.map(item => ({
         description: item.product_name,
         quantity: item.quantity,
         unitPrice: item.price,
         total: item.quantity * item.price,
         productId: 'custom'
       }));
-      
-      const { subtotal, taxAmount, total } = calculateInvoiceTotals(invoiceItems, 10);
-      
+      const {
+        subtotal,
+        taxAmount,
+        total
+      } = calculateInvoiceTotals(invoiceItems, 10);
+
       // Auto-fill the form
       setNewInvoice({
         customerId: customer.id,
@@ -533,16 +533,13 @@ export default function Invoices() {
         notes: `Invoice created from Sale ID: ${sale.id}`,
         paymentTerms: 'Net 30'
       });
-      
       setShowForm(true);
-      
       toast({
         title: "Invoice Auto-filled",
         description: `Invoice form has been populated with data from the sale to ${sale.customer_name}.`
       });
     }
   };
-
   const exportInvoices = () => {
     const exportData = filteredInvoices.map(invoice => ({
       'Invoice Number': invoice.invoiceNumber,
@@ -555,18 +552,29 @@ export default function Invoices() {
       'Total': invoice.total,
       'Payment Terms': invoice.paymentTerms
     }));
-
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(exportData);
-    
-    ws['!cols'] = [
-      { width: 18 }, { width: 20 }, { width: 12 }, { width: 12 }, 
-      { width: 10 }, { width: 12 }, { width: 10 }, { width: 12 }, { width: 15 }
-    ];
-
+    ws['!cols'] = [{
+      width: 18
+    }, {
+      width: 20
+    }, {
+      width: 12
+    }, {
+      width: 12
+    }, {
+      width: 10
+    }, {
+      width: 12
+    }, {
+      width: 10
+    }, {
+      width: 12
+    }, {
+      width: 15
+    }];
     XLSX.utils.book_append_sheet(wb, ws, 'Invoices');
     XLSX.writeFile(wb, `Invoices_${format(new Date(), 'yyyy_MM_dd')}.xlsx`);
-
     toast({
       title: "Export Complete",
       description: "Invoices exported to Excel successfully."
@@ -576,9 +584,7 @@ export default function Invoices() {
   // Filter invoices
   const filteredInvoices = invoices.filter(invoice => {
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-    const matchesSearch = searchTerm === '' || 
-      invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = searchTerm === '' || invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) || invoice.customerName.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
@@ -587,19 +593,21 @@ export default function Invoices() {
   const paidInvoices = invoices.filter(inv => inv.status === 'paid').length;
   const overdueInvoices = invoices.filter(inv => inv.status === 'overdue').length;
   const totalRevenue = invoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + inv.total, 0);
-
   const getStatusColor = (status: Invoice['status']) => {
     switch (status) {
-      case 'draft': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
-      case 'sent': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'paid': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'overdue': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'draft':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+      case 'sent':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'paid':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'overdue':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -639,7 +647,7 @@ export default function Invoices() {
           <CardContent>
             <div className="text-xl md:text-2xl font-bold text-green-600">{paidInvoices}</div>
             <p className="text-xs text-muted-foreground">
-              {totalInvoices > 0 ? ((paidInvoices / totalInvoices) * 100).toFixed(1) : '0'}% of total
+              {totalInvoices > 0 ? (paidInvoices / totalInvoices * 100).toFixed(1) : '0'}% of total
             </p>
           </CardContent>
         </Card>
@@ -679,12 +687,9 @@ export default function Invoices() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {salesLoading ? (
-            <div className="text-center py-8">
+          {salesLoading ? <div className="text-center py-8">
               <p className="text-muted-foreground">Loading sales...</p>
-            </div>
-          ) : salesLog.filter(sale => sale.status === 'completed').length > 0 ? (
-            <Table>
+            </div> : salesLog.filter(sale => sale.status === 'completed').length > 0 ? <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Customer</TableHead>
@@ -696,16 +701,13 @@ export default function Invoices() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {salesLog.filter(sale => sale.status === 'completed').map(sale => (
-                  <TableRow key={sale.id}>
+                {salesLog.filter(sale => sale.status === 'completed').map(sale => <TableRow key={sale.id}>
                     <TableCell className="font-medium">{sale.customer_name}</TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        {sale.items.map((item, idx) => (
-                          <div key={idx} className="text-sm">
+                        {sale.items.map((item, idx) => <div key={idx} className="text-sm">
                             {item.quantity}x {item.product_name}
-                          </div>
-                        ))}
+                          </div>)}
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{sale.rep_name}</TableCell>
@@ -714,32 +716,22 @@ export default function Invoices() {
                       ${sale.total.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="default"
-                        onClick={() => handleCreateInvoiceFromSale(sale)}
-                        className="gap-2"
-                      >
+                      <Button size="sm" variant="default" onClick={() => handleCreateInvoiceFromSale(sale)} className="gap-2">
                         <Plus className="h-4 w-4" />
                         Create Invoice
                       </Button>
                     </TableCell>
-                  </TableRow>
-                ))}
+                  </TableRow>)}
               </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-8">
+            </Table> : <div className="text-center py-8">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
               <p className="text-muted-foreground">No completed sales found</p>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
 
       {/* Invoice Form */}
-      {showForm && (
-        <Card className="dashboard-card">
+      {showForm && <Card className="dashboard-card">
           <CardHeader>
             <CardTitle className="text-card-foreground">
               {editingInvoice ? 'Edit Invoice' : 'Create New Invoice'}
@@ -754,43 +746,35 @@ export default function Invoices() {
               <div className="mobile-form-grid">
                 <div className="space-y-2">
                   <Label>Customer *</Label>
-                  <Select 
-                    value={newInvoice.customerId} 
-                    onValueChange={(value) => setNewInvoice({...newInvoice, customerId: value})}
-                  >
+                  <Select value={newInvoice.customerId} onValueChange={value => setNewInvoice({
+                ...newInvoice,
+                customerId: value
+              })}>
                     <SelectTrigger className="touch-button">
                       <SelectValue placeholder="Select customer" />
                     </SelectTrigger>
                     <SelectContent>
-                      {customers.map(customer => (
-                        <SelectItem key={customer.id} value={customer.id}>
+                      {customers.map(customer => <SelectItem key={customer.id} value={customer.id}>
                           <span className="text-sm">{customer.name} - {customer.company}</span>
-                        </SelectItem>
-                      ))}
+                        </SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Issue Date *</Label>
-                  <Input
-                    type="date"
-                    value={newInvoice.issueDate}
-                    onChange={(e) => setNewInvoice({...newInvoice, issueDate: e.target.value})}
-                    required
-                    className="touch-button"
-                  />
+                  <Input type="date" value={newInvoice.issueDate} onChange={e => setNewInvoice({
+                ...newInvoice,
+                issueDate: e.target.value
+              })} required className="touch-button" />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Due Date *</Label>
-                  <Input
-                    type="date"
-                    value={newInvoice.dueDate}
-                    onChange={(e) => setNewInvoice({...newInvoice, dueDate: e.target.value})}
-                    required
-                    className="touch-button"
-                  />
+                  <Input type="date" value={newInvoice.dueDate} onChange={e => setNewInvoice({
+                ...newInvoice,
+                dueDate: e.target.value
+              })} required className="touch-button" />
                 </div>
               </div>
 
@@ -804,76 +788,46 @@ export default function Invoices() {
                   </Button>
                 </div>
 
-                {newInvoice.items?.map((item, index) => (
-                  <Card key={index} className="p-4">
+                {newInvoice.items?.map((item, index) => <Card key={index} className="p-4">
                     <div className="grid grid-cols-5 gap-4 items-end">
                       <div className="space-y-2">
                         <Label>Product/Service</Label>
-                        <Select
-                          value={item.productId || 'custom'}
-                          onValueChange={(value) => updateInvoiceItem(index, 'productId', value)}
-                        >
+                        <Select value={item.productId || 'custom'} onValueChange={value => updateInvoiceItem(index, 'productId', value)}>
                           <SelectTrigger>
                             <SelectValue placeholder="Select item or custom" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="custom">Custom Item</SelectItem>
                             {getAvailableItemsForCustomer().map(availableItem => {
-                              if (availableItem.type === 'separator') {
-                                return (
-                                  <div key={availableItem.id} className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted/50">
+                        if (availableItem.type === 'separator') {
+                          return <div key={availableItem.id} className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted/50">
                                     {availableItem.name}
-                                  </div>
-                                );
-                              }
-                              
-                              return (
-                                <SelectItem key={availableItem.id} value={availableItem.id}>
+                                  </div>;
+                        }
+                        return <SelectItem key={availableItem.id} value={availableItem.id}>
                                   <div className="flex items-center gap-2">
                                     <span>{availableItem.name}</span>
-                                    {availableItem.type === 'rental' && (
-                                      <Badge variant="outline" className="text-xs">Rental</Badge>
-                                    )}
+                                    {availableItem.type === 'rental' && <Badge variant="outline" className="text-xs">Rental</Badge>}
                                     <span className="text-muted-foreground text-sm">
                                       ${availableItem.displayPrice.toFixed(2)}
-                                      {availableItem.paymentPeriod && (
-                                        <span>/{getPeriodShortLabel(availableItem.paymentPeriod)}</span>
-                                      )}
+                                      {availableItem.paymentPeriod && <span>/{getPeriodShortLabel(availableItem.paymentPeriod)}</span>}
                                     </span>
                                   </div>
-                                </SelectItem>
-                              );
-                            })}
+                                </SelectItem>;
+                      })}
                           </SelectContent>
                         </Select>
-                        {(!item.productId || item.productId === 'custom') && (
-                          <Input
-                            value={item.description}
-                            onChange={(e) => updateInvoiceItem(index, 'description', e.target.value)}
-                            placeholder="Custom description"
-                            className="mt-2"
-                          />
-                        )}
+                        {(!item.productId || item.productId === 'custom') && <Input value={item.description} onChange={e => updateInvoiceItem(index, 'description', e.target.value)} placeholder="Custom description" className="mt-2" />}
                       </div>
                       
                       <div className="space-y-2">
                         <Label>Quantity</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => updateInvoiceItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                        />
+                        <Input type="number" min="1" value={item.quantity} onChange={e => updateInvoiceItem(index, 'quantity', parseInt(e.target.value) || 1)} />
                       </div>
                       
                       <div className="space-y-2">
                         <Label>Unit Price</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={item.unitPrice}
-                          onChange={(e) => updateInvoiceItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                        />
+                        <Input type="number" step="0.01" value={item.unitPrice} onChange={e => updateInvoiceItem(index, 'unitPrice', parseFloat(e.target.value) || 0)} />
                       </div>
                       
                       <div className="space-y-2">
@@ -882,38 +836,33 @@ export default function Invoices() {
                       </div>
                       
                       <div>
-                        {(newInvoice.items?.length || 0) > 1 && (
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => removeInvoiceItem(index)}
-                          >
+                        {(newInvoice.items?.length || 0) > 1 && <Button type="button" variant="destructive" size="sm" onClick={() => removeInvoiceItem(index)}>
                             Remove
-                          </Button>
-                        )}
+                          </Button>}
                       </div>
                     </div>
-                  </Card>
-                ))}
+                  </Card>)}
 
                 {/* Invoice Totals */}
                 <div className="border-t pt-4">
                   <div className="grid grid-cols-2 gap-4 max-w-md ml-auto">
                     <div className="space-y-2">
                       <Label>Tax Rate (%)</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                        value={newInvoice.taxRate}
-                        onChange={(e) => {
-                          const taxRate = parseFloat(e.target.value) || 0;
-                          const { subtotal, taxAmount, total } = calculateInvoiceTotals(newInvoice.items || [], taxRate);
-                          setNewInvoice({...newInvoice, taxRate, subtotal, taxAmount, total});
-                        }}
-                      />
+                      <Input type="number" min="0" max="100" step="0.1" value={newInvoice.taxRate} onChange={e => {
+                    const taxRate = parseFloat(e.target.value) || 0;
+                    const {
+                      subtotal,
+                      taxAmount,
+                      total
+                    } = calculateInvoiceTotals(newInvoice.items || [], taxRate);
+                    setNewInvoice({
+                      ...newInvoice,
+                      taxRate,
+                      subtotal,
+                      taxAmount,
+                      total
+                    });
+                  }} />
                     </div>
                     
                     <div className="space-y-1">
@@ -938,10 +887,10 @@ export default function Invoices() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Payment Terms</Label>
-                  <Select
-                    value={newInvoice.paymentTerms}
-                    onValueChange={(value) => setNewInvoice({...newInvoice, paymentTerms: value})}
-                  >
+                  <Select value={newInvoice.paymentTerms} onValueChange={value => setNewInvoice({
+                ...newInvoice,
+                paymentTerms: value
+              })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -956,10 +905,10 @@ export default function Invoices() {
 
                 <div className="space-y-2">
                   <Label>Status</Label>
-                  <Select
-                    value={newInvoice.status}
-                    onValueChange={(value: Invoice['status']) => setNewInvoice({...newInvoice, status: value})}
-                  >
+                  <Select value={newInvoice.status} onValueChange={(value: Invoice['status']) => setNewInvoice({
+                ...newInvoice,
+                status: value
+              })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -975,11 +924,10 @@ export default function Invoices() {
 
               <div className="space-y-2">
                 <Label>Notes</Label>
-                <Textarea
-                  value={newInvoice.notes}
-                  onChange={(e) => setNewInvoice({...newInvoice, notes: e.target.value})}
-                  placeholder="Additional notes or terms..."
-                />
+                <Textarea value={newInvoice.notes} onChange={e => setNewInvoice({
+              ...newInvoice,
+              notes: e.target.value
+            })} placeholder="Additional notes or terms..." />
               </div>
 
               <Button type="submit" className="w-full">
@@ -987,8 +935,7 @@ export default function Invoices() {
               </Button>
             </form>
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
       {/* Filters */}
       <Card className="dashboard-card">
@@ -996,12 +943,7 @@ export default function Invoices() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search invoices..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-64"
-              />
+              <Input placeholder="Search invoices..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-64" />
             </div>
             
             <Select value={statusFilter} onValueChange={(value: typeof statusFilter) => setStatusFilter(value)}>
@@ -1029,13 +971,10 @@ export default function Invoices() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredInvoices.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+          {filteredInvoices.length === 0 ? <div className="text-center py-8 text-muted-foreground">
               <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p>No invoices found</p>
-            </div>
-          ) : (
-            <div className="mobile-table-scroll">
+            </div> : <div className="mobile-table-scroll">
               <Table className="mobile-table">
                 <TableHeader>
                   <TableRow>
@@ -1049,8 +988,7 @@ export default function Invoices() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredInvoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
+                  {filteredInvoices.map(invoice => <TableRow key={invoice.id}>
                       <TableCell className="font-medium text-xs md:text-sm">{invoice.invoiceNumber}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -1071,42 +1009,25 @@ export default function Invoices() {
                           <div className="flex items-center gap-1">
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => editInvoice(invoice)}
-                                  className="h-8 w-8 p-0"
-                                >
+                                <Button size="sm" variant="outline" onClick={() => editInvoice(invoice)} className="h-8 w-8 p-0">
                                   <Edit className="h-3 w-3" />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>Edit Invoice</TooltipContent>
                             </Tooltip>
                             
-                            {invoice.status !== 'paid' && (
-                              <Tooltip>
+                            {invoice.status !== 'paid' && <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => updateInvoiceStatus(invoice.id, 'paid')}
-                                    className="h-8 w-8 p-0 hover:bg-green-500/10 hover:text-green-600 hover:border-green-600"
-                                  >
+                                  <Button size="sm" variant="outline" onClick={() => updateInvoiceStatus(invoice.id, 'paid')} className="h-8 w-8 p-0 hover:bg-green-500/10 hover:text-green-600 hover:border-green-600">
                                     <Check className="h-3 w-3" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>Mark as Paid</TooltipContent>
-                              </Tooltip>
-                            )}
+                              </Tooltip>}
                             
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => deleteInvoice(invoice.id)}
-                                  className="hover:bg-destructive hover:text-destructive-foreground h-8 w-8 p-0"
-                                >
+                                <Button size="sm" variant="outline" onClick={() => deleteInvoice(invoice.id)} className="hover:bg-destructive hover:text-destructive-foreground h-8 w-8 p-0">
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
                               </TooltipTrigger>
@@ -1115,84 +1036,14 @@ export default function Invoices() {
                           </div>
                         </TooltipProvider>
                       </TableCell>
-                    </TableRow>
-                  ))}
+                    </TableRow>)}
                 </TableBody>
               </Table>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
 
       {/* Sales Log */}
-      <Card className="dashboard-card">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-card-foreground">Sales Log</CardTitle>
-              <CardDescription>
-                Recent sales transactions
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {salesLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>Loading sales...</p>
-            </div>
-          ) : salesLog.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Sales Rep</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {salesLog.slice(0, 10).map(sale => (
-                  <TableRow key={sale.id}>
-                    <TableCell className="font-medium">{sale.customer_name}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {sale.items.map((item, idx) => (
-                          <div key={idx} className="text-sm">
-                            {item.quantity}x {item.product_name}
-                          </div>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{sale.rep_name}</TableCell>
-                    <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{sale.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      ${sale.total.toFixed(2)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-12">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
-                <FileText className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                No sales logged yet
-              </h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Sales transactions will appear here once logged in the system.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
+      
+    </div>;
 }
