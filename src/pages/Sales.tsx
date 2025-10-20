@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package, CalendarIcon, Filter, Trash2, Check, ChevronsUpDown, CheckCircle, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -25,6 +25,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 export default function Sales() {
   const { toast } = useToast();
   const { userDepartment, user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const { sales, loading, refetch } = useSales();
   const { products: supabaseProducts, updateProduct } = useProducts();
   const { customers } = useCustomers();
@@ -248,6 +249,10 @@ export default function Sales() {
   };
 
   // Handler to mark sale as incomplete
+  const handleCreateInvoice = (sale: typeof sales[0]) => {
+    navigate('/invoices', { state: { saleData: sale } });
+  };
+
   const handleMarkIncomplete = async (saleId: string) => {
     try {
       const sale = sales.find(s => s.id === saleId);
@@ -834,15 +839,26 @@ export default function Sales() {
                       ${sale.total.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleMarkIncomplete(sale.id)}
-                        className="gap-2"
-                      >
-                        <X className="h-4 w-4" />
-                        Mark Incomplete
-                      </Button>
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => handleCreateInvoice(sale)}
+                          className="gap-2"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Create Invoice
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleMarkIncomplete(sale.id)}
+                          className="gap-2"
+                        >
+                          <X className="h-4 w-4" />
+                          Mark Incomplete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

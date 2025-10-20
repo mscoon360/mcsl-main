@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,7 @@ export default function Invoices() {
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showForm, setShowForm] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'sent' | 'paid' | 'overdue'>('all');
@@ -230,6 +231,54 @@ export default function Invoices() {
     const total = subtotal + taxAmount;
     return { subtotal, taxAmount, total };
   };
+
+  // Check for sale data from navigation state and auto-fill form
+  useEffect(() => {
+    if (location.state?.saleData && customers.length > 0) {
+      const sale = location.state.saleData;
+      
+      // Find customer by name
+      const customer = customers.find(c => c.name === sale.customer_name);
+      
+      if (customer) {
+        // Convert sale items to invoice items
+        const invoiceItems = sale.items.map((item: any) => ({
+          description: item.product_name,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          total: item.quantity * item.price,
+          productId: 'custom'
+        }));
+        
+        const { subtotal, taxAmount, total } = calculateInvoiceTotals(invoiceItems, 10);
+        
+        // Auto-fill the form
+        setNewInvoice({
+          customerId: customer.id,
+          issueDate: format(new Date(sale.date), 'yyyy-MM-dd'),
+          dueDate: format(addDays(new Date(sale.date), 30), 'yyyy-MM-dd'),
+          status: 'draft',
+          items: invoiceItems,
+          taxRate: 10,
+          subtotal,
+          taxAmount,
+          total,
+          notes: `Invoice created from Sale ID: ${sale.id}`,
+          paymentTerms: 'Net 30'
+        });
+        
+        setShowForm(true);
+        
+        toast({
+          title: "Invoice Auto-filled",
+          description: `Invoice form has been populated with data from the sale to ${sale.customer_name}.`
+        });
+        
+        // Clear the state after processing
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    }
+  }, [location.state, customers, navigate, location.pathname, toast]);
 
   const updateInvoiceItem = (index: number, field: string, value: any) => {
     const updatedItems = [...(newInvoice.items || [])];
