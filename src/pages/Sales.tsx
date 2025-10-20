@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package, CalendarIcon, Filter, Trash2, Check, ChevronsUpDown, CheckCircle } from "lucide-react";
+import { Plus, Search, DollarSign, Calendar, User, FileText, Users, Package, CalendarIcon, Filter, Trash2, Check, ChevronsUpDown, CheckCircle, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -241,6 +241,46 @@ export default function Sales() {
       toast({
         title: "Error",
         description: "Failed to complete sale. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Handler to mark sale as incomplete
+  const handleMarkIncomplete = async (saleId: string) => {
+    try {
+      const sale = sales.find(s => s.id === saleId);
+      if (!sale) return;
+
+      // Update sale status to in_progress
+      const { error: updateError } = await supabase
+        .from('sales')
+        .update({ status: 'in_progress' })
+        .eq('id', saleId);
+
+      if (updateError) throw updateError;
+
+      // Restore product stock for all items
+      for (const item of sale.items) {
+        const product = products.find(p => p.name === item.product_name);
+        if (product) {
+          await updateProduct(product.id, {
+            stock: product.stock + item.quantity
+          });
+        }
+      }
+
+      toast({
+        title: "Sale Marked Incomplete",
+        description: "Sale status reverted and stock restored."
+      });
+
+      refetch();
+    } catch (error) {
+      console.error('Error marking sale incomplete:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark sale incomplete. Please try again.",
         variant: "destructive"
       });
     }
@@ -714,6 +754,7 @@ export default function Sales() {
                   <TableHead>Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -736,6 +777,17 @@ export default function Sales() {
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       ${sale.total.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleMarkIncomplete(sale.id)}
+                        className="gap-2"
+                      >
+                        <X className="h-4 w-4" />
+                        Mark Incomplete
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
