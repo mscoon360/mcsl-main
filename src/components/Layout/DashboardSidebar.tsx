@@ -75,7 +75,15 @@ const navigation: NavigationSection[] = [
     title: "Finance",
     items: [
       { name: "Overview", href: "/finance", icon: BarChart3 },
-      { name: "Income", href: "/income", icon: DollarSign },
+      { 
+        name: "Income", 
+        icon: DollarSign,
+        subItems: [
+          { name: "Overview", href: "/income" },
+          { name: "Accounts Receivable", href: "/accounts-receivable" },
+          { name: "Invoices", href: "/invoices" }
+        ]
+      },
       { 
         name: "Expenditure", 
         icon: Receipt,
@@ -87,14 +95,6 @@ const navigation: NavigationSection[] = [
       },
       { name: "Chart of Accounts", href: "/chart-of-accounts", icon: BookOpen },
       { name: "Trial Balance", href: "/trial-balance", icon: Scale },
-      { 
-        name: "Accounts Receivable", 
-        icon: FileOutput,
-        subItems: [
-          { name: "Overview", href: "/accounts-receivable" },
-          { name: "Invoices", href: "/invoices" }
-        ]
-      },
       { name: "Collections", href: "/rental-payments", icon: CreditCard },
     ]
   }
