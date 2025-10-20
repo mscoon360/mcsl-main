@@ -357,6 +357,7 @@ export default function Products() {
                   <TableHead>Supplier</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Price</TableHead>
+                  <TableHead>Cost Price</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Type</TableHead>
@@ -376,6 +377,7 @@ export default function Products() {
                     <TableCell>{product.supplier_name || '-'}</TableCell>
                     <TableCell>{product.category || '-'}</TableCell>
                     <TableCell>${product.price.toFixed(2)}</TableCell>
+                    <TableCell>${product.cost_price?.toFixed(2) || '0.00'}</TableCell>
                     <TableCell>
                       {product.stock === 0 ? (
                         <span className="text-destructive font-semibold">No Stock</span>
