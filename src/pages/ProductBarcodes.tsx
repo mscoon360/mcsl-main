@@ -58,7 +58,7 @@ export default function ProductBarcodes() {
         .from('product_items')
         .select('*, products!inner(price)')
         .eq('product_id', productId)
-        .order('barcode', { ascending: true });
+        .order('created_at', { ascending: false });
 
       if (itemsError) throw itemsError;
       
@@ -196,12 +196,122 @@ export default function ProductBarcodes() {
     }
   };
 
+  const handlePrintBatch = (batchItems: ProductItem[]) => {
+    const printWindow = window.open('', '', 'width=800,height=600');
+    if (!printWindow) {
+      toast({
+        title: 'Error',
+        description: 'Could not open print window',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    let barcodeHtml = '';
+    batchItems.forEach((item) => {
+      const canvas = document.createElement('canvas');
+      try {
+        bwipjs.toCanvas(canvas, {
+          bcid: 'code128',
+          text: item.barcode,
+          scale: 3,
+          height: 12,
+          includetext: true,
+          textxalign: 'center',
+          paddingwidth: 10,
+          paddingheight: 10,
+        });
+        barcodeHtml += `
+          <div class="label-container">
+            <img src="${canvas.toDataURL()}" alt="Barcode" class="barcode-img" />
+            ${item.price ? `<div class="price">$${item.price.toFixed(2)}</div>` : ''}
+          </div>
+        `;
+      } catch (error) {
+        console.error('Error generating barcode:', error);
+      }
+    });
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Print Barcodes - ${product?.name}</title>
+          <style>
+            @media print {
+              @page {
+                size: 2in 1in;
+                margin: 0;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+              }
+            }
+            body {
+              font-family: Arial, sans-serif;
+              margin: 0;
+              padding: 0;
+            }
+            .label-container {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              width: 2in;
+              height: 1in;
+              background: white;
+              page-break-after: always;
+            }
+            .barcode-img {
+              max-width: 90%;
+              height: auto;
+            }
+            .price {
+              font-size: 14px;
+              font-weight: bold;
+              margin-top: 2px;
+            }
+          </style>
+        </head>
+        <body>
+          ${barcodeHtml}
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const handleDownloadAll = () => {
     toast({
       title: 'Feature coming soon',
       description: 'Bulk download will be available soon.',
     });
   };
+
+  // Group barcodes by creation date (batch)
+  const groupedBarcodes = items.reduce((groups, item) => {
+    const date = new Date(item.created_at).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(item);
+    return groups;
+  }, {} as Record<string, ProductItem[]>);
 
   if (loading) {
     return (
@@ -243,42 +353,58 @@ export default function ProductBarcodes() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {items.length} Barcode{items.length !== 1 ? 's' : ''} Generated
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="border rounded-lg bg-card p-4 flex items-center justify-between"
-              >
-                <div className="flex-1">
-                  <p className="font-medium text-sm">{item.barcode}</p>
-                  <p className="text-xs text-muted-foreground capitalize">
-                    Status: {item.status}
-                  </p>
-                  {item.destination_address && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      📍 {item.destination_address}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedItem(item)}
-                >
-                  View Barcode
-                </Button>
+      <div className="space-y-6">
+        {Object.entries(groupedBarcodes).map(([date, batchItems], index) => (
+          <Card key={date}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle className="text-lg">
+                  Batch #{Object.keys(groupedBarcodes).length - index} - {batchItems.length} Barcode{batchItems.length !== 1 ? 's' : ''}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Created on {date}
+                </p>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <Button
+                variant="outline"
+                onClick={() => handlePrintBatch(batchItems)}
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                Print This Batch
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {batchItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="border rounded-lg bg-card p-4 flex items-center justify-between"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{item.barcode}</p>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        Status: {item.status}
+                      </p>
+                      {item.destination_address && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          📍 {item.destination_address}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedItem(item)}
+                    >
+                      View
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
         <DialogContent className="sm:max-w-xl w-[90vw] overflow-hidden">
