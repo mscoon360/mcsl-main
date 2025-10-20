@@ -21,6 +21,7 @@ import {
   BookOpen,
   FileInput,
   FileOutput,
+  Scale,
 } from "lucide-react";
 import magicCareLogo from "@/assets/magic-care-logo.png";
 import {
@@ -77,6 +78,7 @@ const navigation: NavigationSection[] = [
       { name: "Income", href: "/income", icon: DollarSign },
       { name: "Expenditure", href: "/expenditure", icon: Receipt },
       { name: "Chart of Accounts", href: "/chart-of-accounts", icon: BookOpen },
+      { name: "Trial Balance", href: "/trial-balance", icon: Scale },
       { name: "Accounts Payable", href: "/accounts-payable", icon: FileInput },
       { name: "Accounts Receivable", href: "/accounts-receivable", icon: FileOutput },
       { name: "Vendors", href: "/vendors", icon: Building2 },
