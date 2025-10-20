@@ -57,6 +57,7 @@ export default function Invoices() {
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'sent' | 'paid' | 'overdue'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [salesWithInvoices, setSalesWithInvoices] = useState<Set<string>>(new Set());
 
   // Check access permissions
   useEffect(() => {
@@ -441,6 +442,12 @@ export default function Invoices() {
 
       // Generate and download PDF for new invoices
       generateInvoicePDF(invoice);
+
+      // Track if this invoice was created from a sale
+      const saleIdMatch = invoice.notes?.match(/Sale ID: (\d+)/);
+      if (saleIdMatch) {
+        setSalesWithInvoices(prev => new Set(prev).add(saleIdMatch[1]));
+      }
     }
     resetForm();
   };
@@ -716,9 +723,24 @@ export default function Invoices() {
                       ${sale.total.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button size="sm" variant="default" onClick={() => handleCreateInvoiceFromSale(sale)} className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Create Invoice
+                      <Button 
+                        size="sm" 
+                        variant={salesWithInvoices.has(sale.id) ? "secondary" : "default"} 
+                        onClick={() => handleCreateInvoiceFromSale(sale)} 
+                        className="gap-2"
+                        disabled={salesWithInvoices.has(sale.id)}
+                      >
+                        {salesWithInvoices.has(sale.id) ? (
+                          <>
+                            <FileText className="h-4 w-4" />
+                            Invoice Generated
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-4 w-4" />
+                            Create Invoice
+                          </>
+                        )}
                       </Button>
                     </TableCell>
                   </TableRow>)}
