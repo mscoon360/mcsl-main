@@ -236,11 +236,11 @@ export default function Sales() {
       });
 
       refetch();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error completing sale:', error);
       toast({
         title: "Error",
-        description: "Failed to complete sale. Please try again.",
+        description: error?.message ? `Failed to complete sale: ${error.message}` : "Failed to complete sale. Please try again.",
         variant: "destructive"
       });
     }
@@ -276,11 +276,11 @@ export default function Sales() {
       });
 
       refetch();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error marking sale incomplete:', error);
       toast({
         title: "Error",
-        description: "Failed to mark sale incomplete. Please try again.",
+        description: error?.message ? `Failed to mark sale incomplete: ${error.message}` : "Failed to mark sale incomplete. Please try again.",
         variant: "destructive"
       });
     }
