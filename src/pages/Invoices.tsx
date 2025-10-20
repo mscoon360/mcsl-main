@@ -443,10 +443,15 @@ export default function Invoices() {
       // Generate and download PDF for new invoices
       generateInvoicePDF(invoice);
 
-      // Track if this invoice was created from a sale
-      const saleIdMatch = invoice.notes?.match(/Sale ID: (\d+)/);
-      if (saleIdMatch) {
-        setSalesWithInvoices(prev => new Set(prev).add(saleIdMatch[1]));
+      // Track if this invoice was created from a sale (capture any ID format)
+      const saleIdMatch = invoice.notes?.match(/Sale ID: (.+)/);
+      const matchedId = saleIdMatch?.[1]?.trim();
+      if (matchedId) {
+        setSalesWithInvoices(prev => {
+          const next = new Set(prev);
+          next.add(String(matchedId));
+          return next;
+        });
       }
     }
     resetForm();
@@ -725,12 +730,12 @@ export default function Invoices() {
                     <TableCell className="text-right">
                       <Button 
                         size="sm" 
-                        variant={salesWithInvoices.has(sale.id) ? "secondary" : "default"} 
+                        variant={salesWithInvoices.has(String(sale.id)) ? "secondary" : "default"} 
                         onClick={() => handleCreateInvoiceFromSale(sale)} 
                         className="gap-2"
-                        disabled={salesWithInvoices.has(sale.id)}
+                        disabled={salesWithInvoices.has(String(sale.id))}
                       >
-                        {salesWithInvoices.has(sale.id) ? (
+                        {salesWithInvoices.has(String(sale.id)) ? (
                           <>
                             <FileText className="h-4 w-4" />
                             Invoice Generated
