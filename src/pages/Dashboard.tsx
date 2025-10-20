@@ -2,9 +2,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { BarChart3, DollarSign, ShoppingCart, Users, Plus, Package, FileText, TrendingUp, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useSales } from "@/hooks/useSales";
 import { useProducts } from "@/hooks/useProducts";
+import { useCustomers } from "@/hooks/useCustomers";
 import { startOfMonth, endOfMonth, format, subMonths } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -12,20 +12,8 @@ import { Badge } from "@/components/ui/badge";
 export default function Dashboard() {
   const { sales, loading } = useSales();
   const { products } = useProducts();
+  const { customers } = useCustomers();
   const { user, isAdmin } = useAuth();
-  
-  const [customers] = useLocalStorage<Array<{
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-    company: string;
-    address: string;
-    city: string;
-    totalSales: number;
-    lastPurchase: string;
-    status: string;
-  }>>('dashboard-customers', []);
 
   // Admins see all sales, regular users see only their own - only completed sales
   const userSales = (isAdmin ? sales : sales.filter(sale => sale.user_id === user?.id))
