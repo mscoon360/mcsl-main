@@ -331,11 +331,12 @@ export default function Customers() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="name">Name</Label>
+                    <Label htmlFor="name">Name *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
                     />
                   </div>
                   <div>
@@ -482,11 +483,12 @@ export default function Customers() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="name-form">Name</Label>
+                        <Label htmlFor="name-form">Name *</Label>
                         <Input
                           id="name-form"
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          required
                         />
                       </div>
                       <div>
