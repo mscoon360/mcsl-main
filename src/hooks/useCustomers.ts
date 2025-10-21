@@ -7,7 +7,7 @@ export interface Customer {
   name: string;
   email?: string;
   phone?: string;
-  company?: string;
+  company: string;
   address?: string;
   city?: string;
   total_sales: number;

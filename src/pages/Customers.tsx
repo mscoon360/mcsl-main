@@ -319,7 +319,16 @@ export default function Customers() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="name">Name *</Label>
+                    <Label htmlFor="company">Company Name *</Label>
+                    <Input
+                      id="company"
+                      value={formData.company}
+                      onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="name">Representative Name *</Label>
                     <Input
                       id="name"
                       value={formData.name}
@@ -342,14 +351,6 @@ export default function Customers() {
                       id="phone"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="company">Company</Label>
-                    <Input
-                      id="company"
-                      value={formData.company}
-                      onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                     />
                   </div>
                   <div>
@@ -455,7 +456,16 @@ export default function Customers() {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="name-form">Name *</Label>
+                        <Label htmlFor="company-form">Company Name *</Label>
+                        <Input
+                          id="company-form"
+                          value={formData.company}
+                          onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="name-form">Representative Name *</Label>
                         <Input
                           id="name-form"
                           value={formData.name}
@@ -478,14 +488,6 @@ export default function Customers() {
                           id="phone-form"
                           value={formData.phone}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="company-form">Company</Label>
-                        <Input
-                          id="company-form"
-                          value={formData.company}
-                          onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                         />
                       </div>
                       <div>
