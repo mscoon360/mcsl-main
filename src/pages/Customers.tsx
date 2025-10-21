@@ -37,7 +37,7 @@ export default function Customers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCustomer, setEditingCustomer] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    name: '', email: '', phone: '', company: '', address: '', city: ''
+    company: '', name: '', email: '', phone: '', address: '', city: ''
   });
   const [accessStatus, setAccessStatus] = useState<'none' | 'pending' | 'approved' | 'denied'>('none');
   const [requestingAccess, setRequestingAccess] = useState(false);
@@ -201,10 +201,10 @@ export default function Customers() {
     
     try {
       const customerData = await addCustomer({
+        company: formData.company,
         name: formData.name,
         email: formData.email,
         phone: formData.phone || '',
-        company: formData.company || '',
         address: formData.address || '',
         city: formData.city || '',
         status: "active"
@@ -215,7 +215,7 @@ export default function Customers() {
         await logActivity('created', customerData.id);
       }
       
-      setFormData({ name: '', email: '', phone: '', company: '', address: '', city: '' });
+      setFormData({ company: '', name: '', email: '', phone: '', address: '', city: '' });
       setShowAddForm(false);
     } catch (error) {
       console.error('Failed to add customer:', error);
@@ -235,10 +235,10 @@ export default function Customers() {
     
     try {
       await updateCustomer(editingCustomer, {
+        company: String(data.get("company") || ""),
         name: String(data.get("name") || ""),
         email: String(data.get("email") || ""),
         phone: String(data.get("phone") || ""),
-        company: String(data.get("company") || ""),
         address: String(data.get("address") || ""),
         city: String(data.get("city") || "")
       });
