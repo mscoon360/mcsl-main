@@ -9,6 +9,8 @@ export interface Customer {
   phone?: string;
   company: string;
   address?: string;
+  address_2?: string;
+  zone?: string;
   city?: string;
   total_sales: number;
   last_purchase?: string;

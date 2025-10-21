@@ -37,7 +37,7 @@ export default function Customers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCustomer, setEditingCustomer] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    company: '', name: '', email: '', phone: '', address: '', city: ''
+    company: '', name: '', email: '', phone: '', address: '', address_2: '', zone: '', city: ''
   });
   const [accessStatus, setAccessStatus] = useState<'none' | 'pending' | 'approved' | 'denied'>('none');
   const [requestingAccess, setRequestingAccess] = useState(false);
@@ -206,6 +206,8 @@ export default function Customers() {
         email: formData.email,
         phone: formData.phone || '',
         address: formData.address || '',
+        address_2: formData.address_2 || '',
+        zone: formData.zone || '',
         city: formData.city || '',
         status: "active"
       });
@@ -215,7 +217,7 @@ export default function Customers() {
         await logActivity('created', customerData.id);
       }
       
-      setFormData({ company: '', name: '', email: '', phone: '', address: '', city: '' });
+      setFormData({ company: '', name: '', email: '', phone: '', address: '', address_2: '', zone: '', city: '' });
       setShowAddForm(false);
     } catch (error) {
       console.error('Failed to add customer:', error);
@@ -240,6 +242,8 @@ export default function Customers() {
         email: String(data.get("email") || ""),
         phone: String(data.get("phone") || ""),
         address: String(data.get("address") || ""),
+        address_2: String(data.get("address_2") || ""),
+        zone: String(data.get("zone") || ""),
         city: String(data.get("city") || "")
       });
 
@@ -353,11 +357,27 @@ export default function Customers() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="address">Address</Label>
+                    <Label htmlFor="address">Address #1</Label>
                     <Input
                       id="address"
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="address_2">Address #2</Label>
+                    <Input
+                      id="address_2"
+                      value={formData.address_2}
+                      onChange={(e) => setFormData({ ...formData, address_2: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="zone">Zone</Label>
+                    <Input
+                      id="zone"
+                      value={formData.zone}
+                      onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
                     />
                   </div>
                   <div>
@@ -489,11 +509,27 @@ export default function Customers() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="address-form">Address</Label>
+                        <Label htmlFor="address-form">Address #1</Label>
                         <Input
                           id="address-form"
                           value={formData.address}
                           onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="address_2-form">Address #2</Label>
+                        <Input
+                          id="address_2-form"
+                          value={formData.address_2}
+                          onChange={(e) => setFormData({ ...formData, address_2: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="zone-form">Zone</Label>
+                        <Input
+                          id="zone-form"
+                          value={formData.zone}
+                          onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
                         />
                       </div>
                       <div>
