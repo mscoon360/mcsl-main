@@ -283,7 +283,7 @@ export type Database = {
           address: string | null
           address_2: string | null
           city: string | null
-          company: string
+          company: string | null
           created_at: string | null
           email: string | null
           id: string
@@ -300,7 +300,7 @@ export type Database = {
           address?: string | null
           address_2?: string | null
           city?: string | null
-          company: string
+          company?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -317,7 +317,7 @@ export type Database = {
           address?: string | null
           address_2?: string | null
           city?: string | null
-          company?: string
+          company?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
