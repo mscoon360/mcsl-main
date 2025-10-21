@@ -373,19 +373,19 @@ export default function Customers() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="zone">Zone</Label>
-                    <Input
-                      id="zone"
-                      value={formData.zone}
-                      onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
-                    />
-                  </div>
-                  <div>
                     <Label htmlFor="city">City</Label>
                     <Input
                       id="city"
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="zone">Zone</Label>
+                    <Input
+                      id="zone"
+                      value={formData.zone}
+                      onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
                     />
                   </div>
                 </div>
@@ -525,19 +525,19 @@ export default function Customers() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="zone-form">Zone</Label>
-                        <Input
-                          id="zone-form"
-                          value={formData.zone}
-                          onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
-                        />
-                      </div>
-                      <div>
                         <Label htmlFor="city-form">City</Label>
                         <Input
                           id="city-form"
                           value={formData.city}
                           onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="zone-form">Zone</Label>
+                        <Input
+                          id="zone-form"
+                          value={formData.zone}
+                          onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
                         />
                       </div>
                     </div>
