@@ -192,7 +192,7 @@ export default function Customers() {
   const filteredCustomers = customersWithSales.filter(customer => 
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     customer.company?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.city?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -328,13 +328,12 @@ export default function Customers() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
                     />
                   </div>
                   <div>
@@ -465,13 +464,12 @@ export default function Customers() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="email-form">Email *</Label>
+                        <Label htmlFor="email-form">Email</Label>
                         <Input
                           id="email-form"
                           type="email"
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          required
                         />
                       </div>
                       <div>
