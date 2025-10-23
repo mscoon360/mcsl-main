@@ -69,13 +69,18 @@ export const useProducts = () => {
           status: 'in storage',
         }));
 
-        const { error: barcodeError } = await supabase
-          .from('product_items')
-          .insert(barcodeItems);
+        // Insert in batches of 1000 to handle large quantities
+        const batchSize = 1000;
+        for (let i = 0; i < barcodeItems.length; i += batchSize) {
+          const batch = barcodeItems.slice(i, i + batchSize);
+          const { error: barcodeError } = await supabase
+            .from('product_items')
+            .insert(batch);
 
-        if (barcodeError) {
-          console.error('Error generating barcodes:', barcodeError);
-          throw new Error(`Failed to generate barcodes: ${barcodeError.message}`);
+          if (barcodeError) {
+            console.error('Error generating barcodes:', barcodeError);
+            throw new Error(`Failed to generate barcodes: ${barcodeError.message}`);
+          }
         }
       }
       
