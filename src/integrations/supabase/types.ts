@@ -288,7 +288,7 @@ export type Database = {
           email: string | null
           id: string
           last_purchase: string | null
-          name: string
+          name: string | null
           phone: string | null
           status: string | null
           total_sales: number | null
@@ -306,7 +306,7 @@ export type Database = {
           email?: string | null
           id?: string
           last_purchase?: string | null
-          name: string
+          name?: string | null
           phone?: string | null
           status?: string | null
           total_sales?: number | null
@@ -324,7 +324,7 @@ export type Database = {
           email?: string | null
           id?: string
           last_purchase?: string | null
-          name?: string
+          name?: string | null
           phone?: string | null
           status?: string | null
           total_sales?: number | null
