@@ -487,20 +487,20 @@ export default function Customers() {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="company-form">Company Name</Label>
+                        <Label htmlFor="company-form">Company Name *</Label>
                         <Input
                           id="company-form"
                           value={formData.company}
                           onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                          required
                         />
                       </div>
                       <div>
-                        <Label htmlFor="name-form">Name *</Label>
+                        <Label htmlFor="name-form">Name</Label>
                         <Input
                           id="name-form"
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          required
                         />
                       </div>
                       <div>
@@ -617,7 +617,6 @@ export default function Customers() {
                                 id={`edit-name-${customer.id}`}
                                 name="name"
                                 defaultValue={customer.name}
-                                required
                               />
                             </div>
                             <div>
@@ -639,7 +638,7 @@ export default function Customers() {
                               />
                             </div>
                             <div>
-                              <Label htmlFor={`edit-company-${customer.id}`}>Company</Label>
+                              <Label htmlFor={`edit-company-${customer.id}`}>Company *</Label>
                               <Input
                                 id={`edit-company-${customer.id}`}
                                 name="company"
