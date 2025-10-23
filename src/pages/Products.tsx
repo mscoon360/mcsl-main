@@ -424,7 +424,7 @@ export default function Products() {
                         <span>{product.is_rental_only ? 'Rental Only' : product.is_rental ? 'Both' : 'Sale Only'}</span>
                         {product.needs_servicing && (
                           <Badge variant="outline" className="text-xs">
-                            🔧 Servicing
+                            Requires servicing
                           </Badge>
                         )}
                       </div>
