@@ -15,6 +15,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomers } from "@/hooks/useCustomers";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Your customer database - ready for real data
 const mockCustomers: Array<{
@@ -37,7 +38,7 @@ export default function Customers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCustomer, setEditingCustomer] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    company: '', name: '', email: '', phone: '', address: '', address_2: '', zone: '', city: ''
+    company: '', name: '', email: '', phone: '', address: '', address_2: '', zone: '', city: '', vatable: false
   });
   const [accessStatus, setAccessStatus] = useState<'none' | 'pending' | 'approved' | 'denied'>('none');
   const [requestingAccess, setRequestingAccess] = useState(false);
@@ -209,7 +210,8 @@ export default function Customers() {
         address_2: formData.address_2 || '',
         zone: formData.zone || '',
         city: formData.city || '',
-        status: "active"
+        status: "active",
+        vatable: formData.vatable
       });
       
       // Log activity for sales users
@@ -217,7 +219,7 @@ export default function Customers() {
         await logActivity('created', customerData.id);
       }
       
-      setFormData({ company: '', name: '', email: '', phone: '', address: '', address_2: '', zone: '', city: '' });
+      setFormData({ company: '', name: '', email: '', phone: '', address: '', address_2: '', zone: '', city: '', vatable: false });
       setShowAddForm(false);
     } catch (error) {
       console.error('Failed to add customer:', error);
@@ -389,6 +391,16 @@ export default function Customers() {
                     />
                   </div>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="vatable" 
+                    checked={formData.vatable}
+                    onCheckedChange={(checked) => setFormData({ ...formData, vatable: checked as boolean })}
+                  />
+                  <Label htmlFor="vatable" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    VATable Customer (12.5% VAT will be applied to purchases)
+                  </Label>
+                </div>
                 <Button type="submit">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Customer
@@ -540,6 +552,16 @@ export default function Customers() {
                           onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
                         />
                       </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="vatable-form" 
+                        checked={formData.vatable}
+                        onCheckedChange={(checked) => setFormData({ ...formData, vatable: checked as boolean })}
+                      />
+                      <Label htmlFor="vatable-form" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        VATable Customer (12.5% VAT will be applied to purchases)
+                      </Label>
                     </div>
                     <Button type="submit">
                       <Plus className="mr-2 h-4 w-4" />

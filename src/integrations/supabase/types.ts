@@ -294,6 +294,7 @@ export type Database = {
           total_sales: number | null
           updated_at: string | null
           user_id: string
+          vatable: boolean | null
           zone: string | null
         }
         Insert: {
@@ -311,6 +312,7 @@ export type Database = {
           total_sales?: number | null
           updated_at?: string | null
           user_id: string
+          vatable?: boolean | null
           zone?: string | null
         }
         Update: {
@@ -328,6 +330,7 @@ export type Database = {
           total_sales?: number | null
           updated_at?: string | null
           user_id?: string
+          vatable?: boolean | null
           zone?: string | null
         }
         Relationships: []
@@ -568,6 +571,50 @@ export type Database = {
         }
         Relationships: []
       }
+      item_dependencies: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          last_serviced_date: string | null
+          next_service_date: string | null
+          product_id: string
+          servicing_frequency: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_serviced_date?: string | null
+          next_service_date?: string | null
+          product_id: string
+          servicing_frequency: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_serviced_date?: string | null
+          next_service_date?: string | null
+          product_id?: string
+          servicing_frequency?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_dependencies_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ledger_backfill_logs: {
         Row: {
           batch_id: string
@@ -744,6 +791,7 @@ export type Database = {
           last_sold: string | null
           min_stock: number | null
           name: string
+          needs_servicing: boolean | null
           price: number
           rental_price: number | null
           sku: string
@@ -765,6 +813,7 @@ export type Database = {
           last_sold?: string | null
           min_stock?: number | null
           name: string
+          needs_servicing?: boolean | null
           price: number
           rental_price?: number | null
           sku: string
@@ -786,6 +835,7 @@ export type Database = {
           last_sold?: string | null
           min_stock?: number | null
           name?: string
+          needs_servicing?: boolean | null
           price?: number
           rental_price?: number | null
           sku?: string
@@ -841,6 +891,7 @@ export type Database = {
           quantity: number
           sale_id: string
           start_date: string | null
+          vat_amount: number | null
         }
         Insert: {
           contract_length?: string | null
@@ -854,6 +905,7 @@ export type Database = {
           quantity: number
           sale_id: string
           start_date?: string | null
+          vat_amount?: number | null
         }
         Update: {
           contract_length?: string | null
@@ -867,6 +919,7 @@ export type Database = {
           quantity?: number
           sale_id?: string
           start_date?: string | null
+          vat_amount?: number | null
         }
         Relationships: [
           {
@@ -888,6 +941,7 @@ export type Database = {
           total: number
           updated_at: string | null
           user_id: string
+          vat_amount: number | null
         }
         Insert: {
           created_at?: string | null
@@ -898,6 +952,7 @@ export type Database = {
           total: number
           updated_at?: string | null
           user_id: string
+          vat_amount?: number | null
         }
         Update: {
           created_at?: string | null
@@ -908,6 +963,7 @@ export type Database = {
           total?: number
           updated_at?: string | null
           user_id?: string
+          vat_amount?: number | null
         }
         Relationships: []
       }
@@ -1033,30 +1089,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      armor: {
-        Args: { "": string }
-        Returns: string
-      }
-      compute_balance_hash: {
-        Args: { entries: Json }
-        Returns: string
-      }
-      dearmor: {
-        Args: { "": string }
-        Returns: string
-      }
-      gen_random_bytes: {
-        Args: { "": number }
-        Returns: string
-      }
-      gen_random_uuid: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      gen_salt: {
-        Args: { "": string }
-        Returns: string
-      }
+      compute_balance_hash: { Args: { entries: Json }; Returns: string }
+      dearmor: { Args: { "": string }; Returns: string }
+      gen_random_uuid: { Args: never; Returns: string }
+      gen_salt: { Args: { "": string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1067,10 +1103,6 @@ export type Database = {
       pgp_armor_headers: {
         Args: { "": string }
         Returns: Record<string, unknown>[]
-      }
-      pgp_key_id: {
-        Args: { "": string }
-        Returns: string
       }
     }
     Enums: {

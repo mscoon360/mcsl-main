@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { useCustomers } from "@/hooks/useCustomers";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { useItemDependencies } from "@/hooks/useItemDependencies";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface RentalAgreement {
   id: string;
@@ -58,14 +60,18 @@ export default function RentalAgreements() {
   const [rentalItems, setRentalItems] = useState([{
     product: "",
     quantity: 1,
-    price: 0
+    price: 0,
+    servicingFrequency: "",
+    servicingDescription: ""
   }]);
 
   const addRentalItem = () => {
     setRentalItems([...rentalItems, {
       product: "",
       quantity: 1,
-      price: 0
+      price: 0,
+      servicingFrequency: "",
+      servicingDescription: ""
     }]);
   };
 
@@ -274,6 +280,22 @@ export default function RentalAgreements() {
           await updateProduct(product.id, {
             stock: (product.stock || 0) - item.quantity
           });
+
+          // Create item dependency if product needs servicing and frequency is provided
+          if (product.needs_servicing && item.servicingFrequency) {
+            const { error: depError } = await supabase
+              .from('item_dependencies')
+              .insert({
+                product_id: product.id,
+                servicing_frequency: item.servicingFrequency,
+                description: item.servicingDescription || `${product.name} servicing`,
+                user_id: user.id
+              });
+
+            if (depError) {
+              console.error('Error creating item dependency:', depError);
+            }
+          }
         }
       }
 
@@ -288,7 +310,9 @@ export default function RentalAgreements() {
       setRentalItems([{
         product: "",
         quantity: 1,
-        price: 0
+        price: 0,
+        servicingFrequency: "",
+        servicingDescription: ""
       }]);
       setContractLength("");
       setPaymentPeriod("monthly");
@@ -513,6 +537,7 @@ export default function RentalAgreements() {
                             {rentalProducts.map(product => (
                               <SelectItem key={product.id} value={product.id}>
                                 {product.name} - ${product.price}/month
+                                {product.needs_servicing && " 🔧"}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -549,6 +574,52 @@ export default function RentalAgreements() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Show servicing options if product needs servicing */}
+                    {item.product && rentalProducts.find(p => p.id === item.product)?.needs_servicing && (
+                      <div className="mt-4 p-4 border rounded-lg bg-amber-50 dark:bg-amber-950/20">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-2xl">🔧</span>
+                          <div>
+                            <h4 className="font-semibold text-sm">This item requires servicing</h4>
+                            <p className="text-xs text-muted-foreground">
+                              Configure servicing schedule for maintenance tracking
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Servicing Frequency *</Label>
+                            <Select 
+                              value={item.servicingFrequency}
+                              onValueChange={(value) => updateRentalItem(index, 'servicingFrequency', value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select frequency" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="weekly">Weekly</SelectItem>
+                                <SelectItem value="biweekly">Every 2 Weeks</SelectItem>
+                                <SelectItem value="monthly">Monthly</SelectItem>
+                                <SelectItem value="quarterly">Quarterly</SelectItem>
+                                <SelectItem value="biannually">Bi-annually</SelectItem>
+                                <SelectItem value="annually">Annually</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label>Servicing Description</Label>
+                            <Input
+                              placeholder="e.g., Replace bin liner"
+                              value={item.servicingDescription}
+                              onChange={(e) => updateRentalItem(index, 'servicingDescription', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </Card>
                 ))}
               </div>

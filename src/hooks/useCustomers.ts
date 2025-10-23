@@ -15,6 +15,7 @@ export interface Customer {
   total_sales: number;
   last_purchase?: string;
   status: string;
+  vatable: boolean;
 }
 
 export const useCustomers = () => {

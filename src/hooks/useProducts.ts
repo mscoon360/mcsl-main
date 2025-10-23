@@ -19,6 +19,7 @@ export interface Product {
   supplier_name?: string;
   min_stock?: number;
   cost_price?: number;
+  needs_servicing?: boolean;
 }
 
 export const useProducts = () => {

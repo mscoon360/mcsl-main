@@ -14,6 +14,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function Products() {
   const { products, loading, addProduct, updateProduct, deleteProduct } = useProducts();
@@ -27,6 +28,7 @@ export default function Products() {
   const [productHistory, setProductHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [productType, setProductType] = useState<'sale_only' | 'rental_only' | 'both'>('sale_only');
+  const [needsServicing, setNeedsServicing] = useState(false);
 
   const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -72,6 +74,7 @@ export default function Products() {
       supplier_name,
       min_stock,
       cost_price,
+      needs_servicing: (productType !== 'sale_only') && needsServicing,
     };
 
     try {
@@ -79,6 +82,7 @@ export default function Products() {
       setIsAddDialogOpen(false);
       form.reset();
       setProductType('sale_only');
+      setNeedsServicing(false);
       
       toast({
         title: 'Product created',
@@ -272,6 +276,24 @@ export default function Products() {
                 </RadioGroup>
               </div>
 
+              {(productType === 'rental_only' || productType === 'both') && (
+                <div className="flex items-center space-x-2 p-4 border rounded-lg bg-muted/50">
+                  <Checkbox 
+                    id="needs_servicing" 
+                    checked={needsServicing}
+                    onCheckedChange={(checked) => setNeedsServicing(checked as boolean)}
+                  />
+                  <div className="flex flex-col">
+                    <Label htmlFor="needs_servicing" className="font-medium cursor-pointer">
+                      This item requires servicing
+                    </Label>
+                    <span className="text-sm text-muted-foreground">
+                      Enable this for items like bins that need liner replacements or regular maintenance
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {productType === 'both' ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -398,7 +420,14 @@ export default function Products() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {product.is_rental_only ? 'Rental Only' : product.is_rental ? 'Both' : 'Sale Only'}
+                      <div className="flex items-center gap-2">
+                        <span>{product.is_rental_only ? 'Rental Only' : product.is_rental ? 'Both' : 'Sale Only'}</span>
+                        {product.needs_servicing && (
+                          <Badge variant="outline" className="text-xs">
+                            🔧 Servicing
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
