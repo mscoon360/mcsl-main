@@ -60,19 +60,32 @@ export default function ProductBarcodes() {
       if (productError) throw productError;
       setProduct(productData);
 
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('product_items')
-        .select('*, products!inner(price)')
-        .eq('product_id', productId)
-        .order('created_at', { ascending: false });
+      // Fetch all items with pagination to bypass 1000-row limit
+      const pageSize = 1000;
+      let from = 0;
+      let allItems: any[] = [];
 
-      if (itemsError) throw itemsError;
+      while (true) {
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('product_items')
+          .select('*, products!inner(price)')
+          .eq('product_id', productId)
+          .order('created_at', { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (itemsError) throw itemsError;
+        if (!itemsData || itemsData.length === 0) break;
+
+        allItems = allItems.concat(itemsData);
+        if (itemsData.length < pageSize) break;
+        from += pageSize;
+      }
       
       // Map the data to include price
-      const mappedItems = itemsData?.map(item => ({
+      const mappedItems = allItems.map(item => ({
         ...item,
         price: item.products?.price
-      })) || [];
+      }));
       
       setItems(mappedItems);
     } catch (error: any) {

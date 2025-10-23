@@ -139,11 +139,15 @@ export default function Products() {
           });
         }
 
-        const { error: barcodeError } = await supabase
-          .from('product_items')
-          .insert(newBarcodes);
-
-        if (barcodeError) throw barcodeError;
+        // Insert in batches to handle large quantities
+        const batchSize = 1000;
+        for (let i = 0; i < newBarcodes.length; i += batchSize) {
+          const batch = newBarcodes.slice(i, i + batchSize);
+          const { error: barcodeError } = await supabase
+            .from('product_items')
+            .insert(batch);
+          if (barcodeError) throw barcodeError;
+        }
 
         toast({
           title: 'Product updated',
