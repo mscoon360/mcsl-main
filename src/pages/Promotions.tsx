@@ -149,7 +149,12 @@ const Promotions = () => {
           <h1 className="text-3xl font-bold text-foreground">Promotions</h1>
           <p className="text-muted-foreground mt-1">Create and manage product bundles with discounts</p>
         </div>
-        <Button onClick={() => { resetForm(); setIsAddDialogOpen(true); }}>
+        <Button onClick={() => { 
+          console.log('New Promotion button clicked');
+          resetForm(); 
+          setIsAddDialogOpen(true); 
+          console.log('Dialog should open now, isAddDialogOpen:', true);
+        }}>
           <Plus className="h-4 w-4 mr-2" />
           New Promotion
         </Button>
