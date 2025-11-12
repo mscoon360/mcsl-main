@@ -224,6 +224,420 @@ const Promotions = () => {
           </Card>
         )}
       </div>
+
+      {/* Add Promotion Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Promotion</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">Promotion Name *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Summer Bundle Deal"
+              />
+            </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Save on this amazing bundle..."
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="start_date">Start Date</Label>
+                <Input
+                  id="start_date"
+                  type="date"
+                  value={formData.start_date}
+                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="end_date">End Date</Label>
+                <Input
+                  id="end_date"
+                  type="date"
+                  value={formData.end_date}
+                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_active"
+                checked={formData.is_active}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+              />
+              <Label htmlFor="is_active">Active</Label>
+            </div>
+
+            <div className="border-t pt-4">
+              <h3 className="font-semibold mb-3">Bundle Items *</h3>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="product">Product</Label>
+                    <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select product" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products.map((product) => (
+                          <SelectItem key={product.id} value={product.id}>
+                            {product.name} - ${product.price}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="quantity">Quantity</Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min="1"
+                      value={itemQuantity}
+                      onChange={(e) => setItemQuantity(parseInt(e.target.value) || 1)}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label htmlFor="item_discount_type">Item Discount</Label>
+                    <Select value={itemDiscountType} onValueChange={(value: any) => setItemDiscountType(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Discount</SelectItem>
+                        <SelectItem value="percentage">Percentage</SelectItem>
+                        <SelectItem value="fixed">Fixed Amount</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {itemDiscountType !== 'none' && (
+                    <div>
+                      <Label htmlFor="item_discount_value">Value</Label>
+                      <Input
+                        id="item_discount_value"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={itemDiscountValue}
+                        onChange={(e) => setItemDiscountValue(parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-end">
+                    <Button type="button" onClick={addProductToBundle} disabled={!selectedProduct}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Item
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {formData.bundle_items.length > 0 && (
+                <Table className="mt-4">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Qty</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Discount</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {formData.bundle_items.map((item, index) => {
+                      const itemTotal = item.price * item.quantity;
+                      let itemDiscount = 0;
+                      if (item.discount_type === 'percentage') itemDiscount = (itemTotal * (item.discount_value || 0)) / 100;
+                      else if (item.discount_type === 'fixed') itemDiscount = item.discount_value || 0;
+                      
+                      return (
+                        <TableRow key={index}>
+                          <TableCell>{item.product_name}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>${item.price.toFixed(2)}</TableCell>
+                          <TableCell>
+                            {item.discount_type === 'percentage' && `${item.discount_value}%`}
+                            {item.discount_type === 'fixed' && `$${item.discount_value}`}
+                            {item.discount_type === 'none' && '-'}
+                          </TableCell>
+                          <TableCell>${(itemTotal - itemDiscount).toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="sm" onClick={() => removeProductFromBundle(index)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+
+            <div className="border-t pt-4">
+              <h3 className="font-semibold mb-3">Overall Bundle Discount</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="discount_type">Discount Type</Label>
+                  <Select value={formData.discount_type} onValueChange={(value: any) => setFormData({ ...formData, discount_type: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Discount</SelectItem>
+                      <SelectItem value="percentage">Percentage</SelectItem>
+                      <SelectItem value="fixed">Fixed Amount</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {formData.discount_type !== 'none' && (
+                  <div>
+                    <Label htmlFor="discount_value">Discount Value</Label>
+                    <Input
+                      id="discount_value"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.discount_value}
+                      onChange={(e) => setFormData({ ...formData, discount_value: parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => { setIsAddDialogOpen(false); resetForm(); }}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmit} disabled={!formData.name || formData.bundle_items.length === 0}>
+                Create Promotion
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Promotion Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Promotion</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit_name">Promotion Name *</Label>
+              <Input
+                id="edit_name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Summer Bundle Deal"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit_description">Description</Label>
+              <Textarea
+                id="edit_description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Save on this amazing bundle..."
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit_start_date">Start Date</Label>
+                <Input
+                  id="edit_start_date"
+                  type="date"
+                  value={formData.start_date}
+                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_end_date">End Date</Label>
+                <Input
+                  id="edit_end_date"
+                  type="date"
+                  value={formData.end_date}
+                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="edit_is_active"
+                checked={formData.is_active}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+              />
+              <Label htmlFor="edit_is_active">Active</Label>
+            </div>
+
+            <div className="border-t pt-4">
+              <h3 className="font-semibold mb-3">Bundle Items *</h3>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="edit_product">Product</Label>
+                    <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select product" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products.map((product) => (
+                          <SelectItem key={product.id} value={product.id}>
+                            {product.name} - ${product.price}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit_quantity">Quantity</Label>
+                    <Input
+                      id="edit_quantity"
+                      type="number"
+                      min="1"
+                      value={itemQuantity}
+                      onChange={(e) => setItemQuantity(parseInt(e.target.value) || 1)}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label htmlFor="edit_item_discount_type">Item Discount</Label>
+                    <Select value={itemDiscountType} onValueChange={(value: any) => setItemDiscountType(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Discount</SelectItem>
+                        <SelectItem value="percentage">Percentage</SelectItem>
+                        <SelectItem value="fixed">Fixed Amount</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {itemDiscountType !== 'none' && (
+                    <div>
+                      <Label htmlFor="edit_item_discount_value">Value</Label>
+                      <Input
+                        id="edit_item_discount_value"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={itemDiscountValue}
+                        onChange={(e) => setItemDiscountValue(parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-end">
+                    <Button type="button" onClick={addProductToBundle} disabled={!selectedProduct}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Item
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {formData.bundle_items.length > 0 && (
+                <Table className="mt-4">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Qty</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Discount</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {formData.bundle_items.map((item, index) => {
+                      const itemTotal = item.price * item.quantity;
+                      let itemDiscount = 0;
+                      if (item.discount_type === 'percentage') itemDiscount = (itemTotal * (item.discount_value || 0)) / 100;
+                      else if (item.discount_type === 'fixed') itemDiscount = item.discount_value || 0;
+                      
+                      return (
+                        <TableRow key={index}>
+                          <TableCell>{item.product_name}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>${item.price.toFixed(2)}</TableCell>
+                          <TableCell>
+                            {item.discount_type === 'percentage' && `${item.discount_value}%`}
+                            {item.discount_type === 'fixed' && `$${item.discount_value}`}
+                            {item.discount_type === 'none' && '-'}
+                          </TableCell>
+                          <TableCell>${(itemTotal - itemDiscount).toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="sm" onClick={() => removeProductFromBundle(index)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+
+            <div className="border-t pt-4">
+              <h3 className="font-semibold mb-3">Overall Bundle Discount</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="edit_discount_type">Discount Type</Label>
+                  <Select value={formData.discount_type} onValueChange={(value: any) => setFormData({ ...formData, discount_type: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Discount</SelectItem>
+                      <SelectItem value="percentage">Percentage</SelectItem>
+                      <SelectItem value="fixed">Fixed Amount</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {formData.discount_type !== 'none' && (
+                  <div>
+                    <Label htmlFor="edit_discount_value">Discount Value</Label>
+                    <Input
+                      id="edit_discount_value"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.discount_value}
+                      onChange={(e) => setFormData({ ...formData, discount_value: parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => { setIsEditDialogOpen(false); setEditingPromotion(null); resetForm(); }}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdate} disabled={!formData.name || formData.bundle_items.length === 0}>
+                Update Promotion
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
