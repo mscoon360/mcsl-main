@@ -431,8 +431,8 @@ export default function Sales() {
     }
   };
 
-  // All products available for sales (including rental products which can be sold as contracts)
-  const availableProducts = products;
+  // Filter products to exclude rental-only products for sales
+  const availableProducts = products.filter(p => p.is_rental_only !== true);
 
   // Calculate product catalog sales for current user
   const getTimePeriodStart = () => {
