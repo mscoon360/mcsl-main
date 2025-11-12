@@ -27,7 +27,7 @@ export default function Maintenance() {
 
     const maintenanceItem = {
       product_id: formData.get('product_id') as string,
-      servicing_frequency: formData.get('servicing_frequency') as string,
+      servicing_frequency: 'contract-dependent',
       description: formData.get('description') as string,
       last_serviced_date: formData.get('last_serviced_date') as string || undefined,
       next_service_date: formData.get('next_service_date') as string || undefined,
@@ -48,7 +48,6 @@ export default function Maintenance() {
     const formData = new FormData(form);
 
     const updates = {
-      servicing_frequency: formData.get('servicing_frequency') as string,
       description: formData.get('description') as string,
       last_serviced_date: formData.get('last_serviced_date') as string || undefined,
       next_service_date: formData.get('next_service_date') as string || undefined,
@@ -112,14 +111,14 @@ export default function Maintenance() {
             </DialogHeader>
             <form onSubmit={handleAddMaintenance} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="product_id">Product *</Label>
+                <Label htmlFor="product_id">Rental Product *</Label>
                 <Select name="product_id" required>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a product" />
+                    <SelectValue placeholder="Select a rental product" />
                   </SelectTrigger>
                   <SelectContent>
                     {products
-                      .filter(p => p.needs_servicing)
+                      .filter(p => p.needs_servicing && (p.is_rental || p.is_rental_only))
                       .map((product) => (
                         <SelectItem key={product.id} value={product.id}>
                           {product.name} - {product.sku}
@@ -130,28 +129,11 @@ export default function Maintenance() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="servicing_frequency">Servicing Frequency *</Label>
-                <Select name="servicing_frequency" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select frequency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                    <SelectItem value="semi-annually">Semi-Annually</SelectItem>
-                    <SelectItem value="annually">Annually</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea 
                   id="description" 
                   name="description" 
-                  placeholder="Describe the maintenance requirements..."
+                  placeholder="Describe the maintenance item (e.g., bin liners)..."
                 />
               </div>
 
@@ -199,7 +181,6 @@ export default function Maintenance() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Product</TableHead>
-                  <TableHead>Frequency</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Last Serviced</TableHead>
                   <TableHead>Next Service</TableHead>
@@ -212,9 +193,6 @@ export default function Maintenance() {
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">
                       {getProductName(item.product_id)}
-                    </TableCell>
-                    <TableCell className="capitalize">
-                      {item.servicing_frequency.replace(/-/g, ' ')}
                     </TableCell>
                     <TableCell className="max-w-xs truncate">
                       {item.description || '-'}
@@ -285,33 +263,12 @@ export default function Maintenance() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit_servicing_frequency">Servicing Frequency *</Label>
-                <Select 
-                  name="servicing_frequency" 
-                  defaultValue={editingItem.servicing_frequency}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                    <SelectItem value="semi-annually">Semi-Annually</SelectItem>
-                    <SelectItem value="annually">Annually</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="edit_description">Description</Label>
                 <Textarea 
                   id="edit_description" 
                   name="description" 
                   defaultValue={editingItem.description || ''}
-                  placeholder="Describe the maintenance requirements..."
+                  placeholder="Describe the maintenance item (e.g., bin liners)..."
                 />
               </div>
 
