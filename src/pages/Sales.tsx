@@ -19,6 +19,7 @@ import { useSales } from "@/hooks/useSales";
 import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomers } from "@/hooks/useCustomers";
+import { usePromotions } from "@/hooks/usePromotions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
@@ -28,6 +29,7 @@ export default function Sales() {
   const { sales, loading, refetch } = useSales();
   const { products: supabaseProducts, updateProduct } = useProducts();
   const { customers } = useCustomers();
+  const { promotions } = usePromotions();
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
@@ -42,6 +44,7 @@ export default function Sales() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showInProgress, setShowInProgress] = useState(true);
   const [catalogTimePeriod, setCatalogTimePeriod] = useState<'month' | 'quarter' | 'biannual' | 'annual'>('month');
+  const [selectedPromotion, setSelectedPromotion] = useState<string>("");
 
   // Use products from Supabase instead of localStorage
   const products = supabaseProducts;
@@ -49,11 +52,20 @@ export default function Sales() {
   // Remove the localStorage sales state as we now use Supabase
   // const [sales, setSales] = useLocalStorage(...)
 
-  const [salesItems, setSalesItems] = useState([{
+  const [salesItems, setSalesItems] = useState<Array<{
+    product: string;
+    quantity: number;
+    price: number;
+    total: number;
+    discount_type?: 'percentage' | 'fixed' | 'none';
+    discount_value?: number;
+  }>>([{
     product: "",
     quantity: 1,
     price: 0,
-    total: 0
+    total: 0,
+    discount_type: 'none',
+    discount_value: 0
   }]);
 
   const addSalesItem = () => {
@@ -61,7 +73,9 @@ export default function Sales() {
       product: "",
       quantity: 1,
       price: 0,
-      total: 0
+      total: 0,
+      discount_type: 'none',
+      discount_value: 0
     }]);
   };
 
@@ -72,8 +86,17 @@ export default function Sales() {
         ...updated[index],
         [field]: value
       };
-      if (field === 'quantity' || field === 'price') {
-        updated[index].total = updated[index].quantity * updated[index].price;
+      if (field === 'quantity' || field === 'price' || field === 'discount_type' || field === 'discount_value') {
+        const itemSubtotal = updated[index].quantity * updated[index].price;
+        let itemDiscount = 0;
+        
+        if (updated[index].discount_type === 'percentage') {
+          itemDiscount = (itemSubtotal * (updated[index].discount_value || 0)) / 100;
+        } else if (updated[index].discount_type === 'fixed') {
+          itemDiscount = updated[index].discount_value || 0;
+        }
+        
+        updated[index].total = itemSubtotal - itemDiscount;
       }
       return updated;
     });
@@ -84,7 +107,62 @@ export default function Sales() {
   };
 
   const calculateGrandTotal = () => {
-    return salesItems.reduce((sum, item) => sum + item.total, 0);
+    let subtotal = salesItems.reduce((sum, item) => sum + item.total, 0);
+    
+    // Apply promotion-level discount if selected
+    if (selectedPromotion) {
+      const promotion = promotions.find(p => p.id === selectedPromotion);
+      if (promotion && promotion.discount_type !== 'none') {
+        if (promotion.discount_type === 'percentage') {
+          subtotal -= (subtotal * (promotion.discount_value || 0)) / 100;
+        } else if (promotion.discount_type === 'fixed') {
+          subtotal -= promotion.discount_value || 0;
+        }
+      }
+    }
+    
+    return Math.max(0, subtotal);
+  };
+
+  // Handler to apply promotion to cart
+  const handleApplyPromotion = (promotionId: string) => {
+    const promotion = promotions.find(p => p.id === promotionId);
+    if (!promotion) return;
+
+    // Clear existing items and populate with promotion bundle
+    const newItems = promotion.bundle_items.map(bundleItem => ({
+      product: bundleItem.product_id,
+      quantity: bundleItem.quantity,
+      price: bundleItem.price,
+      total: 0, // Will be calculated
+      discount_type: bundleItem.discount_type || 'none',
+      discount_value: bundleItem.discount_value || 0
+    }));
+
+    setSalesItems(newItems);
+    setSelectedPromotion(promotionId);
+
+    // Recalculate totals for each item
+    newItems.forEach((_, index) => {
+      const item = newItems[index];
+      const itemSubtotal = item.quantity * item.price;
+      let itemDiscount = 0;
+      
+      if (item.discount_type === 'percentage') {
+        itemDiscount = (itemSubtotal * (item.discount_value || 0)) / 100;
+      } else if (item.discount_type === 'fixed') {
+        itemDiscount = item.discount_value || 0;
+      }
+      
+      newItems[index].total = itemSubtotal - itemDiscount;
+    });
+
+    setSalesItems(newItems);
+
+    toast({
+      title: "Promotion Applied",
+      description: `${promotion.name} has been applied to the cart.`
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -137,7 +215,8 @@ export default function Sales() {
           customer_name: customerName,
           total: total,
           date: saleDate,
-          status: 'in_progress'
+          status: 'in_progress',
+          promotion_id: selectedPromotion || null
         })
         .select()
         .single();
@@ -149,7 +228,9 @@ export default function Sales() {
         sale_id: saleData.id,
         product_name: products.find(p => p.id === item.product)?.name || "Unknown Product",
         quantity: item.quantity,
-        price: item.price
+        price: item.price,
+        item_discount_type: item.discount_type || 'none',
+        item_discount_value: item.discount_value || 0
       }));
 
       const { error: itemsError } = await supabase
@@ -169,11 +250,14 @@ export default function Sales() {
       setShowForm(false);
       setSelectedCustomer("");
       setSaleDate(new Date().toISOString().split('T')[0]);
+      setSelectedPromotion("");
       setSalesItems([{
         product: "",
         quantity: 1,
         price: 0,
-        total: 0
+        total: 0,
+        discount_type: 'none',
+        discount_value: 0
       }]);
 
       // Refetch sales
@@ -523,6 +607,69 @@ export default function Sales() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Promotion Selection */}
+              <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="promotion" className="text-base font-semibold">Apply Promotion (Optional)</Label>
+                  {selectedPromotion && (
+                    <Badge variant="default" className="gap-1">
+                      <Package className="h-3 w-3" />
+                      Promotion Active
+                    </Badge>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Select 
+                    value={selectedPromotion} 
+                    onValueChange={handleApplyPromotion}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a promotion bundle..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Promotion</SelectItem>
+                      {promotions
+                        .filter(p => p.is_active)
+                        .map(promo => (
+                          <SelectItem key={promo.id} value={promo.id}>
+                            {promo.name} 
+                            {promo.discount_type !== 'none' && (
+                              <span className="text-xs text-muted-foreground ml-2">
+                                ({promo.discount_type === 'percentage' ? `${promo.discount_value}% off` : `$${promo.discount_value} off`})
+                              </span>
+                            )}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedPromotion && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => {
+                        setSelectedPromotion("");
+                        setSalesItems([{
+                          product: "",
+                          quantity: 1,
+                          price: 0,
+                          total: 0,
+                          discount_type: 'none',
+                          discount_value: 0
+                        }]);
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Clear Promotion
+                    </Button>
+                  )}
+                </div>
+                {selectedPromotion && (
+                  <div className="text-sm text-muted-foreground mt-2">
+                    Bundle items have been added to the cart with promotional pricing.
+                  </div>
+                )}
+              </div>
+
               {/* Customer Selection */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -608,16 +755,23 @@ export default function Sales() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label className="text-lg font-semibold">Sale Items</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={addSalesItem}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Item
-                  </Button>
+                  {!selectedPromotion && (
+                    <Button type="button" variant="outline" size="sm" onClick={addSalesItem}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Item
+                    </Button>
+                  )}
                 </div>
+                {selectedPromotion && (
+                  <div className="text-sm text-muted-foreground">
+                    Items are locked when using a promotion. Clear the promotion to modify items.
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   {salesItems.map((item, index) => (
                     <Card key={index} className="p-4">
-                      <div className="grid grid-cols-5 gap-4 items-end">
+                      <div className="grid grid-cols-6 gap-4 items-end">
                         <div className="space-y-2">
                           <Label>Product</Label>
                           <Select 
@@ -630,6 +784,7 @@ export default function Sales() {
                                 updateSalesItem(index, 'price', product.price);
                               }
                             }}
+                            disabled={!!selectedPromotion}
                           >
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select product" />
@@ -659,6 +814,7 @@ export default function Sales() {
                             min="1" 
                             value={item.quantity} 
                             onChange={e => updateSalesItem(index, 'quantity', parseInt(e.target.value) || 1)} 
+                            disabled={!!selectedPromotion}
                           />
                         </div>
                         <div className="space-y-2">
@@ -667,10 +823,20 @@ export default function Sales() {
                             type="number" 
                             step="0.01" 
                             value={item.price} 
-                            readOnly={item.product !== ""} 
-                            className={item.product !== "" ? "bg-muted" : ""} 
+                            readOnly={item.product !== "" || !!selectedPromotion} 
+                            className={(item.product !== "" || !!selectedPromotion) ? "bg-muted" : ""} 
                             onChange={e => updateSalesItem(index, 'price', parseFloat(e.target.value) || 0)} 
                           />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Discount</Label>
+                          {item.discount_type !== 'none' && item.discount_value ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {item.discount_type === 'percentage' ? `-${item.discount_value}%` : `-$${item.discount_value}`}
+                            </Badge>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">None</span>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <Label>Total</Label>
@@ -679,7 +845,7 @@ export default function Sales() {
                           </div>
                         </div>
                         <div>
-                          {salesItems.length > 1 && (
+                          {salesItems.length > 1 && !selectedPromotion && (
                             <Button 
                               type="button" 
                               variant="destructive" 

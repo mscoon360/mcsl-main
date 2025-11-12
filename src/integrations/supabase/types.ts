@@ -930,6 +930,8 @@ export type Database = {
           end_date: string | null
           id: string
           is_rental: boolean | null
+          item_discount_type: string | null
+          item_discount_value: number | null
           payment_period: string | null
           price: number
           product_name: string
@@ -944,6 +946,8 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_rental?: boolean | null
+          item_discount_type?: string | null
+          item_discount_value?: number | null
           payment_period?: string | null
           price: number
           product_name: string
@@ -958,6 +962,8 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_rental?: boolean | null
+          item_discount_type?: string | null
+          item_discount_value?: number | null
           payment_period?: string | null
           price?: number
           product_name?: string
@@ -982,6 +988,7 @@ export type Database = {
           customer_name: string
           date: string
           id: string
+          promotion_id: string | null
           status: string | null
           total: number
           updated_at: string | null
@@ -993,6 +1000,7 @@ export type Database = {
           customer_name: string
           date: string
           id?: string
+          promotion_id?: string | null
           status?: string | null
           total: number
           updated_at?: string | null
@@ -1004,13 +1012,22 @@ export type Database = {
           customer_name?: string
           date?: string
           id?: string
+          promotion_id?: string | null
           status?: string | null
           total?: number
           updated_at?: string | null
           user_id?: string
           vat_amount?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sales_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       supplies: {
         Row: {
