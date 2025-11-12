@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomers } from "@/hooks/useCustomers";
 import { Checkbox } from "@/components/ui/checkbox";
+import { importCustomers } from "@/utils/importCustomers";
 
 // Your customer database - ready for real data
 const mockCustomers: Array<{
@@ -33,7 +34,7 @@ const mockCustomers: Array<{
 export default function Customers() {
   const { toast } = useToast();
   const { userDepartment, user } = useAuth();
-  const { customers, loading, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
+  const { customers, loading, addCustomer, updateCustomer, deleteCustomer, refetch } = useCustomers();
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCustomer, setEditingCustomer] = useState<string | null>(null);
@@ -265,6 +266,24 @@ export default function Customers() {
     }
   };
 
+  const handleImportCustomers = async () => {
+    try {
+      await importCustomers();
+      toast({
+        title: 'Success',
+        description: '12 customers imported successfully',
+      });
+      refetch();
+    } catch (error: any) {
+      console.error('Error importing customers:', error);
+      toast({
+        title: 'Error importing customers',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleCustomerClick = async (customer: any) => {
     setSelectedCustomer(customer);
     setIsDetailsDialogOpen(true);
@@ -470,10 +489,16 @@ export default function Customers() {
                 </p>
               </div>
               {department !== 'sales' && (
-                <Button onClick={() => setShowAddForm(!showAddForm)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  {showAddForm ? 'Cancel' : 'Add Customer'}
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleImportCustomers}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Import Spreadsheet
+                  </Button>
+                  <Button onClick={() => setShowAddForm(!showAddForm)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {showAddForm ? 'Cancel' : 'Add Customer'}
+                  </Button>
+                </div>
               )}
             </div>
 
