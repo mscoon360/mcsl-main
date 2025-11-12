@@ -12,7 +12,7 @@ export interface Customer {
   address_2?: string;
   zone?: string;
   city?: string;
-  total_sales: number;
+  total_contract_value: number;
   last_purchase?: string;
   status: string;
   vatable: boolean;
@@ -44,7 +44,7 @@ export const useCustomers = () => {
     }
   };
 
-  const addCustomer = async (customer: Omit<Customer, 'id' | 'total_sales'>) => {
+  const addCustomer = async (customer: Omit<Customer, 'id' | 'total_contract_value'>) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');

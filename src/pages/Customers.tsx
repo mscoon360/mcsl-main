@@ -26,7 +26,7 @@ const mockCustomers: Array<{
   company: string;
   address: string;
   city: string;
-  totalSales: number;
+  totalContractValue: number;
   lastPurchase: string;
   status: string;
 }> = [];
@@ -141,56 +141,76 @@ export default function Customers() {
     });
   };
 
-  // Get sales data from Supabase to calculate customer totals
-  const [salesData, setSalesData] = useState<Array<{
+  // Get contract data from Supabase to calculate customer contract totals
+  const [contractData, setContractData] = useState<Array<{
     customer_name: string;
     total: number;
     date: string;
   }>>([]);
 
   useEffect(() => {
-    const fetchSales = async () => {
+    const fetchContracts = async () => {
+      // Fetch rental sales (contracts) with their totals
       const { data, error } = await supabase
-        .from('sales')
-        .select('customer_name, total, date');
+        .from('sale_items')
+        .select(`
+          price,
+          quantity,
+          sales!inner(customer_name, date)
+        `)
+        .eq('is_rental', true);
       
       if (!error && data) {
-        setSalesData(data);
+        // Transform data to calculate contract totals per customer
+        const contractsByCustomer = data.reduce((acc: any[], item: any) => {
+          const customerName = item.sales.customer_name;
+          const total = item.price * item.quantity;
+          const date = item.sales.date;
+          
+          acc.push({ customer_name: customerName, total, date });
+          return acc;
+        }, []);
+        
+        setContractData(contractsByCustomer);
       }
     };
 
-    fetchSales();
+    fetchContracts();
 
-    // Subscribe to sales changes
-    const channel = supabase
-      .channel('customer-sales-changes')
+    // Subscribe to sales and sale_items changes
+    const salesChannel = supabase
+      .channel('customer-contracts-changes')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'sales' },
-        () => fetchSales()
+        () => fetchContracts()
+      )
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'sale_items' },
+        () => fetchContracts()
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(salesChannel);
     };
   }, []);
 
-  // Calculate actual customer sales totals
-  const customersWithSales = customers.map(customer => {
-    const customerSales = salesData.filter(sale => sale.customer_name === customer.name);
-    const totalSales = customerSales.reduce((sum, sale) => sum + sale.total, 0);
-    const lastPurchase = customerSales.length > 0 
-      ? customerSales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date
+  // Calculate actual customer contract values
+  const customersWithContracts = customers.map(customer => {
+    const customerContracts = contractData.filter(contract => contract.customer_name === customer.name);
+    const totalContractValue = customerContracts.reduce((sum, contract) => sum + contract.total, 0);
+    const lastPurchase = customerContracts.length > 0 
+      ? customerContracts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date
       : customer.last_purchase;
     
     return {
       ...customer,
-      totalSales: totalSales || 0,
+      totalContractValue: totalContractValue || 0,
       lastPurchase: lastPurchase || customer.last_purchase || new Date().toISOString()
     };
   });
 
-  const filteredCustomers = customersWithSales.filter(customer => 
+  const filteredCustomers = customersWithContracts.filter(customer => 
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     customer.company?.toLowerCase().includes(searchTerm.toLowerCase()) || 
     customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -325,20 +345,20 @@ export default function Customers() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="company">Company Name</Label>
+                    <Label htmlFor="company">Company Name *</Label>
                     <Input
                       id="company"
                       value={formData.company}
                       onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                      required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="name">Name *</Label>
+                    <Label htmlFor="name">Representative Name</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
                     />
                   </div>
                   <div>
@@ -496,7 +516,7 @@ export default function Customers() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="name-form">Name</Label>
+                        <Label htmlFor="name-form">Representative Name</Label>
                         <Input
                           id="name-form"
                           value={formData.name}
@@ -598,7 +618,7 @@ export default function Customers() {
                   <TableHead>Customer</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Company</TableHead>
-                  <TableHead>Total Sales</TableHead>
+                  <TableHead>Total Contract Value</TableHead>
                   <TableHead>Last Purchase</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
@@ -612,7 +632,16 @@ export default function Customers() {
                         <form onSubmit={handleEditSubmit} className="space-y-4">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <Label htmlFor={`edit-name-${customer.id}`}>Name</Label>
+                              <Label htmlFor={`edit-company-${customer.id}`}>Company *</Label>
+                              <Input
+                                id={`edit-company-${customer.id}`}
+                                name="company"
+                                defaultValue={customer.company}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit-name-${customer.id}`}>Representative Name</Label>
                               <Input
                                 id={`edit-name-${customer.id}`}
                                 name="name"
@@ -626,7 +655,6 @@ export default function Customers() {
                                 name="email"
                                 type="email"
                                 defaultValue={customer.email}
-                                required
                               />
                             </div>
                             <div>
@@ -638,20 +666,19 @@ export default function Customers() {
                               />
                             </div>
                             <div>
-                              <Label htmlFor={`edit-company-${customer.id}`}>Company *</Label>
-                              <Input
-                                id={`edit-company-${customer.id}`}
-                                name="company"
-                                defaultValue={customer.company}
-                                required
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor={`edit-address-${customer.id}`}>Address</Label>
+                              <Label htmlFor={`edit-address-${customer.id}`}>Address #1</Label>
                               <Input
                                 id={`edit-address-${customer.id}`}
                                 name="address"
                                 defaultValue={customer.address}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit-address-2-${customer.id}`}>Address #2</Label>
+                              <Input
+                                id={`edit-address-2-${customer.id}`}
+                                name="address_2"
+                                defaultValue={customer.address_2}
                               />
                             </div>
                             <div>
@@ -660,6 +687,14 @@ export default function Customers() {
                                 id={`edit-city-${customer.id}`}
                                 name="city"
                                 defaultValue={customer.city}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit-zone-${customer.id}`}>Zone</Label>
+                              <Input
+                                id={`edit-zone-${customer.id}`}
+                                name="zone"
+                                defaultValue={customer.zone}
                               />
                             </div>
                           </div>
@@ -714,7 +749,7 @@ export default function Customers() {
                         </div>
                       </TableCell>
                       <TableCell className="font-bold text-success">
-                        ${customer.totalSales.toFixed(2)}
+                        ${customer.totalContractValue.toFixed(2)}
                       </TableCell>
                       <TableCell>
                         {new Date(customer.lastPurchase).toLocaleDateString()}
@@ -784,7 +819,7 @@ export default function Customers() {
                 </h3>
                 <div className="grid grid-cols-2 gap-4 bg-muted/50 p-4 rounded-lg">
                   <div>
-                    <p className="text-sm text-muted-foreground">Name</p>
+                    <p className="text-sm text-muted-foreground">Representative Name</p>
                     <p className="font-medium">{selectedCustomer.name}</p>
                   </div>
                   <div>
@@ -808,8 +843,8 @@ export default function Customers() {
                     <p className="font-medium">{selectedCustomer.city || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Sales</p>
-                    <p className="font-medium text-success">${selectedCustomer.totalSales?.toFixed(2) || '0.00'}</p>
+                    <p className="text-sm text-muted-foreground">Total Contract Value</p>
+                    <p className="font-medium text-success">${selectedCustomer.totalContractValue?.toFixed(2) || '0.00'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Status</p>

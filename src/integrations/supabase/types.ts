@@ -291,7 +291,7 @@ export type Database = {
           name: string | null
           phone: string | null
           status: string | null
-          total_sales: number | null
+          total_contract_value: number | null
           updated_at: string | null
           user_id: string
           vatable: boolean | null
@@ -309,7 +309,7 @@ export type Database = {
           name?: string | null
           phone?: string | null
           status?: string | null
-          total_sales?: number | null
+          total_contract_value?: number | null
           updated_at?: string | null
           user_id: string
           vatable?: boolean | null
@@ -327,7 +327,7 @@ export type Database = {
           name?: string | null
           phone?: string | null
           status?: string | null
-          total_sales?: number | null
+          total_contract_value?: number | null
           updated_at?: string | null
           user_id?: string
           vatable?: boolean | null
