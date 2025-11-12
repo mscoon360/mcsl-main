@@ -56,11 +56,14 @@ export default function RentalAgreements() {
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [customerSearchValue, setCustomerSearchValue] = useState("");
 
+  const { dependencies } = useItemDependencies();
+
   // Support multiple rental items
   const [rentalItems, setRentalItems] = useState([{
     product: "",
     quantity: 1,
     price: 0,
+    maintenanceItemsCount: 0,
     servicingFrequency: "",
     servicingDescription: ""
   }]);
@@ -70,9 +73,22 @@ export default function RentalAgreements() {
       product: "",
       quantity: 1,
       price: 0,
+      maintenanceItemsCount: 0,
       servicingFrequency: "",
       servicingDescription: ""
     }]);
+  };
+
+  const calculateServicingFrequency = (quantity: number, maintenanceCount: number): string => {
+    if (!quantity || !maintenanceCount) return "";
+    
+    const ratio = maintenanceCount / quantity;
+    
+    if (ratio === 4) return "weekly";
+    if (ratio === 2) return "biweekly";
+    if (ratio === 1) return "monthly";
+    
+    return "";
   };
 
   const updateRentalItem = (index: number, field: string, value: any) => {
@@ -82,6 +98,14 @@ export default function RentalAgreements() {
         ...updated[index],
         [field]: value
       };
+      
+      // Auto-calculate servicing frequency when quantity or maintenance count changes
+      if (field === 'quantity' || field === 'maintenanceItemsCount') {
+        const item = updated[index];
+        const frequency = calculateServicingFrequency(item.quantity, item.maintenanceItemsCount);
+        updated[index].servicingFrequency = frequency;
+      }
+      
       return updated;
     });
   };
@@ -311,6 +335,7 @@ export default function RentalAgreements() {
         product: "",
         quantity: 1,
         price: 0,
+        maintenanceItemsCount: 0,
         servicingFrequency: "",
         servicingDescription: ""
       }]);
@@ -575,38 +600,46 @@ export default function RentalAgreements() {
                       </div>
                     </div>
 
-                    {/* Show servicing options if product needs servicing */}
-                    {item.product && rentalProducts.find(p => p.id === item.product)?.needs_servicing && (
+                    {/* Show servicing options if product has maintenance items */}
+                    {item.product && dependencies.some(dep => dep.product_id === item.product) && (
                       <div className="mt-4 p-4 border rounded-lg bg-amber-50 dark:bg-amber-950/20">
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-2xl">🔧</span>
                           <div>
-                            <h4 className="font-semibold text-sm">This item requires servicing</h4>
+                            <h4 className="font-semibold text-sm">This item requires maintenance items</h4>
                             <p className="text-xs text-muted-foreground">
-                              Configure servicing schedule for maintenance tracking
+                              Specify the number of maintenance items (e.g., liners) needed for this contract
                             </p>
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-3 gap-4">
                           <div className="space-y-2">
-                            <Label>Servicing Frequency *</Label>
-                            <Select 
-                              value={item.servicingFrequency}
-                              onValueChange={(value) => updateRentalItem(index, 'servicingFrequency', value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select frequency" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="weekly">Weekly</SelectItem>
-                                <SelectItem value="biweekly">Every 2 Weeks</SelectItem>
-                                <SelectItem value="monthly">Monthly</SelectItem>
-                                <SelectItem value="quarterly">Quarterly</SelectItem>
-                                <SelectItem value="biannually">Bi-annually</SelectItem>
-                                <SelectItem value="annually">Annually</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <Label>Number of Maintenance Items *</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="e.g., 10, 20, 40"
+                              value={item.maintenanceItemsCount || ""}
+                              onChange={(e) => updateRentalItem(index, 'maintenanceItemsCount', parseInt(e.target.value) || 0)}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Total count for {item.quantity} unit{item.quantity > 1 ? 's' : ''}
+                            </p>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label>Servicing Frequency (Auto-calculated)</Label>
+                            <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm items-center">
+                              {item.servicingFrequency ? (
+                                <span className="capitalize">{item.servicingFrequency === 'biweekly' ? 'Every 2 Weeks' : item.servicingFrequency}</span>
+                              ) : (
+                                <span className="text-muted-foreground">Enter counts above</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Ratio: {item.maintenanceItemsCount && item.quantity ? (item.maintenanceItemsCount / item.quantity).toFixed(1) : '-'} items/unit
+                            </p>
                           </div>
                           
                           <div className="space-y-2">
