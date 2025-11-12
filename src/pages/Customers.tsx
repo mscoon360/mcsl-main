@@ -618,6 +618,7 @@ export default function Customers() {
                   <TableHead>Customer</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Company</TableHead>
+                  <TableHead>Zone</TableHead>
                   <TableHead>Total Contract Value</TableHead>
                   <TableHead>Last Purchase</TableHead>
                   <TableHead>Status</TableHead>
@@ -628,7 +629,7 @@ export default function Customers() {
                 {filteredCustomers.map(customer => (
                   editingCustomer === customer.id ? (
                     <TableRow key={customer.id}>
-                      <TableCell colSpan={7} className="p-4">
+                      <TableCell colSpan={8} className="p-4">
                         <form onSubmit={handleEditSubmit} className="space-y-4">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
@@ -747,6 +748,9 @@ export default function Customers() {
                           <Building className="h-4 w-4 text-muted-foreground" />
                           {customer.company}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{customer.zone || 'N/A'}</Badge>
                       </TableCell>
                       <TableCell className="font-bold text-success">
                         ${customer.totalContractValue.toFixed(2)}
