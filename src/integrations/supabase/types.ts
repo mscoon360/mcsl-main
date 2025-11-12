@@ -574,10 +574,9 @@ export type Database = {
       item_dependencies: {
         Row: {
           created_at: string | null
+          current_stock: number | null
           description: string | null
           id: string
-          last_serviced_date: string | null
-          next_service_date: string | null
           product_id: string
           servicing_frequency: string
           updated_at: string | null
@@ -585,10 +584,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          current_stock?: number | null
           description?: string | null
           id?: string
-          last_serviced_date?: string | null
-          next_service_date?: string | null
           product_id: string
           servicing_frequency: string
           updated_at?: string | null
@@ -596,10 +594,9 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          current_stock?: number | null
           description?: string | null
           id?: string
-          last_serviced_date?: string | null
-          next_service_date?: string | null
           product_id?: string
           servicing_frequency?: string
           updated_at?: string | null

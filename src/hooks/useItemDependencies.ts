@@ -7,8 +7,7 @@ export interface ItemDependency {
   product_id: string;
   servicing_frequency: string;
   description?: string;
-  last_serviced_date?: string;
-  next_service_date?: string;
+  current_stock?: number;
   created_at?: string;
   updated_at?: string;
   user_id: string;

@@ -8,10 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Plus, Wrench, AlertCircle } from 'lucide-react';
+import { Pencil, Trash2, Plus, Wrench } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format } from 'date-fns';
+
 
 export default function Maintenance() {
   const { dependencies, loading, addDependency, updateDependency, deleteDependency } = useItemDependencies();
@@ -29,8 +29,7 @@ export default function Maintenance() {
       product_id: formData.get('product_id') as string,
       servicing_frequency: 'contract-dependent',
       description: formData.get('description') as string,
-      last_serviced_date: formData.get('last_serviced_date') as string || undefined,
-      next_service_date: formData.get('next_service_date') as string || undefined,
+      current_stock: parseInt(formData.get('current_stock') as string) || 0,
     };
 
     try {
@@ -49,8 +48,7 @@ export default function Maintenance() {
 
     const updates = {
       description: formData.get('description') as string,
-      last_serviced_date: formData.get('last_serviced_date') as string || undefined,
-      next_service_date: formData.get('next_service_date') as string || undefined,
+      current_stock: parseInt(formData.get('current_stock') as string) || 0,
     };
 
     try {
@@ -78,10 +76,6 @@ export default function Maintenance() {
     return product?.name || 'Unknown Product';
   };
 
-  const isServiceDue = (nextServiceDate?: string) => {
-    if (!nextServiceDate) return false;
-    return new Date(nextServiceDate) <= new Date();
-  };
 
   if (loading) {
     return (
@@ -137,23 +131,16 @@ export default function Maintenance() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="last_serviced_date">Last Serviced Date</Label>
-                  <Input 
-                    id="last_serviced_date" 
-                    name="last_serviced_date" 
-                    type="date"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="next_service_date">Next Service Date</Label>
-                  <Input 
-                    id="next_service_date" 
-                    name="next_service_date" 
-                    type="date"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="current_stock">Current Stock Level *</Label>
+                <Input 
+                  id="current_stock" 
+                  name="current_stock" 
+                  type="number"
+                  min="0"
+                  placeholder="Enter current stock quantity"
+                  required
+                />
               </div>
 
               <Button type="submit" className="w-full">
@@ -179,12 +166,11 @@ export default function Maintenance() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
+              <TableRow>
                   <TableHead>Product</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead>Last Serviced</TableHead>
-                  <TableHead>Next Service</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Current Stock</TableHead>
+                  <TableHead>In Use</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -198,26 +184,10 @@ export default function Maintenance() {
                       {item.description || '-'}
                     </TableCell>
                     <TableCell>
-                      {item.last_serviced_date 
-                        ? format(new Date(item.last_serviced_date), 'MMM dd, yyyy')
-                        : '-'
-                      }
+                      <Badge variant="outline">{item.current_stock || 0}</Badge>
                     </TableCell>
                     <TableCell>
-                      {item.next_service_date 
-                        ? format(new Date(item.next_service_date), 'MMM dd, yyyy')
-                        : '-'
-                      }
-                    </TableCell>
-                    <TableCell>
-                      {item.next_service_date && isServiceDue(item.next_service_date) ? (
-                        <Badge variant="destructive" className="flex items-center gap-1 w-fit">
-                          <AlertCircle className="h-3 w-3" />
-                          Service Due
-                        </Badge>
-                      ) : (
-                        <Badge variant="default">Up to Date</Badge>
-                      )}
+                      <Badge variant="secondary">0</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -272,25 +242,16 @@ export default function Maintenance() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit_last_serviced_date">Last Serviced Date</Label>
-                  <Input 
-                    id="edit_last_serviced_date" 
-                    name="last_serviced_date" 
-                    type="date"
-                    defaultValue={editingItem.last_serviced_date || ''}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit_next_service_date">Next Service Date</Label>
-                  <Input 
-                    id="edit_next_service_date" 
-                    name="next_service_date" 
-                    type="date"
-                    defaultValue={editingItem.next_service_date || ''}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_current_stock">Current Stock Level *</Label>
+                <Input 
+                  id="edit_current_stock" 
+                  name="current_stock" 
+                  type="number"
+                  min="0"
+                  defaultValue={editingItem.current_stock || 0}
+                  required
+                />
               </div>
 
               <Button type="submit" className="w-full">
