@@ -30,6 +30,7 @@ import Auth from "./pages/Auth";
 import ChangePassword from "./pages/ChangePassword";
 import Admin from "./pages/Admin";
 import Promotions from "./pages/Promotions";
+import Maintenance from "./pages/Maintenance";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,7 @@ const App = () => (
               <Route path="vendors" element={<Vendors />} />
               <Route path="invoices" element={<Invoices />} />
               <Route path="promotions" element={<Promotions />} />
+              <Route path="maintenance" element={<Maintenance />} />
               <Route path="admin" element={<Admin />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

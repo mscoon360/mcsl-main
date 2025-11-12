@@ -23,6 +23,7 @@ import {
   FileOutput,
   Scale,
   Tag,
+  Wrench,
 } from "lucide-react";
 import magicCareLogo from "@/assets/magic-care-logo.png";
 import {
@@ -71,6 +72,7 @@ const navigation: NavigationSection[] = [
       { name: "Promotions", href: "/promotions", icon: Tag },
       { name: "Contracts", href: "/rental-agreements", icon: FileText },
       { name: "Fulfillment", href: "/fulfillment", icon: Truck },
+      { name: "Maintenance", href: "/maintenance", icon: Wrench },
     ]
   },
   {
