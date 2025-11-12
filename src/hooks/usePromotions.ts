@@ -1,25 +1,28 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
+
+export interface BundleItem {
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  price: number;
+  discount_type?: 'percentage' | 'fixed' | 'none';
+  discount_value?: number;
+}
 
 export interface Promotion {
   id: string;
   user_id: string;
   name: string;
-  description: string | null;
-  discount_type: 'percentage' | 'fixed' | 'none';
+  description?: string;
+  discount_type?: 'percentage' | 'fixed' | 'none';
   discount_value: number;
-  start_date: string | null;
-  end_date: string | null;
+  start_date?: string;
+  end_date?: string;
   is_active: boolean;
-  bundle_items: Array<{
-    product_id: string;
-    product_name: string;
-    quantity: number;
-    discount_type: 'percentage' | 'fixed' | 'none';
-    discount_value: number;
-  }>;
+  bundle_items: BundleItem[];
   created_at: string;
   updated_at: string;
 }
@@ -31,7 +34,7 @@ export function usePromotions() {
 
   const fetchPromotions = async () => {
     if (!user) return;
-
+    
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -40,51 +43,73 @@ export function usePromotions() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
-      setPromotions((data || []) as Promotion[]);
+      setPromotions((data || []) as unknown as Promotion[]);
     } catch (error) {
       console.error('Error fetching promotions:', error);
-      toast.error('Failed to load promotions');
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch promotions',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const addPromotion = async (promotion: Omit<Promotion, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+  const addPromotion = async (promotion: Omit<Promotion, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('promotions')
-        .insert([{
-          ...promotion,
-          user_id: user.id,
-        }]);
+        .insert([{ ...promotion, user_id: user.id } as any])
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast.success('Promotion created successfully');
-      fetchPromotions();
+      setPromotions(prev => [data as unknown as Promotion, ...prev]);
+      toast({
+        title: 'Success',
+        description: 'Promotion created successfully',
+      });
+      return data;
     } catch (error) {
-      console.error('Error creating promotion:', error);
-      toast.error('Failed to create promotion');
+      console.error('Error adding promotion:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create promotion',
+        variant: 'destructive',
+      });
+      throw error;
     }
   };
 
-  const updatePromotion = async (id: string, promotion: Partial<Omit<Promotion, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => {
+  const updatePromotion = async (id: string, updates: Partial<Omit<Promotion, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('promotions')
-        .update(promotion)
-        .eq('id', id);
+        .update(updates as any)
+        .eq('id', id)
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast.success('Promotion updated successfully');
-      fetchPromotions();
+      setPromotions(prev => prev.map(p => p.id === id ? data as unknown as Promotion : p));
+      toast({
+        title: 'Success',
+        description: 'Promotion updated successfully',
+      });
+      return data;
     } catch (error) {
       console.error('Error updating promotion:', error);
-      toast.error('Failed to update promotion');
+      toast({
+        title: 'Error',
+        description: 'Failed to update promotion',
+        variant: 'destructive',
+      });
+      throw error;
     }
   };
 
@@ -97,11 +122,18 @@ export function usePromotions() {
 
       if (error) throw error;
 
-      toast.success('Promotion deleted successfully');
-      fetchPromotions();
+      setPromotions(prev => prev.filter(p => p.id !== id));
+      toast({
+        title: 'Success',
+        description: 'Promotion deleted successfully',
+      });
     } catch (error) {
       console.error('Error deleting promotion:', error);
-      toast.error('Failed to delete promotion');
+      toast({
+        title: 'Error',
+        description: 'Failed to delete promotion',
+        variant: 'destructive',
+      });
     }
   };
 
