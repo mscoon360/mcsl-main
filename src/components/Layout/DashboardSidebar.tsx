@@ -72,7 +72,14 @@ const navigation: NavigationSection[] = [
       { name: "Promotions", href: "/promotions", icon: Tag },
       { name: "Contracts", href: "/rental-agreements", icon: FileText },
       { name: "Fulfillment", href: "/fulfillment", icon: Truck },
-      { name: "Maintenance", href: "/maintenance", icon: Wrench },
+      { 
+        name: "Maintenance", 
+        icon: Wrench,
+        subItems: [
+          { name: "Maintenance", href: "/maintenance" },
+          { name: "Schedule", href: "/schedule" }
+        ]
+      },
     ]
   },
   {

@@ -31,6 +31,7 @@ import ChangePassword from "./pages/ChangePassword";
 import Admin from "./pages/Admin";
 import Promotions from "./pages/Promotions";
 import Maintenance from "./pages/Maintenance";
+import Schedule from "./pages/Schedule";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -68,6 +69,7 @@ const App = () => (
               <Route path="invoices" element={<Invoices />} />
               <Route path="promotions" element={<Promotions />} />
               <Route path="maintenance" element={<Maintenance />} />
+              <Route path="schedule" element={<Schedule />} />
               <Route path="admin" element={<Admin />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

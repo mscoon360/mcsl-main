@@ -79,16 +79,17 @@ export default function RentalAgreements() {
     }]);
   };
 
-  const calculateServicingFrequency = (quantity: number, maintenanceCount: number): string => {
-    if (!quantity || !maintenanceCount) return "";
+  const calculateMaintenanceItems = (quantity: number, frequency: string): number => {
+    if (!quantity || !frequency) return 0;
     
-    const ratio = maintenanceCount / quantity;
+    const ratios: Record<string, number> = {
+      'weekly': 4,
+      'biweekly': 2,
+      'monthly': 1,
+      'every-2-months': 0.5
+    };
     
-    if (ratio === 4) return "weekly";
-    if (ratio === 2) return "biweekly";
-    if (ratio === 1) return "monthly";
-    
-    return "";
+    return Math.round(quantity * (ratios[frequency] || 0));
   };
 
   const updateRentalItem = (index: number, field: string, value: any) => {
@@ -99,11 +100,11 @@ export default function RentalAgreements() {
         [field]: value
       };
       
-      // Auto-calculate servicing frequency when quantity or maintenance count changes
-      if (field === 'quantity' || field === 'maintenanceItemsCount') {
+      // Auto-calculate maintenance items when quantity or servicing frequency changes
+      if (field === 'quantity' || field === 'servicingFrequency') {
         const item = updated[index];
-        const frequency = calculateServicingFrequency(item.quantity, item.maintenanceItemsCount);
-        updated[index].servicingFrequency = frequency;
+        const maintenanceCount = calculateMaintenanceItems(item.quantity, item.servicingFrequency);
+        updated[index].maintenanceItemsCount = maintenanceCount;
       }
       
       return updated;
@@ -615,30 +616,33 @@ export default function RentalAgreements() {
                         
                         <div className="grid grid-cols-3 gap-4">
                           <div className="space-y-2">
-                            <Label>Number of Maintenance Items *</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              placeholder="e.g., 10, 20, 40"
-                              value={item.maintenanceItemsCount || ""}
-                              onChange={(e) => updateRentalItem(index, 'maintenanceItemsCount', parseInt(e.target.value) || 0)}
-                            />
+                            <Label>Servicing Frequency *</Label>
+                            <Select 
+                              value={item.servicingFrequency} 
+                              onValueChange={(value) => updateRentalItem(index, 'servicingFrequency', value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select frequency" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="weekly">Weekly</SelectItem>
+                                <SelectItem value="biweekly">Every 2 Weeks</SelectItem>
+                                <SelectItem value="monthly">Monthly</SelectItem>
+                                <SelectItem value="every-2-months">Every 2 Months</SelectItem>
+                              </SelectContent>
+                            </Select>
                             <p className="text-xs text-muted-foreground">
-                              Total count for {item.quantity} unit{item.quantity > 1 ? 's' : ''}
+                              How often servicing is needed
                             </p>
                           </div>
                           
                           <div className="space-y-2">
-                            <Label>Servicing Frequency (Auto-calculated)</Label>
+                            <Label>Number of Maintenance Items (Auto-calculated)</Label>
                             <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm items-center">
-                              {item.servicingFrequency ? (
-                                <span className="capitalize">{item.servicingFrequency === 'biweekly' ? 'Every 2 Weeks' : item.servicingFrequency}</span>
-                              ) : (
-                                <span className="text-muted-foreground">Enter counts above</span>
-                              )}
+                              {item.maintenanceItemsCount || 0}
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              Ratio: {item.maintenanceItemsCount && item.quantity ? (item.maintenanceItemsCount / item.quantity).toFixed(1) : '-'} items/unit
+                              {item.quantity} unit{item.quantity > 1 ? 's' : ''} × {item.servicingFrequency ? (item.maintenanceItemsCount / item.quantity).toFixed(1) : '-'} items/unit
                             </p>
                           </div>
                           
