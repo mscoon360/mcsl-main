@@ -8,6 +8,9 @@ export interface ExpenditureRecord {
   date: string; // ISO date string (YYYY-MM-DD)
   description: string;
   amount: number;
+  subtotal: number;
+  vat_amount: number;
+  total: number;
   category: 'working-capital' | 'fixed-capital';
   type: string;
   created_at?: string;

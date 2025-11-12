@@ -21,6 +21,9 @@ interface Expenditure {
   date: string;
   description: string;
   amount: number;
+  subtotal: number;
+  vat_amount: number;
+  total: number;
   category: 'working-capital' | 'fixed-capital';
   type: string;
 }
@@ -57,6 +60,9 @@ export default function Expenditure() {
     date: format(new Date(), 'yyyy-MM-dd'),
     description: '',
     amount: 0,
+    subtotal: 0,
+    vat_amount: 0,
+    total: 0,
     category: 'working-capital' as 'working-capital' | 'fixed-capital',
     type: ''
   });
@@ -155,7 +161,7 @@ export default function Expenditure() {
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newExpense.description || !newExpense.amount || !newExpense.type) {
+    if (!newExpense.description || !newExpense.total || !newExpense.type) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -168,7 +174,7 @@ export default function Expenditure() {
 
     toast({
       title: "Expense Added",
-      description: `${newExpense.category === 'working-capital' ? 'Working' : 'Fixed'} capital expense of $${newExpense.amount.toFixed(2)} has been recorded.`
+      description: `${newExpense.category === 'working-capital' ? 'Working' : 'Fixed'} capital expense of $${newExpense.total.toFixed(2)} has been recorded.`
     });
 
     // Reset form
@@ -176,6 +182,9 @@ export default function Expenditure() {
       date: format(new Date(), 'yyyy-MM-dd'),
       description: '',
       amount: 0,
+      subtotal: 0,
+      vat_amount: 0,
+      total: 0,
       category: 'working-capital',
       type: ''
     });
@@ -201,18 +210,20 @@ export default function Expenditure() {
       Category: expense.category === 'working-capital' ? 'Working Capital' : 'Fixed Capital',
       Type: expense.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()),
       Description: expense.description,
-      Amount: expense.amount
+      Subtotal: expense.subtotal || expense.amount,
+      VAT: expense.vat_amount || 0,
+      Total: expense.total || expense.amount
     }));
 
     // Add summary row
     const summaryData = [
-      { Date: '', Category: '', Type: '', Description: '', Amount: '' },
-      { Date: '', Category: 'SUMMARY', Type: '', Description: '', Amount: '' },
-      { Date: '', Category: 'Total Expenses', Type: '', Description: '', Amount: totalExpenses },
-      { Date: '', Category: 'Working Capital', Type: '', Description: '', Amount: workingCapitalTotal },
-      { Date: '', Category: 'Fixed Capital', Type: '', Description: '', Amount: fixedCapitalTotal },
-      { Date: '', Category: 'Payroll', Type: '', Description: '', Amount: payrollTotal },
-      { Date: '', Category: 'Tax', Type: '', Description: '', Amount: taxTotal }
+      { Date: '', Category: '', Type: '', Description: '', Subtotal: '', VAT: '', Total: '' },
+      { Date: '', Category: 'SUMMARY', Type: '', Description: '', Subtotal: '', VAT: '', Total: '' },
+      { Date: '', Category: 'Total Expenses', Type: '', Description: '', Subtotal: '', VAT: '', Total: totalExpenses },
+      { Date: '', Category: 'Working Capital', Type: '', Description: '', Subtotal: '', VAT: '', Total: workingCapitalTotal },
+      { Date: '', Category: 'Fixed Capital', Type: '', Description: '', Subtotal: '', VAT: '', Total: fixedCapitalTotal },
+      { Date: '', Category: 'Payroll', Type: '', Description: '', Subtotal: '', VAT: '', Total: payrollTotal },
+      { Date: '', Category: 'Tax', Type: '', Description: '', Subtotal: '', VAT: '', Total: taxTotal }
     ];
 
     const finalData = [...exportData, ...summaryData];
@@ -227,7 +238,9 @@ export default function Expenditure() {
       { width: 18 }, // Category
       { width: 20 }, // Type
       { width: 40 }, // Description
-      { width: 12 }  // Amount
+      { width: 12 }, // Subtotal
+      { width: 12 }, // VAT
+      { width: 12 }  // Total
     ];
 
     // Add worksheet to workbook
@@ -299,18 +312,58 @@ export default function Expenditure() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Amount *</Label>
+                  <Label htmlFor="subtotal">Subtotal *</Label>
                   <Input
                     type="text"
                     placeholder="0.00"
-                    value={newExpense.amount === 0 ? '' : newExpense.amount.toString()}
+                    value={newExpense.subtotal === 0 ? '' : newExpense.subtotal.toString()}
                     onChange={(e) => {
                       const value = e.target.value;
                       if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                        setNewExpense(prev => ({...prev, amount: value === '' ? 0 : parseFloat(value) || 0}));
+                        const subtotal = value === '' ? 0 : parseFloat(value) || 0;
+                        const total = subtotal + newExpense.vat_amount;
+                        setNewExpense(prev => ({
+                          ...prev, 
+                          subtotal,
+                          total,
+                          amount: total
+                        }));
                       }
                     }}
                     required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="vat">VAT Amount</Label>
+                  <Input
+                    type="text"
+                    placeholder="0.00"
+                    value={newExpense.vat_amount === 0 ? '' : newExpense.vat_amount.toString()}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                        const vat_amount = value === '' ? 0 : parseFloat(value) || 0;
+                        const total = newExpense.subtotal + vat_amount;
+                        setNewExpense(prev => ({
+                          ...prev, 
+                          vat_amount,
+                          total,
+                          amount: total
+                        }));
+                      }
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="total">Total</Label>
+                  <Input
+                    type="text"
+                    value={newExpense.total === 0 ? '0.00' : newExpense.total.toFixed(2)}
+                    disabled
+                    className="bg-muted"
                   />
                 </div>
               </div>
@@ -537,7 +590,9 @@ export default function Expenditure() {
                   <TableHead>Category</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Subtotal</TableHead>
+                  <TableHead className="text-right">VAT</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -559,8 +614,14 @@ export default function Expenditure() {
                     <TableCell>
                       <div className="max-w-xs truncate">{expense.description}</div>
                     </TableCell>
+                    <TableCell className="text-right">
+                      ${expense.subtotal?.toFixed(2) || expense.amount.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      ${expense.vat_amount?.toFixed(2) || '0.00'}
+                    </TableCell>
                     <TableCell className="text-right font-bold text-destructive">
-                      ${expense.amount.toFixed(2)}
+                      ${expense.total?.toFixed(2) || expense.amount.toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <Button

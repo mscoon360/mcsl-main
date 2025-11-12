@@ -364,9 +364,12 @@ export type Database = {
           date: string
           description: string
           id: string
+          subtotal: number | null
+          total: number | null
           type: string
           updated_at: string | null
           user_id: string
+          vat_amount: number | null
         }
         Insert: {
           amount: number
@@ -375,9 +378,12 @@ export type Database = {
           date: string
           description: string
           id?: string
+          subtotal?: number | null
+          total?: number | null
           type: string
           updated_at?: string | null
           user_id: string
+          vat_amount?: number | null
         }
         Update: {
           amount?: number
@@ -386,9 +392,12 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          subtotal?: number | null
+          total?: number | null
           type?: string
           updated_at?: string | null
           user_id?: string
+          vat_amount?: number | null
         }
         Relationships: []
       }
