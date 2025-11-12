@@ -29,6 +29,7 @@ import Invoices from "./pages/Invoices";
 import Auth from "./pages/Auth";
 import ChangePassword from "./pages/ChangePassword";
 import Admin from "./pages/Admin";
+import Promotions from "./pages/Promotions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +65,7 @@ const App = () => (
               <Route path="accounts-receivable" element={<AccountsReceivable />} />
               <Route path="vendors" element={<Vendors />} />
               <Route path="invoices" element={<Invoices />} />
+              <Route path="promotions" element={<Promotions />} />
               <Route path="admin" element={<Admin />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
