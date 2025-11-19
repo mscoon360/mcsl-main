@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Plus, Search, Truck, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { useFleetVehicles } from "@/hooks/useFleetVehicles";
 
 const vehicleSchema = z.object({
   make: z.string().trim().min(1, "Make is required").max(50, "Make must be less than 50 characters"),
@@ -34,9 +35,50 @@ export default function Fleet() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const { vehicles, isLoading, addVehicle } = useFleetVehicles();
 
-  // Mock data for fleet vehicles
-  const fleetData: any[] = [];
+  // Calculate statistics from real data
+  const stats = useMemo(() => {
+    const totalVehicles = vehicles.length;
+    const activeVehicles = vehicles.filter(v => v.status === 'active').length;
+    const maintenanceVehicles = vehicles.filter(v => v.status === 'maintenance').length;
+    
+    // Count vehicles with inspections due in next 30 days
+    const today = new Date();
+    const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const inspectionsDue = vehicles.filter(v => {
+      if (!v.next_inspection_date) return false;
+      const nextInspection = new Date(v.next_inspection_date);
+      return nextInspection >= today && nextInspection <= thirtyDaysFromNow;
+    }).length;
+
+    return [
+      {
+        title: "Total Vehicles",
+        value: totalVehicles.toString(),
+        icon: Truck,
+        description: "Active fleet count",
+      },
+      {
+        title: "Active",
+        value: activeVehicles.toString(),
+        icon: CheckCircle2,
+        description: "Ready for operations",
+      },
+      {
+        title: "In Maintenance",
+        value: maintenanceVehicles.toString(),
+        icon: Clock,
+        description: "Under service",
+      },
+      {
+        title: "Inspections Due",
+        value: inspectionsDue.toString(),
+        icon: AlertCircle,
+        description: "Next 30 days",
+      },
+    ];
+  }, [vehicles]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -52,10 +94,17 @@ export default function Fleet() {
     try {
       vehicleSchema.parse(formData);
       
-      // Success - here you would normally save to database
-      toast({
-        title: "Vehicle Added",
-        description: `${formData.make} ${formData.model} has been added to the fleet.`,
+      // Save to database
+      addVehicle.mutate({
+        make: formData.make,
+        model: formData.model,
+        license_plate: formData.licensePlate,
+        driver_name: formData.driverName,
+        driver_phone: formData.driverPhone,
+        mpg: parseFloat(formData.mpg),
+        inspection_cycle: formData.inspectionCycle,
+        status: 'active',
+        mileage: 0,
       });
       
       // Reset form and close dialog
@@ -95,33 +144,6 @@ export default function Fleet() {
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
-
-  const stats = [
-    {
-      title: "Total Vehicles",
-      value: "12",
-      icon: Truck,
-      description: "Active fleet count",
-    },
-    {
-      title: "Active",
-      value: "10",
-      icon: CheckCircle2,
-      description: "Ready for operations",
-    },
-    {
-      title: "In Maintenance",
-      value: "2",
-      icon: Clock,
-      description: "Under service",
-    },
-    {
-      title: "Inspections Due",
-      value: "3",
-      icon: AlertCircle,
-      description: "Next 30 days",
-    },
-  ];
 
   return (
     <div className="space-y-6">
@@ -297,30 +319,47 @@ export default function Fleet() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {fleetData.length === 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                    Loading vehicles...
+                  </TableCell>
+                </TableRow>
+              ) : vehicles.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                     No vehicles in fleet. Click "Add Vehicle" to get started.
                   </TableCell>
                 </TableRow>
               ) : (
-                fleetData.map((vehicle) => (
-                  <TableRow key={vehicle.id}>
-                    <TableCell className="font-medium">{vehicle.licensePlate}</TableCell>
-                    <TableCell>{vehicle.make} {vehicle.model}</TableCell>
-                    <TableCell>{vehicle.driverName}</TableCell>
-                    <TableCell>{vehicle.driverPhone}</TableCell>
-                    <TableCell>{vehicle.mpg} MPG</TableCell>
-                    <TableCell>{vehicle.inspectionCycle}</TableCell>
-                    <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
-                    <TableCell>{new Date(vehicle.nextInspection).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm">
-                        View Details
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                vehicles
+                  .filter(
+                    (vehicle) =>
+                      vehicle.license_plate.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      vehicle.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      vehicle.model.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map((vehicle) => (
+                    <TableRow key={vehicle.id}>
+                      <TableCell className="font-medium">{vehicle.license_plate}</TableCell>
+                      <TableCell>{vehicle.make} {vehicle.model}</TableCell>
+                      <TableCell>{vehicle.driver_name}</TableCell>
+                      <TableCell>{vehicle.driver_phone}</TableCell>
+                      <TableCell>{vehicle.mpg} MPG</TableCell>
+                      <TableCell>{vehicle.inspection_cycle}</TableCell>
+                      <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
+                      <TableCell>
+                        {vehicle.next_inspection_date
+                          ? new Date(vehicle.next_inspection_date).toLocaleDateString()
+                          : "Not scheduled"}
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="outline" size="sm">
+                          View Details
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
               )}
             </TableBody>
           </Table>
