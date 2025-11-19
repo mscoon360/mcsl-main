@@ -27,6 +27,8 @@ const vehicleSchema = z.object({
 export default function Fleet() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [formData, setFormData] = useState({
     make: "",
     model: "",
@@ -51,6 +53,11 @@ export default function Fleet() {
       return;
     }
     deleteVehicle.mutate(vehicleId);
+  };
+
+  const handleViewDetails = (vehicle: any) => {
+    setSelectedVehicle(vehicle);
+    setIsDetailsOpen(true);
   };
 
   // Calculate statistics from real data
@@ -391,7 +398,7 @@ export default function Fleet() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => handleViewDetails(vehicle)}>
                             View Details
                           </Button>
                           {isAdmin && (
@@ -429,6 +436,87 @@ export default function Fleet() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Vehicle Details Dialog */}
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="max-w-2xl bg-background z-50">
+          <DialogHeader>
+            <DialogTitle>Vehicle Details</DialogTitle>
+            <DialogDescription>
+              Complete information for {selectedVehicle?.license_plate}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedVehicle && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">License Plate</Label>
+                  <p className="font-medium">{selectedVehicle.license_plate}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Status</Label>
+                  <div>{getStatusBadge(selectedVehicle.status)}</div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Make</Label>
+                  <p className="font-medium">{selectedVehicle.make}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Model</Label>
+                  <p className="font-medium">{selectedVehicle.model}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Driver Name</Label>
+                  <p className="font-medium">{selectedVehicle.driver_name}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Driver Phone</Label>
+                  <p className="font-medium">{selectedVehicle.driver_phone}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Miles Per Gallon</Label>
+                  <p className="font-medium">{selectedVehicle.mpg} MPG</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Current Mileage</Label>
+                  <p className="font-medium">{selectedVehicle.mileage.toLocaleString()} miles</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Inspection Cycle</Label>
+                  <p className="font-medium capitalize">{selectedVehicle.inspection_cycle}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Next Inspection</Label>
+                  <p className="font-medium">
+                    {selectedVehicle.next_inspection_date
+                      ? new Date(selectedVehicle.next_inspection_date).toLocaleDateString()
+                      : "Not scheduled"}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Last Inspection</Label>
+                  <p className="font-medium">
+                    {selectedVehicle.last_inspection_date
+                      ? new Date(selectedVehicle.last_inspection_date).toLocaleDateString()
+                      : "No previous inspection"}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Added to Fleet</Label>
+                  <p className="font-medium">
+                    {new Date(selectedVehicle.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
