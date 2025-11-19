@@ -83,6 +83,12 @@ const navigation: NavigationSection[] = [
     ]
   },
   {
+    title: "Fleet",
+    items: [
+      { name: "Fleet Management", href: "/fleet", icon: Truck },
+    ]
+  },
+  {
     title: "Finance",
     items: [
       { name: "Overview", href: "/finance", icon: BarChart3 },
