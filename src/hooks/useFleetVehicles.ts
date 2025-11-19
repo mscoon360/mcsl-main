@@ -11,6 +11,7 @@ export interface FleetVehicle {
   license_plate: string;
   driver_name: string;
   driver_phone: string;
+  companion?: string;
   mpg: number;
   inspection_cycle: string;
   last_inspection_date?: string;
