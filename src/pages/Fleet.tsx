@@ -12,6 +12,7 @@ import { Plus, Search, Truck, CheckCircle2, AlertCircle, Clock, Trash2 } from "l
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { useFleetVehicles } from "@/hooks/useFleetVehicles";
+import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/contexts/AuthContext";
 
 const vehicleSchema = z.object({
@@ -19,7 +20,6 @@ const vehicleSchema = z.object({
   model: z.string().trim().min(1, "Model is required").max(50, "Model must be less than 50 characters"),
   licensePlate: z.string().trim().min(1, "License plate is required").max(20, "License plate must be less than 20 characters"),
   driverName: z.string().trim().min(1, "Driver name is required").max(100, "Driver name must be less than 100 characters"),
-  driverPhone: z.string().trim().min(10, "Phone number must be at least 10 digits").max(20, "Phone number must be less than 20 characters"),
   mpg: z.string().trim().min(1, "MPG is required").refine((val) => !isNaN(Number(val)) && Number(val) > 0, "MPG must be a positive number"),
   inspectionCycle: z.enum(["daily", "weekly"], { errorMap: () => ({ message: "Please select an inspection cycle" }) }),
 });
@@ -35,12 +35,14 @@ export default function Fleet() {
     licensePlate: "",
     driverName: "",
     driverPhone: "",
+    companion: "",
     mpg: "",
     inspectionCycle: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const { vehicles, isLoading, addVehicle, deleteVehicle } = useFleetVehicles();
+  const { users, isLoading: usersLoading } = useUsers("Procurement and Logistics");
   const { isAdmin } = useAuth();
 
   const handleDeleteVehicle = (vehicleId: string, licensePlate: string) => {
@@ -136,8 +138,9 @@ export default function Fleet() {
         make: formData.make,
         model: formData.model,
         license_plate: formData.licensePlate,
-        driver_name: formData.driverName,
-        driver_phone: formData.driverPhone,
+      driver_name: formData.driverName,
+      driver_phone: formData.driverPhone,
+      companion: formData.companion,
         mpg: parseFloat(formData.mpg),
         inspection_cycle: formData.inspectionCycle,
         next_inspection_date: nextInspectionDate.toISOString().split('T')[0],
@@ -152,6 +155,7 @@ export default function Fleet() {
         licensePlate: "",
         driverName: "",
         driverPhone: "",
+        companion: "",
         mpg: "",
         inspectionCycle: "",
       });
@@ -245,25 +249,51 @@ export default function Fleet() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="driverName">Driver Name *</Label>
-                  <Input
-                    id="driverName"
+                  <Select
                     value={formData.driverName}
-                    onChange={(e) => handleInputChange("driverName", e.target.value)}
-                    placeholder="e.g., John Smith"
-                    className={errors.driverName ? "border-destructive" : ""}
-                  />
+                    onValueChange={(value) => {
+                      const selectedUser = users.find(u => u.name === value);
+                      setFormData({ 
+                        ...formData, 
+                        driverName: value,
+                        driverPhone: selectedUser?.id || ""
+                      });
+                      setErrors({ ...errors, driverName: "" });
+                    }}
+                  >
+                    <SelectTrigger className={errors.driverName ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Select a driver" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.map((user) => (
+                        <SelectItem key={user.id} value={user.name}>
+                          {user.name} ({user.username})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   {errors.driverName && <p className="text-sm text-destructive">{errors.driverName}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="driverPhone">Driver Phone *</Label>
-                  <Input
-                    id="driverPhone"
-                    value={formData.driverPhone}
-                    onChange={(e) => handleInputChange("driverPhone", e.target.value)}
-                    placeholder="e.g., (555) 123-4567"
-                    className={errors.driverPhone ? "border-destructive" : ""}
-                  />
-                  {errors.driverPhone && <p className="text-sm text-destructive">{errors.driverPhone}</p>}
+                  <Label htmlFor="companion">Companion</Label>
+                  <Select
+                    value={formData.companion}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, companion: value });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a companion (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {users.map((user) => (
+                        <SelectItem key={user.id} value={user.name}>
+                          {user.name} ({user.username})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -353,7 +383,7 @@ export default function Fleet() {
                 <TableHead>License Plate</TableHead>
                 <TableHead>Make/Model</TableHead>
                 <TableHead>Driver</TableHead>
-                <TableHead>Phone</TableHead>
+                <TableHead>Companion</TableHead>
                 <TableHead>MPG</TableHead>
                 <TableHead>Inspection Cycle</TableHead>
                 <TableHead>Status</TableHead>
@@ -387,7 +417,7 @@ export default function Fleet() {
                       <TableCell className="font-medium">{vehicle.license_plate}</TableCell>
                       <TableCell>{vehicle.make} {vehicle.model}</TableCell>
                       <TableCell>{vehicle.driver_name}</TableCell>
-                      <TableCell>{vehicle.driver_phone}</TableCell>
+                      <TableCell>{vehicle.companion || "None"}</TableCell>
                       <TableCell>{vehicle.mpg} MPG</TableCell>
                       <TableCell>{vehicle.inspection_cycle}</TableCell>
                       <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
@@ -470,8 +500,8 @@ export default function Fleet() {
                   <p className="font-medium">{selectedVehicle.driver_name}</p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-muted-foreground">Driver Phone</Label>
-                  <p className="font-medium">{selectedVehicle.driver_phone}</p>
+                  <Label className="text-muted-foreground">Companion</Label>
+                  <p className="font-medium">{selectedVehicle.companion || "None"}</p>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Miles Per Gallon</Label>
