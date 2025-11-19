@@ -275,18 +275,17 @@ export default function Fleet() {
                   {errors.driverName && <p className="text-sm text-destructive">{errors.driverName}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="companion">Companion</Label>
+                  <Label htmlFor="companion">Companion (Optional)</Label>
                   <Select
-                    value={formData.companion}
+                    value={formData.companion || undefined}
                     onValueChange={(value) => {
                       setFormData({ ...formData, companion: value });
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a companion (optional)" />
+                      <SelectValue placeholder="None - Select if needed" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
                       {users.map((user) => (
                         <SelectItem key={user.id} value={user.name}>
                           {user.name} ({user.username})
