@@ -437,6 +437,60 @@ export type Database = {
         }
         Relationships: []
       }
+      fleet_vehicles: {
+        Row: {
+          created_at: string
+          driver_name: string
+          driver_phone: string
+          id: string
+          inspection_cycle: string
+          last_inspection_date: string | null
+          license_plate: string
+          make: string
+          mileage: number
+          model: string
+          mpg: number
+          next_inspection_date: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          driver_name: string
+          driver_phone: string
+          id?: string
+          inspection_cycle: string
+          last_inspection_date?: string | null
+          license_plate: string
+          make: string
+          mileage?: number
+          model: string
+          mpg: number
+          next_inspection_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          driver_name?: string
+          driver_phone?: string
+          id?: string
+          inspection_cycle?: string
+          last_inspection_date?: string | null
+          license_plate?: string
+          make?: string
+          mileage?: number
+          model?: string
+          mpg?: number
+          next_inspection_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       fulfillment_items: {
         Row: {
           created_at: string | null
