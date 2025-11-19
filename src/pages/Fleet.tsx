@@ -36,36 +36,7 @@ export default function Fleet() {
   const { toast } = useToast();
 
   // Mock data for fleet vehicles
-  const fleetData = [
-    {
-      id: "1",
-      licensePlate: "ABC-123",
-      make: "Ford",
-      model: "Transit",
-      driverName: "John Smith",
-      driverPhone: "(555) 123-4567",
-      mpg: 18.5,
-      inspectionCycle: "Every 3 months",
-      lastInspection: "2024-01-15",
-      nextInspection: "2024-04-15",
-      status: "active",
-      mileage: 45000,
-    },
-    {
-      id: "2",
-      licensePlate: "XYZ-789",
-      make: "Mercedes",
-      model: "Sprinter",
-      driverName: "Sarah Johnson",
-      driverPhone: "(555) 987-6543",
-      mpg: 16.2,
-      inspectionCycle: "Every 6 months",
-      lastInspection: "2024-02-01",
-      nextInspection: "2024-05-01",
-      status: "maintenance",
-      mileage: 32000,
-    },
-  ];
+  const fleetData: any[] = [];
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -326,23 +297,31 @@ export default function Fleet() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {fleetData.map((vehicle) => (
-                <TableRow key={vehicle.id}>
-                  <TableCell className="font-medium">{vehicle.licensePlate}</TableCell>
-                  <TableCell>{vehicle.make} {vehicle.model}</TableCell>
-                  <TableCell>{vehicle.driverName}</TableCell>
-                  <TableCell>{vehicle.driverPhone}</TableCell>
-                  <TableCell>{vehicle.mpg} MPG</TableCell>
-                  <TableCell>{vehicle.inspectionCycle}</TableCell>
-                  <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
-                  <TableCell>{new Date(vehicle.nextInspection).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Button variant="outline" size="sm">
-                      View Details
-                    </Button>
+              {fleetData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                    No vehicles in fleet. Click "Add Vehicle" to get started.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                fleetData.map((vehicle) => (
+                  <TableRow key={vehicle.id}>
+                    <TableCell className="font-medium">{vehicle.licensePlate}</TableCell>
+                    <TableCell>{vehicle.make} {vehicle.model}</TableCell>
+                    <TableCell>{vehicle.driverName}</TableCell>
+                    <TableCell>{vehicle.driverPhone}</TableCell>
+                    <TableCell>{vehicle.mpg} MPG</TableCell>
+                    <TableCell>{vehicle.inspectionCycle}</TableCell>
+                    <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
+                    <TableCell>{new Date(vehicle.nextInspection).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm">
+                        View Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
