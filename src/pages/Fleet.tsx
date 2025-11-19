@@ -95,6 +95,20 @@ export default function Fleet() {
     try {
       vehicleSchema.parse(formData);
       
+      // Calculate next inspection date based on cycle
+      const today = new Date();
+      let nextInspectionDate: Date;
+      
+      if (formData.inspectionCycle === 'daily') {
+        // Tomorrow for daily cycle
+        nextInspectionDate = new Date(today);
+        nextInspectionDate.setDate(today.getDate() + 1);
+      } else {
+        // 7 days from now for weekly cycle
+        nextInspectionDate = new Date(today);
+        nextInspectionDate.setDate(today.getDate() + 7);
+      }
+      
       // Save to database
       addVehicle.mutate({
         make: formData.make,
@@ -104,6 +118,7 @@ export default function Fleet() {
         driver_phone: formData.driverPhone,
         mpg: parseFloat(formData.mpg),
         inspection_cycle: formData.inspectionCycle,
+        next_inspection_date: nextInspectionDate.toISOString().split('T')[0],
         status: 'active',
         mileage: 0,
       });
