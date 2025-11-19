@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Search, Truck, CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Plus, Search, Truck, CheckCircle2, AlertCircle, Clock, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { useFleetVehicles } from "@/hooks/useFleetVehicles";
+import { useAuth } from "@/contexts/AuthContext";
 
 const vehicleSchema = z.object({
   make: z.string().trim().min(1, "Make is required").max(50, "Make must be less than 50 characters"),
@@ -36,7 +38,20 @@ export default function Fleet() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
-  const { vehicles, isLoading, addVehicle } = useFleetVehicles();
+  const { vehicles, isLoading, addVehicle, deleteVehicle } = useFleetVehicles();
+  const { isAdmin } = useAuth();
+
+  const handleDeleteVehicle = (vehicleId: string, licensePlate: string) => {
+    if (!isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "Only administrators can delete vehicles.",
+        variant: "destructive",
+      });
+      return;
+    }
+    deleteVehicle.mutate(vehicleId);
+  };
 
   // Calculate statistics from real data
   const stats = useMemo(() => {
@@ -375,9 +390,37 @@ export default function Fleet() {
                           : "Not scheduled"}
                       </TableCell>
                       <TableCell>
-                        <Button variant="outline" size="sm">
-                          View Details
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm">
+                            View Details
+                          </Button>
+                          {isAdmin && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="bg-background z-50">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Remove Vehicle</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to remove {vehicle.license_plate} ({vehicle.make} {vehicle.model}) from the fleet? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteVehicle(vehicle.id, vehicle.license_plate)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Remove Vehicle
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
