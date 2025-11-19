@@ -439,6 +439,7 @@ export type Database = {
       }
       fleet_vehicles: {
         Row: {
+          companion: string | null
           created_at: string
           driver_name: string
           driver_phone: string
@@ -456,6 +457,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          companion?: string | null
           created_at?: string
           driver_name: string
           driver_phone: string
@@ -473,6 +475,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          companion?: string | null
           created_at?: string
           driver_name?: string
           driver_phone?: string
