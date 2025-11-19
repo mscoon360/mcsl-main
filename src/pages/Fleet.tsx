@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Search, Truck, CheckCircle2, AlertCircle, Clock } from "lucide-react";
@@ -18,7 +19,7 @@ const vehicleSchema = z.object({
   driverName: z.string().trim().min(1, "Driver name is required").max(100, "Driver name must be less than 100 characters"),
   driverPhone: z.string().trim().min(10, "Phone number must be at least 10 digits").max(20, "Phone number must be less than 20 characters"),
   mpg: z.string().trim().min(1, "MPG is required").refine((val) => !isNaN(Number(val)) && Number(val) > 0, "MPG must be a positive number"),
-  inspectionCycle: z.string().trim().min(1, "Inspection cycle is required").max(50, "Inspection cycle must be less than 50 characters"),
+  inspectionCycle: z.enum(["daily", "weekly"], { errorMap: () => ({ message: "Please select an inspection cycle" }) }),
 });
 
 export default function Fleet() {
@@ -245,13 +246,18 @@ export default function Fleet() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="inspectionCycle">Inspection Cycle *</Label>
-                  <Input
-                    id="inspectionCycle"
+                  <Select
                     value={formData.inspectionCycle}
-                    onChange={(e) => handleInputChange("inspectionCycle", e.target.value)}
-                    placeholder="e.g., Every 3 months"
-                    className={errors.inspectionCycle ? "border-destructive" : ""}
-                  />
+                    onValueChange={(value) => handleInputChange("inspectionCycle", value)}
+                  >
+                    <SelectTrigger className={errors.inspectionCycle ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Select inspection cycle" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background z-50">
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                    </SelectContent>
+                  </Select>
                   {errors.inspectionCycle && <p className="text-sm text-destructive">{errors.inspectionCycle}</p>}
                 </div>
               </div>
