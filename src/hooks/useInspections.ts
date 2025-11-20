@@ -48,6 +48,16 @@ export function useInspections() {
     }) => {
       if (!user) throw new Error("User not authenticated");
 
+      // First get the inspection to find the vehicle_id
+      const { data: inspection, error: fetchError } = await supabase
+        .from("inspections")
+        .select("vehicle_id")
+        .eq("id", id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Update the inspection status
       const { data, error } = await supabase
         .from("inspections")
         .update({
@@ -60,13 +70,26 @@ export function useInspections() {
         .single();
 
       if (error) throw error;
+
+      // Update the vehicle status based on inspection result
+      if (inspection.vehicle_id) {
+        const vehicleStatus = status === "passed" ? "active" : "inspection failed";
+        const { error: vehicleError } = await supabase
+          .from("fleet_vehicles")
+          .update({ status: vehicleStatus })
+          .eq("id", inspection.vehicle_id);
+
+        if (vehicleError) throw vehicleError;
+      }
+
       return data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["inspections"] });
+      queryClient.invalidateQueries({ queryKey: ["fleet-vehicles"] });
       toast({
         title: "Inspection Updated",
-        description: `Inspection marked as ${variables.status}.`,
+        description: `Inspection marked as ${variables.status}. Vehicle status updated.`,
       });
     },
     onError: (error) => {
