@@ -85,15 +85,6 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
             addNPStations();
             searchNearbyPOIs(userCoords);
           });
-
-          // Add click handler for pin mode
-          map.current.on('click', (e) => {
-            if (isPinMode) {
-              setNewPinLocation([e.lngLat.lng, e.lngLat.lat]);
-              setShowPinDialog(true);
-              setIsPinMode(false);
-            }
-          });
         },
         (error) => {
           toast({
@@ -120,15 +111,6 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
             setIsMapReady(true);
             addNPStations();
             searchNearbyPOIs(defaultCoords);
-          });
-
-          // Add click handler for pin mode
-          map.current.on('click', (e) => {
-            if (isPinMode) {
-              setNewPinLocation([e.lngLat.lng, e.lngLat.lat]);
-              setShowPinDialog(true);
-              setIsPinMode(false);
-            }
           });
         }
       );
@@ -273,6 +255,25 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
       addPinnedLocationsToMap();
     }
   }, [isMapReady, pinnedLocations]);
+
+  // Handle map click for pin mode
+  useEffect(() => {
+    if (!map.current) return;
+
+    const handleMapClick = (e: mapboxgl.MapMouseEvent) => {
+      if (isPinMode) {
+        setNewPinLocation([e.lngLat.lng, e.lngLat.lat]);
+        setShowPinDialog(true);
+        setIsPinMode(false);
+      }
+    };
+
+    map.current.on('click', handleMapClick);
+
+    return () => {
+      map.current?.off('click', handleMapClick);
+    };
+  }, [isPinMode]);
 
   const searchNearbyPOIs = async (coords: [number, number]) => {
     if (!map.current || !apiKey) return;
