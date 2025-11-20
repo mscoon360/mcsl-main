@@ -6,27 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Search, Navigation } from "lucide-react";
-
-
-// National Petroleum gas station locations in Trinidad and Tobago
-const NP_STATIONS = [
-  { name: "NP - Curepe", coords: [-61.4147, 10.6403] as [number, number] },
-  { name: "NP - Chaguanas", coords: [-61.4114, 10.5167] as [number, number] },
-  { name: "NP - San Fernando", coords: [-61.4667, 10.2833] as [number, number] },
-  { name: "NP - Port of Spain", coords: [-61.5167, 10.6667] as [number, number] },
-  { name: "NP - Arima", coords: [-61.2833, 10.6333] as [number, number] },
-  { name: "NP - Point Fortin", coords: [-61.6833, 10.1833] as [number, number] },
-  { name: "NP - Princes Town", coords: [-61.3833, 10.2667] as [number, number] },
-  { name: "NP - Sangre Grande", coords: [-61.1333, 10.5833] as [number, number] },
-  { name: "NP - Diego Martin", coords: [-61.5500, 10.7000] as [number, number] },
-  { name: "NP - Maraval", coords: [-61.5000, 10.6833] as [number, number] },
-  { name: "NP - Tunapuna", coords: [-61.3833, 10.6500] as [number, number] },
-  { name: "NP - Couva", coords: [-61.4667, 10.4167] as [number, number] },
-  { name: "NP - Rio Claro", coords: [-61.1833, 10.3000] as [number, number] },
-  { name: "NP - Fyzabad", coords: [-61.5000, 10.2000] as [number, number] },
-  { name: "NP - Tobago - Scarborough", coords: [-60.7333, 11.1833] as [number, number] },
-  { name: "NP - Tobago - Crown Point", coords: [-60.8333, 11.1500] as [number, number] },
-];
+import { useNPStations } from "@/hooks/useNPStations";
 
 interface DriverMapProps {
   onClose?: () => void;
@@ -42,6 +22,8 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [routeInfo, setRouteInfo] = useState<{ distance: string; duration: string } | null>(null);
+  
+  const { data: npStations = [], isLoading: stationsLoading } = useNPStations();
 
   const initializeMap = () => {
     if (!apiKey) {
@@ -126,9 +108,9 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
   };
 
   const addNPStations = () => {
-    if (!map.current) return;
+    if (!map.current || stationsLoading || npStations.length === 0) return;
 
-    NP_STATIONS.forEach((station) => {
+    npStations.forEach((station) => {
       const el = document.createElement('div');
       el.className = 'np-station-marker';
       el.style.width = '30px';
@@ -139,12 +121,13 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
       el.style.cursor = 'pointer';
 
       new mapboxgl.Marker(el)
-        .setLngLat(station.coords)
+        .setLngLat([station.longitude, station.latitude])
         .setPopup(
           new mapboxgl.Popup({ offset: 25 }).setHTML(
             `<h3 style="font-weight: bold; margin-bottom: 4px;">⛽ ${station.name}</h3>
+             ${station.address ? `<p style="margin: 4px 0; font-size: 12px;">${station.address}</p>` : ''}
              <button 
-               onclick="window.calculateRouteToNP('${station.coords[0]}', '${station.coords[1]}', '${station.name}')"
+               onclick="window.calculateRouteToNP('${station.longitude}', '${station.latitude}', '${station.name}')"
                style="background: #3b82f6; color: white; padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; margin-top: 4px;"
              >
                Get Directions
@@ -156,19 +139,25 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
 
     toast({
       title: "NP Stations Loaded",
-      description: `${NP_STATIONS.length} National Petroleum stations available`,
+      description: `${npStations.length} National Petroleum stations available`,
     });
   };
 
-  // Make calculateRoute available globally for popup buttons
+  // Make calculateRoute available globally for popup buttons and trigger addNPStations when data loads
   useEffect(() => {
     (window as any).calculateRouteToNP = (lon: string, lat: string, name: string) => {
       calculateRoute([parseFloat(lon), parseFloat(lat)], name);
     };
+    
+    // Add NP stations when they're loaded and map is ready
+    if (isMapReady && npStations.length > 0 && !stationsLoading) {
+      addNPStations();
+    }
+    
     return () => {
       delete (window as any).calculateRouteToNP;
     };
-  }, [userLocation, apiKey]);
+  }, [userLocation, apiKey, isMapReady, npStations, stationsLoading]);
 
   const searchNearbyPOIs = async (coords: [number, number]) => {
     if (!map.current || !apiKey) return;
