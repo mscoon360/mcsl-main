@@ -35,6 +35,7 @@ import Schedule from "./pages/Schedule";
 import Fleet from "./pages/Fleet";
 import Companion from "./pages/Companion";
 import Inspections from "./pages/Inspections";
+import Fuel from "./pages/Fuel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -76,6 +77,7 @@ const App = () => (
               <Route path="fleet" element={<Fleet />} />
               <Route path="inspections" element={<Inspections />} />
               <Route path="companion" element={<Companion />} />
+              <Route path="fuel" element={<Fuel />} />
               <Route path="admin" element={<Admin />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
