@@ -85,7 +85,11 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
           });
 
           map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-          setIsMapReady(true);
+
+          map.current.on('load', () => {
+            setIsMapReady(true);
+            searchNearbyPOIs(defaultCoords);
+          });
         }
       );
     }
@@ -103,7 +107,7 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
 
       // Initial nearby search
       const [npResponse, evResponse] = await Promise.all([
-        fetch(buildUrl("NP", true)),
+        fetch(buildUrl("NP gas station", true)),
         fetch(buildUrl("ev charging station", true)),
       ]);
 
@@ -112,7 +116,7 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
 
       // Fallback to broader search if nothing found nearby
       if (!npData.features || npData.features.length === 0) {
-        const npFallback = await fetch(buildUrl("NP", false));
+        const npFallback = await fetch(buildUrl("NP gas station", false));
         npData = await npFallback.json();
       }
 
