@@ -756,6 +756,39 @@ export type Database = {
         }
         Relationships: []
       }
+      np_stations: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          latitude: number
+          longitude: number
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          latitude: number
+          longitude: number
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          latitude?: number
+          longitude?: number
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       payment_schedules: {
         Row: {
           amount: number
