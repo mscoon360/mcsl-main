@@ -4,9 +4,12 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { Search, Navigation } from "lucide-react";
+import { Search, Navigation, MapPin } from "lucide-react";
 import { useNPStations } from "@/hooks/useNPStations";
+import { usePinnedLocations } from "@/hooks/usePinnedLocations";
 
 interface DriverMapProps {
   onClose?: () => void;
@@ -22,8 +25,15 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [routeInfo, setRouteInfo] = useState<{ distance: string; duration: string } | null>(null);
+  const [isPinMode, setIsPinMode] = useState(false);
+  const [showPinDialog, setShowPinDialog] = useState(false);
+  const [newPinLocation, setNewPinLocation] = useState<[number, number] | null>(null);
+  const [pinName, setPinName] = useState('');
+  const [pinDescription, setPinDescription] = useState('');
+  const pinnedMarkersRef = useRef<mapboxgl.Marker[]>([]);
   
   const { data: npStations = [], isLoading: stationsLoading } = useNPStations();
+  const { pinnedLocations, addPinnedLocation, deletePinnedLocation } = usePinnedLocations();
 
   const initializeMap = () => {
     if (!apiKey) {
@@ -75,6 +85,15 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
             addNPStations();
             searchNearbyPOIs(userCoords);
           });
+
+          // Add click handler for pin mode
+          map.current.on('click', (e) => {
+            if (isPinMode) {
+              setNewPinLocation([e.lngLat.lng, e.lngLat.lat]);
+              setShowPinDialog(true);
+              setIsPinMode(false);
+            }
+          });
         },
         (error) => {
           toast({
@@ -101,6 +120,15 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
             setIsMapReady(true);
             addNPStations();
             searchNearbyPOIs(defaultCoords);
+          });
+
+          // Add click handler for pin mode
+          map.current.on('click', (e) => {
+            if (isPinMode) {
+              setNewPinLocation([e.lngLat.lng, e.lngLat.lat]);
+              setShowPinDialog(true);
+              setIsPinMode(false);
+            }
           });
         }
       );
@@ -143,21 +171,108 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
     });
   };
 
-  // Make calculateRoute available globally for popup buttons and trigger addNPStations when data loads
+  const addPinnedLocationsToMap = () => {
+    if (!map.current || !pinnedLocations || pinnedLocations.length === 0) return;
+
+    // Clear existing pinned markers
+    pinnedMarkersRef.current.forEach(marker => marker.remove());
+    pinnedMarkersRef.current = [];
+
+    pinnedLocations.forEach((location) => {
+      const el = document.createElement('div');
+      el.className = 'pinned-location-marker';
+      el.style.width = '30px';
+      el.style.height = '30px';
+      el.style.borderRadius = '50%';
+      el.style.backgroundColor = '#8B5CF6';
+      el.style.border = '2px solid white';
+      el.style.cursor = 'pointer';
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([location.longitude, location.latitude])
+        .setPopup(
+          new mapboxgl.Popup({ offset: 25 }).setHTML(
+            `<h3 style="font-weight: bold; margin-bottom: 4px;">📍 ${location.name}</h3>
+             ${location.description ? `<p style="margin: 4px 0; font-size: 12px;">${location.description}</p>` : ''}
+             <div style="display: flex; gap: 4px; margin-top: 8px;">
+               <button 
+                 onclick="window.calculateRouteToPin('${location.longitude}', '${location.latitude}', '${location.name}')"
+                 style="background: #3b82f6; color: white; padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; flex: 1;"
+               >
+                 Directions
+               </button>
+               <button 
+                 onclick="window.deletePinnedLocation('${location.id}')"
+                 style="background: #ef4444; color: white; padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer;"
+               >
+                 Delete
+               </button>
+             </div>`
+          )
+        )
+        .addTo(map.current!);
+
+      pinnedMarkersRef.current.push(marker);
+    });
+  };
+
+  const handleSavePin = () => {
+    if (!newPinLocation || !pinName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a name for the location",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addPinnedLocation.mutate({
+      name: pinName,
+      description: pinDescription || undefined,
+      latitude: newPinLocation[1],
+      longitude: newPinLocation[0],
+    });
+
+    setShowPinDialog(false);
+    setPinName('');
+    setPinDescription('');
+    setNewPinLocation(null);
+  };
+
+  // Make functions available globally for popup buttons
   useEffect(() => {
     (window as any).calculateRouteToNP = (lon: string, lat: string, name: string) => {
       calculateRoute([parseFloat(lon), parseFloat(lat)], name);
     };
-    
-    // Add NP stations when they're loaded and map is ready
-    if (isMapReady && npStations.length > 0 && !stationsLoading) {
-      addNPStations();
-    }
+
+    (window as any).calculateRouteToPin = (lon: string, lat: string, name: string) => {
+      calculateRoute([parseFloat(lon), parseFloat(lat)], name);
+    };
+
+    (window as any).deletePinnedLocation = (id: string) => {
+      deletePinnedLocation.mutate(id);
+    };
     
     return () => {
       delete (window as any).calculateRouteToNP;
+      delete (window as any).calculateRouteToPin;
+      delete (window as any).deletePinnedLocation;
     };
-  }, [userLocation, apiKey, isMapReady, npStations, stationsLoading]);
+  }, [userLocation, apiKey]);
+
+  // Add NP stations when they're loaded and map is ready
+  useEffect(() => {
+    if (isMapReady && npStations.length > 0 && !stationsLoading) {
+      addNPStations();
+    }
+  }, [isMapReady, npStations, stationsLoading]);
+
+  // Add pinned locations when they're loaded and map is ready
+  useEffect(() => {
+    if (isMapReady && pinnedLocations) {
+      addPinnedLocationsToMap();
+    }
+  }, [isMapReady, pinnedLocations]);
 
   const searchNearbyPOIs = async (coords: [number, number]) => {
     if (!map.current || !apiKey) return;
@@ -410,7 +525,20 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
               <Button onClick={searchPOI} size="icon">
                 <Search className="h-4 w-4" />
               </Button>
+              <Button 
+                onClick={() => setIsPinMode(!isPinMode)} 
+                size="icon"
+                variant={isPinMode ? "default" : "outline"}
+              >
+                <MapPin className="h-4 w-4" />
+              </Button>
             </div>
+
+            {isPinMode && (
+              <div className="text-xs text-muted-foreground bg-primary/10 p-2 rounded">
+                Click anywhere on the map to pin a location
+              </div>
+            )}
 
             {showResults && searchResults.length > 0 && (
               <div className="max-h-48 overflow-y-auto space-y-1">
@@ -452,9 +580,49 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
               <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-white"></div>
               <span className="text-sm">EV Charger / Destination</span>
             </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-purple-500 border-2 border-white"></div>
+              <span className="text-sm">My Pins</span>
+            </div>
           </div>
         )}
       </div>
+
+      <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Pin Location</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="pin-name">Location Name</Label>
+              <Input
+                id="pin-name"
+                value={pinName}
+                onChange={(e) => setPinName(e.target.value)}
+                placeholder="e.g., Home, Office, Favorite Restaurant"
+              />
+            </div>
+            <div>
+              <Label htmlFor="pin-description">Description (Optional)</Label>
+              <Textarea
+                id="pin-description"
+                value={pinDescription}
+                onChange={(e) => setPinDescription(e.target.value)}
+                placeholder="Add any notes about this location"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPinDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSavePin}>
+              Save Pin
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
