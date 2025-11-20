@@ -24,6 +24,7 @@ import {
   Scale,
   Tag,
   Wrench,
+  ClipboardCheck,
 } from "lucide-react";
 import magicCareLogo from "@/assets/magic-care-logo.png";
 import {
@@ -86,6 +87,7 @@ const navigation: NavigationSection[] = [
     title: "Fleet",
     items: [
       { name: "Fleet Management", href: "/fleet", icon: Truck },
+      { name: "Inspections", href: "/inspections", icon: ClipboardCheck },
       { name: "Driver Companion", href: "/companion", icon: Shield },
     ]
   },

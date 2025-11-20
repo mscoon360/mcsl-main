@@ -1,0 +1,86 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
+
+export interface Inspection {
+  id: string;
+  user_id: string;
+  vehicle_id: string | null;
+  inspection_date: string;
+  status: string;
+  notes: string | null;
+  photos: string[];
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function useInspections() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: inspections = [], isLoading } = useQuery({
+    queryKey: ["inspections"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("inspections")
+        .select(`
+          *,
+          fleet_vehicles(make, model, license_plate)
+        `)
+        .order("inspection_date", { ascending: false });
+
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!user,
+  });
+
+  const updateInspectionStatus = useMutation({
+    mutationFn: async ({ 
+      id, 
+      status 
+    }: { 
+      id: string; 
+      status: "passed" | "failed";
+    }) => {
+      if (!user) throw new Error("User not authenticated");
+
+      const { data, error } = await supabase
+        .from("inspections")
+        .update({
+          status,
+          reviewed_by: user.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["inspections"] });
+      toast({
+        title: "Inspection Updated",
+        description: `Inspection marked as ${variables.status}.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to update inspection: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  return {
+    inspections,
+    isLoading,
+    updateInspectionStatus,
+  };
+}
