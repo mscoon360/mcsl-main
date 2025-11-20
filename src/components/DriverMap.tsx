@@ -201,10 +201,13 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
     if (!searchQuery || !apiKey) return;
 
     try {
+      // Trinidad and Tobago bounding box: [minLon, minLat, maxLon, maxLat]
+      const ttBbox = '-61.95,10.0,-60.5,11.5';
+      
       const response = await fetch(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
           searchQuery
-        )}.json?proximity=${userLocation?.[0] || -59.5432},${userLocation?.[1] || 13.1939}&limit=5&access_token=${apiKey}`
+        )}.json?bbox=${ttBbox}&proximity=${userLocation?.[0] || -61.5432},${userLocation?.[1] || 10.6802}&limit=5&country=TT&access_token=${apiKey}`
       );
       const data = await response.json();
       setSearchResults(data.features || []);
