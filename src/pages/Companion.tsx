@@ -5,15 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Camera, Upload, CheckCircle2, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Camera, Upload, CheckCircle2, AlertCircle, Image as ImageIcon, ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFleetVehicles } from "@/hooks/useFleetVehicles";
-
+import DriverMap from "@/components/DriverMap";
 export default function Companion() {
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [inspectionType, setInspectionType] = useState("");
   const [notes, setNotes] = useState("");
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [isInspectionOpen, setIsInspectionOpen] = useState(true);
   const { toast } = useToast();
   const { vehicles, isLoading } = useFleetVehicles();
 
@@ -104,13 +106,40 @@ export default function Companion() {
         </Card>
       </div>
 
-      {/* Vehicle Inspection Form */}
+      {/* Map Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Vehicle Inspection</CardTitle>
-          <CardDescription>Upload photos and document vehicle condition</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            Nearby Gas Stations & EV Chargers
+          </CardTitle>
+          <CardDescription>Find the nearest refueling and charging stations</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent>
+          <DriverMap />
+        </CardContent>
+      </Card>
+
+      {/* Vehicle Inspection Form - Collapsible */}
+      <Collapsible open={isInspectionOpen} onOpenChange={setIsInspectionOpen}>
+        <Card>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Vehicle Inspection</CardTitle>
+                <CardDescription>Upload photos and document vehicle condition</CardDescription>
+              </div>
+              {isInspectionOpen ? (
+                <ChevronUp className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              )}
+            </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="vehicle">Select Vehicle</Label>
@@ -234,7 +263,9 @@ export default function Companion() {
             <Button onClick={handleSubmitInspection}>Submit Inspection</Button>
           </div>
         </CardContent>
+        </CollapsibleContent>
       </Card>
+      </Collapsible>
     </div>
   );
 }
