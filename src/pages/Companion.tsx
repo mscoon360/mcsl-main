@@ -232,7 +232,6 @@ export default function Companion() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="daily">Daily Pre-Trip</SelectItem>
-                  <SelectItem value="weekly">Weekly Inspection</SelectItem>
                   <SelectItem value="issue">Issue Report</SelectItem>
                   <SelectItem value="post-trip">Post-Trip Review</SelectItem>
                 </SelectContent>
