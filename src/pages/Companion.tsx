@@ -9,6 +9,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Camera, Upload, CheckCircle2, AlertCircle, Image as ImageIcon, ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFleetVehicles } from "@/hooks/useFleetVehicles";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import DriverMap from "@/components/DriverMap";
 export default function Companion() {
   const [selectedVehicle, setSelectedVehicle] = useState("");
@@ -16,8 +18,10 @@ export default function Companion() {
   const [notes, setNotes] = useState("");
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [isInspectionOpen, setIsInspectionOpen] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { vehicles, isLoading } = useFleetVehicles();
+  const { user } = useAuth();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -28,7 +32,7 @@ export default function Companion() {
     });
   };
 
-  const handleSubmitInspection = () => {
+  const handleSubmitInspection = async () => {
     if (!selectedVehicle || !inspectionType) {
       toast({
         title: "Missing Information",
@@ -38,17 +42,70 @@ export default function Companion() {
       return;
     }
 
-    // TODO: Implement actual inspection submission to backend
-    toast({
-      title: "Inspection Submitted",
-      description: "Vehicle inspection has been recorded successfully",
-    });
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to submit inspections",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Reset form
-    setSelectedVehicle("");
-    setInspectionType("");
-    setNotes("");
-    setUploadedImages([]);
+    setIsSubmitting(true);
+
+    try {
+      // Upload photos to storage
+      const photoUrls: string[] = [];
+      
+      for (const file of uploadedImages) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}-${Math.random()}.${fileExt}`;
+        
+        const { error: uploadError, data } = await supabase.storage
+          .from('inspection-photos')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('inspection-photos')
+          .getPublicUrl(fileName);
+
+        photoUrls.push(publicUrl);
+      }
+
+      // Create inspection record
+      const { error: insertError } = await supabase
+        .from('inspections')
+        .insert({
+          user_id: user.id,
+          vehicle_id: selectedVehicle,
+          notes: `${inspectionType}: ${notes}`,
+          photos: photoUrls,
+          status: 'pending',
+        });
+
+      if (insertError) throw insertError;
+
+      toast({
+        title: "Inspection Submitted",
+        description: "Vehicle inspection has been recorded successfully",
+      });
+
+      // Reset form
+      setSelectedVehicle("");
+      setInspectionType("");
+      setNotes("");
+      setUploadedImages([]);
+    } catch (error: any) {
+      toast({
+        title: "Submission Failed",
+        description: error.message || "Failed to submit inspection",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -260,7 +317,9 @@ export default function Companion() {
             >
               Clear
             </Button>
-            <Button onClick={handleSubmitInspection}>Submit Inspection</Button>
+            <Button onClick={handleSubmitInspection} disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Submit Inspection"}
+            </Button>
           </div>
         </CardContent>
         </CollapsibleContent>
