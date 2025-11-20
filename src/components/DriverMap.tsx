@@ -102,18 +102,18 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
         (useProximity ? `&proximity=${coords[0]},${coords[1]}` : "");
 
       // Initial nearby search
-      const [gasResponse, evResponse] = await Promise.all([
-        fetch(buildUrl("gas station", true)),
+      const [npResponse, evResponse] = await Promise.all([
+        fetch(buildUrl("NP", true)),
         fetch(buildUrl("ev charging station", true)),
       ]);
 
-      let gasData = await gasResponse.json();
+      let npData = await npResponse.json();
       let evData = await evResponse.json();
 
       // Fallback to broader search if nothing found nearby
-      if (!gasData.features || gasData.features.length === 0) {
-        const gasFallback = await fetch(buildUrl("gas station", false));
-        gasData = await gasFallback.json();
+      if (!npData.features || npData.features.length === 0) {
+        const npFallback = await fetch(buildUrl("NP", false));
+        npData = await npFallback.json();
       }
 
       if (!evData.features || evData.features.length === 0) {
@@ -121,13 +121,13 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
         evData = await evFallback.json();
       }
 
-      const gasFeatures = gasData.features || [];
+      const npFeatures = npData.features || [];
       const evFeatures = evData.features || [];
 
-      // Add gas station markers
-      gasFeatures.forEach((feature: any) => {
+      // Add NP markers
+      npFeatures.forEach((feature: any) => {
         const el = document.createElement('div');
-        el.className = 'gas-station-marker';
+        el.className = 'np-marker';
         el.style.width = '30px';
         el.style.height = '30px';
         el.style.borderRadius = '50%';
@@ -139,7 +139,7 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
           .setLngLat(feature.center)
           .setPopup(
             new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<h3 style="font-weight: bold; margin-bottom: 4px;">⛽ Gas Station</h3>
+              `<h3 style="font-weight: bold; margin-bottom: 4px;">📍 NP</h3>
                <p style="margin: 0;">${feature.place_name}</p>`
             )
           )
@@ -168,15 +168,15 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
           .addTo(map.current!);
       });
 
-      const gasCount = gasFeatures.length;
+      const npCount = npFeatures.length;
       const evCount = evFeatures.length;
 
       toast({
-        title: gasCount + evCount === 0 ? "No Stations Found" : "Nearby Stations Loaded",
+        title: npCount + evCount === 0 ? "No Locations Found" : "Nearby Locations Loaded",
         description:
-          gasCount + evCount === 0
-            ? "No gas stations or EV chargers were found. Try zooming out or panning the map."
-            : `Found ${gasCount} gas stations and ${evCount} EV chargers`,
+          npCount + evCount === 0
+            ? "No NP locations or EV chargers were found. Try zooming out or panning the map."
+            : `Found ${npCount} NP locations and ${evCount} EV chargers`,
       });
     } catch (error) {
       console.error('Error fetching POIs:', error);
@@ -247,7 +247,7 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-red-500 border-2 border-white"></div>
-              <span className="text-sm">Gas Station</span>
+              <span className="text-sm">NP</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-white"></div>
