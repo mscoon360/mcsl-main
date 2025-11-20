@@ -89,18 +89,18 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
   };
 
   const searchNearbyPOIs = async (coords: [number, number]) => {
-    if (!map.current) return;
+    if (!map.current || !apiKey) return;
 
     try {
       // Search for gas stations
       const gasResponse = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/gas%20station.json?proximity=${coords[0]},${coords[1]}&limit=10&access_token=${apiKey}`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/gas.json?proximity=${coords[0]},${coords[1]}&limit=10&types=poi&access_token=${apiKey}`
       );
       const gasData = await gasResponse.json();
 
       // Search for EV charging stations
       const evResponse = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/ev%20charging%20station.json?proximity=${coords[0]},${coords[1]}&limit=10&access_token=${apiKey}`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/charging.json?proximity=${coords[0]},${coords[1]}&limit=10&types=poi&access_token=${apiKey}`
       );
       const evData = await evResponse.json();
 
