@@ -203,15 +203,33 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
     try {
       // Trinidad and Tobago bounding box: [minLon, minLat, maxLon, maxLat]
       const ttBbox = '-61.95,10.0,-60.5,11.5';
-      
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-          searchQuery
-        )}.json?bbox=${ttBbox}&proximity=${userLocation?.[0] || -61.5432},${userLocation?.[1] || 10.6802}&limit=5&country=TT&access_token=${apiKey}`
+      const baseUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+        searchQuery
+      )}.json`;
+
+      // First try: within TT bbox
+      const primaryResponse = await fetch(
+        `${baseUrl}?bbox=${ttBbox}&country=TT&limit=10&access_token=${apiKey}`
       );
-      const data = await response.json();
+      let data = await primaryResponse.json();
+
+      // Fallback: anywhere in TT without bbox if nothing found
+      if (!data.features || data.features.length === 0) {
+        const fallbackResponse = await fetch(
+          `${baseUrl}?country=TT&limit=10&access_token=${apiKey}`
+        );
+        data = await fallbackResponse.json();
+      }
+
       setSearchResults(data.features || []);
       setShowResults(true);
+
+      if (!data.features || data.features.length === 0) {
+        toast({
+          title: "No Results",
+          description: "No locations found in Trinidad and Tobago for that search.",
+        });
+      }
     } catch (error) {
       console.error('Error searching POI:', error);
       toast({
