@@ -33,6 +33,7 @@ import Promotions from "./pages/Promotions";
 import Maintenance from "./pages/Maintenance";
 import Schedule from "./pages/Schedule";
 import Fleet from "./pages/Fleet";
+import Companion from "./pages/Companion";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -72,6 +73,7 @@ const App = () => (
               <Route path="maintenance" element={<Maintenance />} />
               <Route path="schedule" element={<Schedule />} />
               <Route path="fleet" element={<Fleet />} />
+              <Route path="companion" element={<Companion />} />
               <Route path="admin" element={<Admin />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -35,7 +35,6 @@ export default function Fleet() {
     licensePlate: "",
     driverName: "",
     driverPhone: "",
-    companion: "",
     mpg: "",
     inspectionCycle: "",
   });
@@ -138,9 +137,8 @@ export default function Fleet() {
         make: formData.make,
         model: formData.model,
         license_plate: formData.licensePlate,
-      driver_name: formData.driverName,
-      driver_phone: formData.driverPhone,
-      companion: formData.companion,
+        driver_name: formData.driverName,
+        driver_phone: formData.driverPhone,
         mpg: parseFloat(formData.mpg),
         inspection_cycle: formData.inspectionCycle,
         next_inspection_date: nextInspectionDate.toISOString().split('T')[0],
@@ -155,7 +153,6 @@ export default function Fleet() {
         licensePlate: "",
         driverName: "",
         driverPhone: "",
-        companion: "",
         mpg: "",
         inspectionCycle: "",
       });
@@ -274,26 +271,6 @@ export default function Fleet() {
                   </Select>
                   {errors.driverName && <p className="text-sm text-destructive">{errors.driverName}</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="companion">Companion (Optional)</Label>
-                  <Select
-                    value={formData.companion || undefined}
-                    onValueChange={(value) => {
-                      setFormData({ ...formData, companion: value });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="None - Select if needed" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users.map((user) => (
-                        <SelectItem key={user.id} value={user.name}>
-                          {user.name} ({user.username})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -382,7 +359,7 @@ export default function Fleet() {
                 <TableHead>License Plate</TableHead>
                 <TableHead>Make/Model</TableHead>
                 <TableHead>Driver</TableHead>
-                <TableHead>Companion</TableHead>
+                <TableHead>Phone</TableHead>
                 <TableHead>MPG</TableHead>
                 <TableHead>Inspection Cycle</TableHead>
                 <TableHead>Status</TableHead>
@@ -416,7 +393,7 @@ export default function Fleet() {
                       <TableCell className="font-medium">{vehicle.license_plate}</TableCell>
                       <TableCell>{vehicle.make} {vehicle.model}</TableCell>
                       <TableCell>{vehicle.driver_name}</TableCell>
-                      <TableCell>{vehicle.companion || "None"}</TableCell>
+                      <TableCell>{vehicle.driver_phone}</TableCell>
                       <TableCell>{vehicle.mpg} MPG</TableCell>
                       <TableCell>{vehicle.inspection_cycle}</TableCell>
                       <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
@@ -499,8 +476,8 @@ export default function Fleet() {
                   <p className="font-medium">{selectedVehicle.driver_name}</p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-muted-foreground">Companion</Label>
-                  <p className="font-medium">{selectedVehicle.companion || "None"}</p>
+                  <Label className="text-muted-foreground">Driver Phone</Label>
+                  <p className="font-medium">{selectedVehicle.driver_phone}</p>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Miles Per Gallon</Label>

@@ -86,6 +86,7 @@ const navigation: NavigationSection[] = [
     title: "Fleet",
     items: [
       { name: "Fleet Management", href: "/fleet", icon: Truck },
+      { name: "Driver Companion", href: "/companion", icon: Shield },
     ]
   },
   {
