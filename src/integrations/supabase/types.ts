@@ -491,6 +491,53 @@ export type Database = {
         }
         Relationships: []
       }
+      fuel_records: {
+        Row: {
+          created_at: string
+          gallons: number
+          id: string
+          notes: string | null
+          receipt_photo: string | null
+          refuel_date: string
+          total_cost: number
+          updated_at: string
+          user_id: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          gallons: number
+          id?: string
+          notes?: string | null
+          receipt_photo?: string | null
+          refuel_date?: string
+          total_cost: number
+          updated_at?: string
+          user_id: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          gallons?: number
+          id?: string
+          notes?: string | null
+          receipt_photo?: string | null
+          refuel_date?: string
+          total_cost?: number
+          updated_at?: string
+          user_id?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_records_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fulfillment_items: {
         Row: {
           created_at: string | null
