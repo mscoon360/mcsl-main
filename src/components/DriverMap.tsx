@@ -13,7 +13,7 @@ interface DriverMapProps {
 const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('mapbox_api_key') || '');
   const [isMapReady, setIsMapReady] = useState(false);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
 
@@ -26,6 +26,9 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
       });
       return;
     }
+
+    // Save API key to localStorage
+    localStorage.setItem('mapbox_api_key', apiKey);
 
     if (!mapContainer.current) return;
 
@@ -186,10 +189,22 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
   };
 
   useEffect(() => {
+    // Auto-initialize if API key is already saved
+    if (apiKey && !isMapReady) {
+      initializeMap();
+    }
+    
     return () => {
       map.current?.remove();
     };
   }, []);
+  
+  // Update localStorage when API key changes
+  useEffect(() => {
+    if (apiKey) {
+      localStorage.setItem('mapbox_api_key', apiKey);
+    }
+  }, [apiKey]);
 
   return (
     <div className="space-y-4">
