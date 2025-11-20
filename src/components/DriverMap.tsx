@@ -92,20 +92,37 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
     if (!map.current || !apiKey) return;
 
     try {
-      // Search for gas stations
-      const gasResponse = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/gas.json?proximity=${coords[0]},${coords[1]}&limit=10&types=poi&access_token=${apiKey}`
-      );
-      const gasData = await gasResponse.json();
+      const buildUrl = (query: string, useProximity: boolean) =>
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+          query
+        )}.json?limit=10&types=poi&access_token=${apiKey}` +
+        (useProximity ? `&proximity=${coords[0]},${coords[1]}` : "");
 
-      // Search for EV charging stations
-      const evResponse = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/charging.json?proximity=${coords[0]},${coords[1]}&limit=10&types=poi&access_token=${apiKey}`
-      );
-      const evData = await evResponse.json();
+      // Initial nearby search
+      const [gasResponse, evResponse] = await Promise.all([
+        fetch(buildUrl("gas station", true)),
+        fetch(buildUrl("ev charging station", true)),
+      ]);
+
+      let gasData = await gasResponse.json();
+      let evData = await evResponse.json();
+
+      // Fallback to broader search if nothing found nearby
+      if (!gasData.features || gasData.features.length === 0) {
+        const gasFallback = await fetch(buildUrl("gas station", false));
+        gasData = await gasFallback.json();
+      }
+
+      if (!evData.features || evData.features.length === 0) {
+        const evFallback = await fetch(buildUrl("ev charging station", false));
+        evData = await evFallback.json();
+      }
+
+      const gasFeatures = gasData.features || [];
+      const evFeatures = evData.features || [];
 
       // Add gas station markers
-      gasData.features?.forEach((feature: any) => {
+      gasFeatures.forEach((feature: any) => {
         const el = document.createElement('div');
         el.className = 'gas-station-marker';
         el.style.width = '30px';
@@ -127,7 +144,7 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
       });
 
       // Add EV charging station markers
-      evData.features?.forEach((feature: any) => {
+      evFeatures.forEach((feature: any) => {
         const el = document.createElement('div');
         el.className = 'ev-charger-marker';
         el.style.width = '30px';
@@ -148,9 +165,15 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
           .addTo(map.current!);
       });
 
+      const gasCount = gasFeatures.length;
+      const evCount = evFeatures.length;
+
       toast({
-        title: "Nearby Stations Loaded",
-        description: `Found ${gasData.features?.length || 0} gas stations and ${evData.features?.length || 0} EV chargers`,
+        title: gasCount + evCount === 0 ? "No Stations Found" : "Nearby Stations Loaded",
+        description:
+          gasCount + evCount === 0
+            ? "No gas stations or EV chargers were found. Try zooming out or panning the map."
+            : `Found ${gasCount} gas stations and ${evCount} EV chargers`,
       });
     } catch (error) {
       console.error('Error fetching POIs:', error);
