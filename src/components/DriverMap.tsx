@@ -7,6 +7,27 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Search, Navigation } from "lucide-react";
 
+
+// National Petroleum gas station locations in Trinidad and Tobago
+const NP_STATIONS = [
+  { name: "NP - Curepe", coords: [-61.4147, 10.6403] as [number, number] },
+  { name: "NP - Chaguanas", coords: [-61.4114, 10.5167] as [number, number] },
+  { name: "NP - San Fernando", coords: [-61.4667, 10.2833] as [number, number] },
+  { name: "NP - Port of Spain", coords: [-61.5167, 10.6667] as [number, number] },
+  { name: "NP - Arima", coords: [-61.2833, 10.6333] as [number, number] },
+  { name: "NP - Point Fortin", coords: [-61.6833, 10.1833] as [number, number] },
+  { name: "NP - Princes Town", coords: [-61.3833, 10.2667] as [number, number] },
+  { name: "NP - Sangre Grande", coords: [-61.1333, 10.5833] as [number, number] },
+  { name: "NP - Diego Martin", coords: [-61.5500, 10.7000] as [number, number] },
+  { name: "NP - Maraval", coords: [-61.5000, 10.6833] as [number, number] },
+  { name: "NP - Tunapuna", coords: [-61.3833, 10.6500] as [number, number] },
+  { name: "NP - Couva", coords: [-61.4667, 10.4167] as [number, number] },
+  { name: "NP - Rio Claro", coords: [-61.1833, 10.3000] as [number, number] },
+  { name: "NP - Fyzabad", coords: [-61.5000, 10.2000] as [number, number] },
+  { name: "NP - Tobago - Scarborough", coords: [-60.7333, 11.1833] as [number, number] },
+  { name: "NP - Tobago - Crown Point", coords: [-60.8333, 11.1500] as [number, number] },
+];
+
 interface DriverMapProps {
   onClose?: () => void;
 }
@@ -66,8 +87,10 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
             .setPopup(new mapboxgl.Popup().setHTML('<h3>Your Location</h3>'))
             .addTo(map.current);
 
+
           map.current.on('load', () => {
             setIsMapReady(true);
+            addNPStations();
             searchNearbyPOIs(userCoords);
           });
         },
@@ -91,14 +114,61 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
 
           map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
+
           map.current.on('load', () => {
             setIsMapReady(true);
+            addNPStations();
             searchNearbyPOIs(defaultCoords);
           });
         }
       );
     }
   };
+
+  const addNPStations = () => {
+    if (!map.current) return;
+
+    NP_STATIONS.forEach((station) => {
+      const el = document.createElement('div');
+      el.className = 'np-station-marker';
+      el.style.width = '30px';
+      el.style.height = '30px';
+      el.style.borderRadius = '50%';
+      el.style.backgroundColor = '#EF4444';
+      el.style.border = '2px solid white';
+      el.style.cursor = 'pointer';
+
+      new mapboxgl.Marker(el)
+        .setLngLat(station.coords)
+        .setPopup(
+          new mapboxgl.Popup({ offset: 25 }).setHTML(
+            `<h3 style="font-weight: bold; margin-bottom: 4px;">⛽ ${station.name}</h3>
+             <button 
+               onclick="window.calculateRouteToNP('${station.coords[0]}', '${station.coords[1]}', '${station.name}')"
+               style="background: #3b82f6; color: white; padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; margin-top: 4px;"
+             >
+               Get Directions
+             </button>`
+          )
+        )
+        .addTo(map.current!);
+    });
+
+    toast({
+      title: "NP Stations Loaded",
+      description: `${NP_STATIONS.length} National Petroleum stations available`,
+    });
+  };
+
+  // Make calculateRoute available globally for popup buttons
+  useEffect(() => {
+    (window as any).calculateRouteToNP = (lon: string, lat: string, name: string) => {
+      calculateRoute([parseFloat(lon), parseFloat(lat)], name);
+    };
+    return () => {
+      delete (window as any).calculateRouteToNP;
+    };
+  }, [userLocation, apiKey]);
 
   const searchNearbyPOIs = async (coords: [number, number]) => {
     if (!map.current || !apiKey) return;
@@ -110,50 +180,17 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
         )}.json?limit=10&types=poi&access_token=${apiKey}` +
         (useProximity ? `&proximity=${coords[0]},${coords[1]}` : "");
 
-      // Initial nearby search
-      const [npResponse, evResponse] = await Promise.all([
-        fetch(buildUrl("NP gas station", true)),
-        fetch(buildUrl("ev charging station", true)),
-      ]);
-
-      let npData = await npResponse.json();
+      // Search for EV charging stations only (NP stations are now from our custom dataset)
+      const evResponse = await fetch(buildUrl("ev charging station", true));
       let evData = await evResponse.json();
 
       // Fallback to broader search if nothing found nearby
-      if (!npData.features || npData.features.length === 0) {
-        const npFallback = await fetch(buildUrl("NP gas station", false));
-        npData = await npFallback.json();
-      }
-
       if (!evData.features || evData.features.length === 0) {
         const evFallback = await fetch(buildUrl("ev charging station", false));
         evData = await evFallback.json();
       }
 
-      const npFeatures = npData.features || [];
       const evFeatures = evData.features || [];
-
-      // Add NP markers
-      npFeatures.forEach((feature: any) => {
-        const el = document.createElement('div');
-        el.className = 'np-marker';
-        el.style.width = '30px';
-        el.style.height = '30px';
-        el.style.borderRadius = '50%';
-        el.style.backgroundColor = '#EF4444';
-        el.style.border = '2px solid white';
-        el.style.cursor = 'pointer';
-
-        new mapboxgl.Marker(el)
-          .setLngLat(feature.center)
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<h3 style="font-weight: bold; margin-bottom: 4px;">📍 NP</h3>
-               <p style="margin: 0;">${feature.place_name}</p>`
-            )
-          )
-          .addTo(map.current!);
-      });
 
       // Add EV charging station markers
       evFeatures.forEach((feature: any) => {
@@ -177,15 +214,14 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
           .addTo(map.current!);
       });
 
-      const npCount = npFeatures.length;
       const evCount = evFeatures.length;
 
       toast({
-        title: npCount + evCount === 0 ? "No Locations Found" : "Nearby Locations Loaded",
+        title: evCount === 0 ? "No EV Chargers Found" : "EV Chargers Loaded",
         description:
-          npCount + evCount === 0
-            ? "No NP locations or EV chargers were found. Try zooming out or panning the map."
-            : `Found ${npCount} NP locations and ${evCount} EV chargers`,
+          evCount === 0
+            ? "No EV chargers were found nearby."
+            : `Found ${evCount} EV chargers`,
       });
     } catch (error) {
       console.error('Error fetching POIs:', error);
