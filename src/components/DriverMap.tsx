@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { Search, Navigation } from "lucide-react";
 
 interface DriverMapProps {
   onClose?: () => void;
@@ -16,6 +17,10 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('mapbox_api_key') || '');
   const [isMapReady, setIsMapReady] = useState(false);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showResults, setShowResults] = useState(false);
+  const [routeInfo, setRouteInfo] = useState<{ distance: string; duration: string } | null>(null);
 
   const initializeMap = () => {
     if (!apiKey) {
@@ -192,6 +197,107 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
     }
   };
 
+  const searchPOI = async () => {
+    if (!searchQuery || !apiKey) return;
+
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+          searchQuery
+        )}.json?proximity=${userLocation?.[0] || -59.5432},${userLocation?.[1] || 13.1939}&limit=5&access_token=${apiKey}`
+      );
+      const data = await response.json();
+      setSearchResults(data.features || []);
+      setShowResults(true);
+    } catch (error) {
+      console.error('Error searching POI:', error);
+      toast({
+        title: "Search Error",
+        description: "Failed to search for locations",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const calculateRoute = async (destination: [number, number], placeName: string) => {
+    if (!userLocation || !map.current || !apiKey) return;
+
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${userLocation[0]},${userLocation[1]};${destination[0]},${destination[1]}?geometries=geojson&access_token=${apiKey}`
+      );
+      const data = await response.json();
+
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const distance = (route.distance / 1000).toFixed(2); // Convert to km
+        const duration = Math.round(route.duration / 60); // Convert to minutes
+
+        // Remove existing route layer if present
+        if (map.current.getLayer('route')) {
+          map.current.removeLayer('route');
+          map.current.removeSource('route');
+        }
+
+        // Add route to map
+        map.current.addSource('route', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: route.geometry,
+          },
+        });
+
+        map.current.addLayer({
+          id: 'route',
+          type: 'line',
+          source: 'route',
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round',
+          },
+          paint: {
+            'line-color': '#3b82f6',
+            'line-width': 5,
+            'line-opacity': 0.75,
+          },
+        });
+
+        // Add destination marker
+        new mapboxgl.Marker({ color: '#10B981' })
+          .setLngLat(destination)
+          .setPopup(new mapboxgl.Popup().setHTML(`<h3>${placeName}</h3>`))
+          .addTo(map.current);
+
+        // Fit map to show entire route
+        const coordinates = route.geometry.coordinates;
+        const bounds = coordinates.reduce(
+          (bounds: mapboxgl.LngLatBounds, coord: [number, number]) => {
+            return bounds.extend(coord as [number, number]);
+          },
+          new mapboxgl.LngLatBounds(coordinates[0], coordinates[0])
+        );
+        map.current.fitBounds(bounds, { padding: 50 });
+
+        setRouteInfo({ distance: `${distance} km`, duration: `${duration} min` });
+        setShowResults(false);
+        
+        toast({
+          title: "Route Calculated",
+          description: `Distance: ${distance} km, Duration: ${duration} min`,
+        });
+      }
+    } catch (error) {
+      console.error('Error calculating route:', error);
+      toast({
+        title: "Route Error",
+        description: "Failed to calculate route",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     // Auto-initialize if API key is already saved
     if (apiKey && !isMapReady) {
@@ -243,6 +349,49 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
 
       <div className="relative w-full h-[500px] rounded-lg overflow-hidden border">
         <div ref={mapContainer} className="absolute inset-0" />
+        
+        {isMapReady && (
+          <div className="absolute top-4 right-4 bg-background/95 backdrop-blur p-4 rounded-lg shadow-lg space-y-3 w-80">
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Search for a location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && searchPOI()}
+                className="flex-1"
+              />
+              <Button onClick={searchPOI} size="icon">
+                <Search className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {showResults && searchResults.length > 0 && (
+              <div className="max-h-48 overflow-y-auto space-y-1">
+                {searchResults.map((result, index) => (
+                  <div
+                    key={index}
+                    className="p-2 hover:bg-muted cursor-pointer rounded text-sm"
+                    onClick={() => {
+                      calculateRoute(result.center, result.place_name);
+                    }}
+                  >
+                    <div className="font-medium">{result.text}</div>
+                    <div className="text-xs text-muted-foreground">{result.place_name}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {routeInfo && (
+              <div className="flex items-center gap-2 text-sm bg-primary/10 p-2 rounded">
+                <Navigation className="h-4 w-4" />
+                <span>{routeInfo.distance} • {routeInfo.duration}</span>
+              </div>
+            )}
+          </div>
+        )}
+        
         {isMapReady && (
           <div className="absolute top-4 left-4 bg-background/95 backdrop-blur p-3 rounded-lg shadow-lg space-y-2">
             <div className="flex items-center gap-2">
@@ -255,7 +404,7 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-white"></div>
-              <span className="text-sm">EV Charger</span>
+              <span className="text-sm">EV Charger / Destination</span>
             </div>
           </div>
         )}
