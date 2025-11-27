@@ -109,7 +109,8 @@ export default function Invoices() {
     date: string;
     status: string;
   }>>('dashboard-sales', []);
-  const [invoices, setInvoices] = useLocalStorage<Invoice[]>('invoices', []);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(true);
   const [newInvoice, setNewInvoice] = useState<Partial<Invoice>>({
     customerId: '',
     issueDate: format(new Date(), 'yyyy-MM-dd'),
@@ -126,6 +127,85 @@ export default function Invoices() {
     notes: '',
     paymentTerms: 'Cash'
   });
+
+  // Fetch invoices from Supabase
+  const fetchInvoices = async () => {
+    try {
+      const { data: invoicesData, error: invoicesError } = await supabase
+        .from('invoices')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (invoicesError) throw invoicesError;
+
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('invoice_items')
+        .select('*');
+
+      if (itemsError) throw itemsError;
+
+      // Group items by invoice_id
+      const itemsByInvoice: Record<string, InvoiceItem[]> = {};
+      itemsData?.forEach((item) => {
+        if (!itemsByInvoice[item.invoice_id]) {
+          itemsByInvoice[item.invoice_id] = [];
+        }
+        itemsByInvoice[item.invoice_id].push({
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unit_price,
+          total: item.total,
+          productId: item.product_id || undefined,
+        });
+      });
+
+      // Map database invoices to local format
+      const mappedInvoices: Invoice[] = (invoicesData || []).map((inv) => ({
+        id: inv.id,
+        invoiceNumber: inv.invoice_number,
+        customerId: inv.customer_id,
+        customerName: inv.customer_name,
+        issueDate: inv.issue_date,
+        dueDate: inv.due_date,
+        status: inv.status as Invoice['status'],
+        items: itemsByInvoice[inv.id] || [],
+        subtotal: inv.subtotal,
+        taxRate: inv.tax_rate,
+        taxAmount: inv.tax_amount,
+        total: inv.total,
+        notes: inv.notes || undefined,
+        paymentTerms: inv.payment_terms || 'Cash',
+      }));
+
+      setInvoices(mappedInvoices);
+    } catch (error: any) {
+      console.error('Error fetching invoices:', error);
+      toast({
+        title: 'Error loading invoices',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingInvoices(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoices();
+
+    const channel = supabase
+      .channel('invoices-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'invoices' },
+        () => fetchInvoices()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Get available items for the selected customer (products + rental items)
   const getAvailableItemsForCustomer = () => {
@@ -399,7 +479,7 @@ export default function Invoices() {
       });
     }
   };
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newInvoice.customerId || !newInvoice.items?.length) {
       toast({
@@ -409,52 +489,154 @@ export default function Invoices() {
       });
       return;
     }
+    
     const customer = customers.find(c => c.id === newInvoice.customerId);
     if (!customer) return;
-    const invoice: Invoice = {
-      id: editingInvoice?.id || Date.now().toString(),
-      invoiceNumber: editingInvoice?.invoiceNumber || generateInvoiceNumber(),
-      customerId: newInvoice.customerId!,
-      customerName: customer.name,
-      issueDate: newInvoice.issueDate!,
-      dueDate: newInvoice.dueDate!,
-      status: newInvoice.status as Invoice['status'],
-      items: newInvoice.items || [],
-      subtotal: newInvoice.subtotal || 0,
-      taxRate: newInvoice.taxRate || 0,
-      taxAmount: newInvoice.taxAmount || 0,
-      total: newInvoice.total || 0,
-      notes: newInvoice.notes,
-      paymentTerms: newInvoice.paymentTerms || 'Cash'
-    };
-    if (editingInvoice) {
-      setInvoices(prev => prev.map(inv => inv.id === editingInvoice.id ? invoice : inv));
-      toast({
-        title: "Invoice Updated",
-        description: `Invoice ${invoice.invoiceNumber} has been updated successfully.`
-      });
-    } else {
-      setInvoices(prev => [...prev, invoice]);
-      toast({
-        title: "Invoice Created",
-        description: `Invoice ${invoice.invoiceNumber} has been created and PDF downloaded.`
-      });
 
-      // Generate and download PDF for new invoices
-      generateInvoicePDF(invoice);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No authenticated user');
 
-      // Track if this invoice was created from a sale (capture any ID format)
-      const saleIdMatch = invoice.notes?.match(/Sale ID: (.+)/);
-      const matchedId = saleIdMatch?.[1]?.trim();
-      if (matchedId) {
-        setSalesWithInvoices(prev => {
-          const next = new Set(prev);
-          next.add(String(matchedId));
-          return next;
+      if (editingInvoice) {
+        // Update existing invoice
+        const { error: updateError } = await supabase
+          .from('invoices')
+          .update({
+            customer_id: newInvoice.customerId,
+            customer_name: customer.name,
+            issue_date: newInvoice.issueDate,
+            due_date: newInvoice.dueDate,
+            status: newInvoice.status,
+            subtotal: newInvoice.subtotal || 0,
+            tax_rate: newInvoice.taxRate || 0,
+            tax_amount: newInvoice.taxAmount || 0,
+            total: newInvoice.total || 0,
+            notes: newInvoice.notes,
+            payment_terms: newInvoice.paymentTerms || 'Cash',
+          })
+          .eq('id', editingInvoice.id);
+
+        if (updateError) throw updateError;
+
+        // Delete existing items and re-insert
+        await supabase
+          .from('invoice_items')
+          .delete()
+          .eq('invoice_id', editingInvoice.id);
+
+        if (newInvoice.items && newInvoice.items.length > 0) {
+          const itemsToInsert = newInvoice.items.map(item => ({
+            invoice_id: editingInvoice.id,
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unitPrice,
+            total: item.total,
+            product_id: item.productId === 'custom' ? null : item.productId,
+          }));
+
+          const { error: itemsError } = await supabase
+            .from('invoice_items')
+            .insert(itemsToInsert);
+
+          if (itemsError) throw itemsError;
+        }
+
+        toast({
+          title: "Invoice Updated",
+          description: `Invoice ${editingInvoice.invoiceNumber} has been updated successfully.`
         });
+      } else {
+        // Create new invoice
+        const invoiceNumber = generateInvoiceNumber();
+        
+        const { data: invoiceData, error: invoiceError } = await supabase
+          .from('invoices')
+          .insert({
+            user_id: user.id,
+            customer_id: newInvoice.customerId,
+            customer_name: customer.name,
+            invoice_number: invoiceNumber,
+            issue_date: newInvoice.issueDate,
+            due_date: newInvoice.dueDate,
+            status: newInvoice.status,
+            subtotal: newInvoice.subtotal || 0,
+            tax_rate: newInvoice.taxRate || 0,
+            tax_amount: newInvoice.taxAmount || 0,
+            total: newInvoice.total || 0,
+            notes: newInvoice.notes,
+            payment_terms: newInvoice.paymentTerms || 'Cash',
+          })
+          .select()
+          .single();
+
+        if (invoiceError) throw invoiceError;
+
+        // Insert invoice items
+        if (newInvoice.items && newInvoice.items.length > 0) {
+          const itemsToInsert = newInvoice.items.map(item => ({
+            invoice_id: invoiceData.id,
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unitPrice,
+            total: item.total,
+            product_id: item.productId === 'custom' ? null : item.productId,
+          }));
+
+          const { error: itemsError } = await supabase
+            .from('invoice_items')
+            .insert(itemsToInsert);
+
+          if (itemsError) throw itemsError;
+        }
+
+        // Create invoice object for PDF generation
+        const invoice: Invoice = {
+          id: invoiceData.id,
+          invoiceNumber: invoiceNumber,
+          customerId: newInvoice.customerId!,
+          customerName: customer.name,
+          issueDate: newInvoice.issueDate!,
+          dueDate: newInvoice.dueDate!,
+          status: newInvoice.status as Invoice['status'],
+          items: newInvoice.items || [],
+          subtotal: newInvoice.subtotal || 0,
+          taxRate: newInvoice.taxRate || 0,
+          taxAmount: newInvoice.taxAmount || 0,
+          total: newInvoice.total || 0,
+          notes: newInvoice.notes,
+          paymentTerms: newInvoice.paymentTerms || 'Cash'
+        };
+
+        toast({
+          title: "Invoice Created",
+          description: `Invoice ${invoiceNumber} has been created and PDF downloaded.`
+        });
+
+        // Generate and download PDF for new invoices
+        generateInvoicePDF(invoice);
+
+        // Track if this invoice was created from a sale
+        const saleIdMatch = invoice.notes?.match(/Sale ID: (.+)/);
+        const matchedId = saleIdMatch?.[1]?.trim();
+        if (matchedId) {
+          setSalesWithInvoices(prev => {
+            const next = new Set(prev);
+            next.add(String(matchedId));
+            return next;
+          });
+        }
       }
+
+      resetForm();
+      fetchInvoices();
+    } catch (error: any) {
+      console.error('Error saving invoice:', error);
+      toast({
+        title: "Error saving invoice",
+        description: error.message,
+        variant: "destructive"
+      });
     }
-    resetForm();
   };
   const resetForm = () => {
     setNewInvoice({
@@ -493,25 +675,65 @@ export default function Invoices() {
     setEditingInvoice(invoice);
     setShowForm(true);
   };
-  const deleteInvoice = (invoiceId: string) => {
+  const deleteInvoice = async (invoiceId: string) => {
     const invoice = invoices.find(inv => inv.id === invoiceId);
     if (!invoice) return;
-    setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
-    toast({
-      title: "Invoice Deleted",
-      description: `Invoice ${invoice.invoiceNumber} has been deleted.`
-    });
+
+    try {
+      // Delete invoice items first
+      await supabase
+        .from('invoice_items')
+        .delete()
+        .eq('invoice_id', invoiceId);
+
+      // Delete invoice
+      const { error } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', invoiceId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Invoice Deleted",
+        description: `Invoice ${invoice.invoiceNumber} has been deleted.`
+      });
+
+      fetchInvoices();
+    } catch (error: any) {
+      console.error('Error deleting invoice:', error);
+      toast({
+        title: "Error deleting invoice",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
-  const updateInvoiceStatus = (invoiceId: string, status: Invoice['status']) => {
-    setInvoices(prev => prev.map(inv => inv.id === invoiceId ? {
-      ...inv,
-      status
-    } : inv));
-    const invoice = invoices.find(inv => inv.id === invoiceId);
-    toast({
-      title: "Status Updated",
-      description: `Invoice ${invoice?.invoiceNumber} marked as ${status}.`
-    });
+
+  const updateInvoiceStatus = async (invoiceId: string, status: Invoice['status']) => {
+    try {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ status })
+        .eq('id', invoiceId);
+
+      if (error) throw error;
+
+      const invoice = invoices.find(inv => inv.id === invoiceId);
+      toast({
+        title: "Status Updated",
+        description: `Invoice ${invoice?.invoiceNumber} marked as ${status}.`
+      });
+
+      fetchInvoices();
+    } catch (error: any) {
+      console.error('Error updating invoice status:', error);
+      toast({
+        title: "Error updating status",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
   const handleCreateInvoiceFromSale = (sale: typeof salesLog[0]) => {
     // Find customer by name
@@ -997,10 +1219,17 @@ export default function Invoices() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredInvoices.length === 0 ? <div className="text-center py-8 text-muted-foreground">
+          {loadingInvoices ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Loading invoices...</p>
+            </div>
+          ) : filteredInvoices.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
               <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p>No invoices found</p>
-            </div> : <div className="mobile-table-scroll">
+            </div>
+          ) : (
+            <div className="mobile-table-scroll">
               <Table className="mobile-table">
                 <TableHeader>
                   <TableRow>
@@ -1069,7 +1298,8 @@ export default function Invoices() {
                     </TableRow>)}
                 </TableBody>
               </Table>
-            </div>}
+            </div>
+          )}
         </CardContent>
       </Card>
 
