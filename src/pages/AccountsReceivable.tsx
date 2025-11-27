@@ -214,7 +214,11 @@ export default function AccountsReceivable() {
                     type="number"
                     step="0.01"
                     value={formData.subtotal}
-                    onChange={(e) => setFormData({ ...formData, subtotal: e.target.value })}
+                    onChange={(e) => {
+                      const subtotal = parseFloat(e.target.value) || 0;
+                      const vat = (subtotal * 0.125).toFixed(2);
+                      setFormData({ ...formData, subtotal: e.target.value, vat_amount: vat });
+                    }}
                     placeholder="0.00"
                     required
                   />
