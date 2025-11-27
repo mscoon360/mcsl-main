@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle, DollarSign, Download, Check } from 'lucide-react';
+import { AlertCircle, DollarSign, Download, Check, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -53,6 +53,8 @@ export default function AccountsReceivable() {
   const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
   const [wtcNumber, setWtcNumber] = useState('');
+  const [showInfoDialog, setShowInfoDialog] = useState(false);
+  const [infoInvoice, setInfoInvoice] = useState<Invoice | null>(null);
 
   const fetchInvoices = async () => {
     try {
@@ -161,6 +163,20 @@ export default function AccountsReceivable() {
     setAccountName('');
     setWtcNumber('');
     setShowPaymentDialog(true);
+  };
+
+  const handleViewInfo = (invoice: Invoice) => {
+    setInfoInvoice(invoice);
+    setShowInfoDialog(true);
+  };
+
+  const parsePaymentDetails = (notes: string | null | undefined) => {
+    if (!notes) return null;
+    try {
+      return JSON.parse(notes);
+    } catch {
+      return null;
+    }
   };
 
   const submitPayment = async () => {
@@ -407,6 +423,98 @@ export default function AccountsReceivable() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showInfoDialog} onOpenChange={setShowInfoDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invoice Details</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-muted-foreground">Invoice Number</Label>
+                <p className="font-medium">{infoInvoice?.invoice_number}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Status</Label>
+                <div className="mt-1">{infoInvoice && getStatusBadge(infoInvoice.status)}</div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Customer</Label>
+                <p className="font-medium">{infoInvoice?.customer_name}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Total Amount</Label>
+                <p className="font-medium">${infoInvoice?.total.toFixed(2)}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Issue Date</Label>
+                <p className="font-medium">
+                  {infoInvoice && format(new Date(infoInvoice.issue_date), 'MMM dd, yyyy')}
+                </p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Due Date</Label>
+                <p className="font-medium">
+                  {infoInvoice && format(new Date(infoInvoice.due_date), 'MMM dd, yyyy')}
+                </p>
+              </div>
+            </div>
+
+            {infoInvoice?.notes && parsePaymentDetails(infoInvoice.notes) && (
+              <div className="border-t pt-4 mt-4">
+                <Label className="text-lg font-semibold">Payment Details</Label>
+                <div className="mt-3 space-y-2">
+                  {(() => {
+                    const details = parsePaymentDetails(infoInvoice.notes);
+                    if (!details) return null;
+                    
+                    return (
+                      <>
+                        <div>
+                          <Label className="text-muted-foreground">Payment Method</Label>
+                          <p className="font-medium">{details.payment_method}</p>
+                        </div>
+                        {details.cheque_number && (
+                          <>
+                            <div>
+                              <Label className="text-muted-foreground">Cheque Number</Label>
+                              <p className="font-medium">{details.cheque_number}</p>
+                            </div>
+                            <div>
+                              <Label className="text-muted-foreground">Name on Cheque</Label>
+                              <p className="font-medium">{details.cheque_name}</p>
+                            </div>
+                          </>
+                        )}
+                        {details.account_number && (
+                          <>
+                            <div>
+                              <Label className="text-muted-foreground">Account Number</Label>
+                              <p className="font-medium">{details.account_number}</p>
+                            </div>
+                            <div>
+                              <Label className="text-muted-foreground">Account Name</Label>
+                              <p className="font-medium">{details.account_name}</p>
+                            </div>
+                            <div>
+                              <Label className="text-muted-foreground">WTC Number</Label>
+                              <p className="font-medium">{details.wtc_number}</p>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowInfoDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {loading ? (
         <div className="text-center py-8">Loading invoices...</div>
       ) : (
@@ -456,6 +564,14 @@ export default function AccountsReceivable() {
                             title="Download Invoice"
                           >
                             <Download className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleViewInfo(invoice)}
+                            title="View Details"
+                          >
+                            <Info className="h-4 w-4" />
                           </Button>
                           {invoice.status !== 'paid' && (
                             <Button 
