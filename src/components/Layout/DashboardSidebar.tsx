@@ -26,6 +26,12 @@ import {
   Wrench,
   ClipboardCheck,
   Fuel,
+  Briefcase,
+  GraduationCap,
+  FileCheck,
+  HardHat,
+  Microscope,
+  Megaphone,
 } from "lucide-react";
 import magicCareLogo from "@/assets/magic-care-logo.png";
 import {
@@ -130,6 +136,19 @@ const navigation: NavigationSection[] = [
       { name: "Contracts", href: "/rental-agreements", icon: FileText },
       { name: "Customer Database", href: "/customers", icon: Users },
     ]
+  },
+  {
+    title: "Group Departments",
+    items: [
+      { name: "Group Legal Department", href: "/group-legal", icon: Scale },
+      { name: "Group Finance Department", href: "/group-finance", icon: DollarSign },
+      { name: "Group Human Resource Department", href: "/group-hr", icon: Users },
+      { name: "Group Learning & Development Department", href: "/group-learning", icon: GraduationCap },
+      { name: "Group Policies & Standard Department", href: "/group-policies", icon: FileCheck },
+      { name: "Group HSSE Department", href: "/group-hsse", icon: HardHat },
+      { name: "Group Research Development & A.I Department", href: "/group-research", icon: Microscope },
+      { name: "Group Marketing Department", href: "/group-marketing", icon: Megaphone },
+    ]
   }
 ];
 
@@ -142,7 +161,8 @@ export function DashboardSidebar() {
     "Main": true,
     "Finance Department": true,
     "Procurement & Logistics Department": true,
-    "Divisional Sales & Contracts Department": true
+    "Divisional Sales & Contracts Department": true,
+    "Group Departments": true
   });
   const { isAdmin, user, signOut } = useAuth();
   const [allowedSections, setAllowedSections] = useState<string[]>([]);
