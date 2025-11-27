@@ -19,14 +19,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 export default function Products() {
   const { products, loading, addProduct, updateProduct, deleteProduct } = useProducts();
-  const { divisions, loading: divisionsLoading, addDivision, deleteDivision } = useDivisions();
+  const { divisions, loading: divisionsLoading, addDivision, updateDivision, deleteDivision } = useDivisions();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isDivisionDialogOpen, setIsDivisionDialogOpen] = useState(false);
+  const [isEditDivisionDialogOpen, setIsEditDivisionDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [editingDivision, setEditingDivision] = useState<any>(null);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [productHistory, setProductHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -34,6 +36,8 @@ export default function Products() {
   const [needsServicing, setNeedsServicing] = useState(false);
   const [divisionName, setDivisionName] = useState('');
   const [subdivisionNames, setSubdivisionNames] = useState<string[]>(['']);
+  const [editDivisionName, setEditDivisionName] = useState('');
+  const [editSubdivisionNames, setEditSubdivisionNames] = useState<string[]>(['']);
   const [selectedDivisionId, setSelectedDivisionId] = useState<string>('');
   const [selectedSubdivisionId, setSelectedSubdivisionId] = useState<string>('');
   const [editDivisionId, setEditDivisionId] = useState<string>('');
@@ -269,6 +273,56 @@ export default function Products() {
     const updated = [...subdivisionNames];
     updated[index] = value;
     setSubdivisionNames(updated);
+  };
+
+  const handleEditDivision = (division: any) => {
+    setEditingDivision(division);
+    setEditDivisionName(division.name);
+    setEditSubdivisionNames(
+      division.subdivisions && division.subdivisions.length > 0
+        ? division.subdivisions.map((sub: any) => sub.name)
+        : ['']
+    );
+    setIsEditDivisionDialogOpen(true);
+  };
+
+  const handleUpdateDivision = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editDivisionName.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a division name',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const validSubdivisions = editSubdivisionNames.filter(name => name.trim() !== '');
+    
+    try {
+      await updateDivision(editingDivision.id, editDivisionName, validSubdivisions);
+      setIsEditDivisionDialogOpen(false);
+      setEditingDivision(null);
+      setEditDivisionName('');
+      setEditSubdivisionNames(['']);
+    } catch (error) {
+      // Error handled in hook
+    }
+  };
+
+  const addEditSubdivisionField = () => {
+    setEditSubdivisionNames([...editSubdivisionNames, '']);
+  };
+
+  const removeEditSubdivisionField = (index: number) => {
+    setEditSubdivisionNames(editSubdivisionNames.filter((_, i) => i !== index));
+  };
+
+  const updateEditSubdivisionName = (index: number, value: string) => {
+    const updated = [...editSubdivisionNames];
+    updated[index] = value;
+    setEditSubdivisionNames(updated);
   };
 
   if (loading) {
@@ -553,13 +607,22 @@ export default function Products() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => deleteDivision(division.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditDivision(division)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteDivision(division.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -568,6 +631,70 @@ export default function Products() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Division Dialog */}
+      <Dialog open={isEditDivisionDialogOpen} onOpenChange={setIsEditDivisionDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Division</DialogTitle>
+          </DialogHeader>
+          {editingDivision && (
+            <form onSubmit={handleUpdateDivision} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-division-name">Division Name *</Label>
+                <Input
+                  id="edit-division-name"
+                  value={editDivisionName}
+                  onChange={(e) => setEditDivisionName(e.target.value)}
+                  placeholder="Enter division name"
+                  required
+                />
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Subdivisions</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addEditSubdivisionField}
+                  >
+                    <Plus className="mr-2 h-3 w-3" />
+                    Add Subdivision
+                  </Button>
+                </div>
+
+                {editSubdivisionNames.map((name, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      value={name}
+                      onChange={(e) => updateEditSubdivisionName(index, e.target.value)}
+                      placeholder={`Subdivision ${index + 1}`}
+                    />
+                    {editSubdivisionNames.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeEditSubdivisionField(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <Button type="submit" className="w-full">
+                Update Division
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>
