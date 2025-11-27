@@ -85,15 +85,6 @@ const navigation: NavigationSection[] = [
     ]
   },
   {
-    title: "Fleet",
-    items: [
-      { name: "Fleet Management", href: "/fleet", icon: Truck },
-      { name: "Inspections", href: "/inspections", icon: ClipboardCheck },
-      { name: "Driver Companion", href: "/companion", icon: Shield },
-      { name: "Fuel", href: "/fuel", icon: Fuel },
-    ]
-  },
-  {
     title: "Finance",
     items: [
       { name: "Overview", href: "/finance", icon: BarChart3 },
@@ -118,6 +109,15 @@ const navigation: NavigationSection[] = [
       { name: "Chart of Accounts", href: "/chart-of-accounts", icon: BookOpen },
       { name: "Trial Balance", href: "/trial-balance", icon: Scale },
       { name: "Collections", href: "/rental-payments", icon: CreditCard },
+    ]
+  },
+  {
+    title: "Fleet",
+    items: [
+      { name: "Fleet Management", href: "/fleet", icon: Truck },
+      { name: "Inspections", href: "/inspections", icon: ClipboardCheck },
+      { name: "Driver Companion", href: "/companion", icon: Shield },
+      { name: "Fuel", href: "/fuel", icon: Fuel },
     ]
   }
 ];
