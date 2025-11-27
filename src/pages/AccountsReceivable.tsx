@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -46,6 +47,12 @@ export default function AccountsReceivable() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [chequeNumber, setChequeNumber] = useState('');
+  const [chequeName, setChequeName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [wtcNumber, setWtcNumber] = useState('');
 
   const fetchInvoices = async () => {
     try {
@@ -147,6 +154,12 @@ export default function AccountsReceivable() {
   const handleRecordPayment = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
     setPaymentAmount(invoice.total.toString());
+    setPaymentMethod(invoice.payment_terms || '');
+    setChequeNumber('');
+    setChequeName('');
+    setAccountNumber('');
+    setAccountName('');
+    setWtcNumber('');
     setShowPaymentDialog(true);
   };
 
@@ -157,9 +170,29 @@ export default function AccountsReceivable() {
       const amount = parseFloat(paymentAmount);
       const newStatus = amount >= selectedInvoice.total ? 'paid' : 'partially-paid';
 
+      let paymentDetails: any = { payment_method: paymentMethod };
+      
+      if (paymentMethod === 'Cheque') {
+        paymentDetails = {
+          ...paymentDetails,
+          cheque_number: chequeNumber,
+          cheque_name: chequeName
+        };
+      } else if (paymentMethod === 'Bank Transfer') {
+        paymentDetails = {
+          ...paymentDetails,
+          account_number: accountNumber,
+          account_name: accountName,
+          wtc_number: wtcNumber
+        };
+      }
+
       const { error } = await supabase
         .from('invoices')
-        .update({ status: newStatus })
+        .update({ 
+          status: newStatus,
+          notes: JSON.stringify(paymentDetails)
+        })
         .eq('id', selectedInvoice.id);
 
       if (error) throw error;
@@ -172,6 +205,12 @@ export default function AccountsReceivable() {
       setShowPaymentDialog(false);
       setSelectedInvoice(null);
       setPaymentAmount('');
+      setPaymentMethod('');
+      setChequeNumber('');
+      setChequeName('');
+      setAccountNumber('');
+      setAccountName('');
+      setWtcNumber('');
       fetchInvoices();
     } catch (error: any) {
       console.error('Error recording payment:', error);
@@ -258,7 +297,7 @@ export default function AccountsReceivable() {
       </div>
 
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Record Payment</DialogTitle>
           </DialogHeader>
@@ -283,6 +322,79 @@ export default function AccountsReceivable() {
                 required
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="paymentMethod">Payment Method *</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger id="paymentMethod">
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="Cheque">Cheque</SelectItem>
+                  <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {paymentMethod === 'Cheque' && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="chequeNumber">Cheque Number *</Label>
+                  <Input
+                    id="chequeNumber"
+                    value={chequeNumber}
+                    onChange={(e) => setChequeNumber(e.target.value)}
+                    placeholder="Enter cheque number"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="chequeName">Name on Cheque *</Label>
+                  <Input
+                    id="chequeName"
+                    value={chequeName}
+                    onChange={(e) => setChequeName(e.target.value)}
+                    placeholder="Enter name on cheque"
+                    required
+                  />
+                </div>
+              </>
+            )}
+
+            {paymentMethod === 'Bank Transfer' && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="accountNumber">Account Number *</Label>
+                  <Input
+                    id="accountNumber"
+                    value={accountNumber}
+                    onChange={(e) => setAccountNumber(e.target.value)}
+                    placeholder="Enter account number"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="accountName">Account Name *</Label>
+                  <Input
+                    id="accountName"
+                    value={accountName}
+                    onChange={(e) => setAccountName(e.target.value)}
+                    placeholder="Enter account name"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="wtcNumber">WTC Number *</Label>
+                  <Input
+                    id="wtcNumber"
+                    value={wtcNumber}
+                    onChange={(e) => setWtcNumber(e.target.value)}
+                    placeholder="Enter WTC number"
+                    required
+                  />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
