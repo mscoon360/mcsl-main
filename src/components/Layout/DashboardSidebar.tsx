@@ -62,14 +62,11 @@ type NavigationSection = {
 
 const navigation: NavigationSection[] = [
   {
-    title: "Group Supporting Departments",
+    title: "Main",
     items: [
       { name: "Dashboard", href: "/", icon: BarChart3 },
       { name: "Sales", href: "/sales", icon: ShoppingCart },
       { name: "Customers", href: "/customers", icon: Users },
-      { name: "Product Listing", href: "/products", icon: Package },
-      { name: "Inventory", href: "/inventory", icon: Warehouse },
-      { name: "Barcode Scanner", href: "/barcode-scanner", icon: ScanBarcode },
       { name: "Data Extractor (Coming Soon)", href: "/data-extractor", icon: ScanText },
       { name: "Promotions", href: "/promotions", icon: Tag },
       { name: "Contracts", href: "/rental-agreements", icon: FileText },
@@ -104,12 +101,21 @@ const navigation: NavigationSection[] = [
     ]
   },
   {
-    title: "Procurement and Logistics Department",
+    title: "Procurement and Logistics",
     items: [
-      { name: "Fleet Management", href: "/fleet", icon: Truck },
-      { name: "Inspections", href: "/inspections", icon: ClipboardCheck },
-      { name: "Driver Companion", href: "/companion", icon: Shield },
-      { name: "Fuel", href: "/fuel", icon: Fuel },
+      { name: "Product Catalog", href: "/products", icon: Package },
+      { name: "Inventory", href: "/inventory", icon: Warehouse },
+      { name: "Barcode Scanner", href: "/barcode-scanner", icon: ScanBarcode },
+      { 
+        name: "Fleet", 
+        icon: Truck,
+        subItems: [
+          { name: "Fleet Management", href: "/fleet" },
+          { name: "Inspections", href: "/inspections" },
+          { name: "Driver Companion", href: "/companion" },
+          { name: "Fuel", href: "/fuel" }
+        ]
+      },
       { 
         name: "Maintenance", 
         icon: Wrench,
@@ -128,9 +134,9 @@ export function DashboardSidebar() {
   const isCollapsed = state === "collapsed";
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    "Group Supporting Departments": true,
+    "Main": true,
     "Accounting and Finance": true,
-    "Procurement and Logistics Department": true
+    "Procurement and Logistics": true
   });
   const { isAdmin, user, signOut } = useAuth();
   const [allowedSections, setAllowedSections] = useState<string[]>([]);
