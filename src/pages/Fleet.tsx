@@ -44,9 +44,16 @@ export default function Fleet() {
   const { users, isLoading: usersLoading, error: usersError } = useUsers("procurement");
   const { isAdmin } = useAuth();
 
-  // Show error toast if users fail to load
+  console.log("[Fleet] render", {
+    vehiclesLength: vehicles?.length,
+    isLoading,
+    usersLength: users?.length,
+    usersLoading,
+    usersError,
+  });
+
   if (usersError) {
-    console.error("Failed to load users:", usersError);
+    console.error("[Fleet] Failed to load users:", usersError);
   }
 
   const handleDeleteVehicle = (vehicleId: string, licensePlate: string) => {
