@@ -1010,6 +1010,8 @@ export default function Invoices() {
                     <TableHead className="hide-mobile">Issue Date</TableHead>
                     <TableHead className="hide-mobile">Due Date</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right min-w-[80px]">Subtotal</TableHead>
+                    <TableHead className="text-right min-w-[80px]">VAT</TableHead>
                     <TableHead className="text-right min-w-[80px]">Total</TableHead>
                     <TableHead className="w-24 md:w-32">Actions</TableHead>
                   </TableRow>
@@ -1030,6 +1032,8 @@ export default function Invoices() {
                           {invoice.status.toUpperCase()}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-right text-xs md:text-sm">${invoice.subtotal.toFixed(2)}</TableCell>
+                      <TableCell className="text-right text-xs md:text-sm">${invoice.taxAmount.toFixed(2)}</TableCell>
                       <TableCell className="text-right font-bold text-xs md:text-sm">${invoice.total.toFixed(2)}</TableCell>
                       <TableCell>
                         <TooltipProvider>
