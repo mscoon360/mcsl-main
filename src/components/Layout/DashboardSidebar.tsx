@@ -75,6 +75,19 @@ const navigation: NavigationSection[] = [
     ]
   },
   {
+    title: "Group Supporting Departments",
+    items: [
+      { name: "Legal Dept.", href: "/group-legal", icon: Scale },
+      { name: "Finance Dept.", href: "/group-finance", icon: DollarSign },
+      { name: "Human Resource Dept.", href: "/group-hr", icon: Users },
+      { name: "Learning & Development Dept.", href: "/group-learning", icon: GraduationCap },
+      { name: "Policies & Standard Dept.", href: "/group-policies", icon: FileCheck },
+      { name: "HSSE Dept.", href: "/group-hsse", icon: HardHat },
+      { name: "Research Development & A.I Dept.", href: "/group-research", icon: Microscope },
+      { name: "Marketing Dept.", href: "/group-marketing", icon: Megaphone },
+    ]
+  },
+  {
     title: "Finance Department",
     items: [
       { name: "Overview", href: "/finance", icon: BarChart3 },
@@ -135,19 +148,6 @@ const navigation: NavigationSection[] = [
       { name: "Promotions", href: "/promotions", icon: Tag },
       { name: "Contracts", href: "/rental-agreements", icon: FileText },
       { name: "Customer Database", href: "/customers", icon: Users },
-    ]
-  },
-  {
-    title: "Group Supporting Departments",
-    items: [
-      { name: "Legal Dept.", href: "/group-legal", icon: Scale },
-      { name: "Finance Dept.", href: "/group-finance", icon: DollarSign },
-      { name: "Human Resource Dept.", href: "/group-hr", icon: Users },
-      { name: "Learning & Development Dept.", href: "/group-learning", icon: GraduationCap },
-      { name: "Policies & Standard Dept.", href: "/group-policies", icon: FileCheck },
-      { name: "HSSE Dept.", href: "/group-hsse", icon: HardHat },
-      { name: "Research Development & A.I Dept.", href: "/group-research", icon: Microscope },
-      { name: "Marketing Dept.", href: "/group-marketing", icon: Megaphone },
     ]
   }
 ];
