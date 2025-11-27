@@ -74,7 +74,7 @@ const navigation: NavigationSection[] = [
     ]
   },
   {
-    title: "Accounting and Finance",
+    title: "Finance and Accounting Department",
     items: [
       { name: "Overview", href: "/finance", icon: BarChart3 },
       { 
@@ -101,7 +101,7 @@ const navigation: NavigationSection[] = [
     ]
   },
   {
-    title: "Procurement and Logistics",
+    title: "Procurement and Logistics Department",
     items: [
       { name: "Product Catalog", href: "/products", icon: Package },
       { name: "Inventory", href: "/inventory", icon: Warehouse },
@@ -135,8 +135,8 @@ export function DashboardSidebar() {
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     "Main": true,
-    "Accounting and Finance": true,
-    "Procurement and Logistics": true
+    "Finance and Accounting Department": true,
+    "Procurement and Logistics Department": true
   });
   const { isAdmin, user, signOut } = useAuth();
   const [allowedSections, setAllowedSections] = useState<string[]>([]);
