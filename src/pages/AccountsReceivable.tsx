@@ -24,6 +24,8 @@ export default function AccountsReceivable() {
     invoice_number: '',
     invoice_date: format(new Date(), 'yyyy-MM-dd'),
     due_date: format(new Date(), 'yyyy-MM-dd'),
+    subtotal: '',
+    vat_amount: '',
     amount: '',
     description: '',
     status: 'unpaid',
@@ -32,9 +34,15 @@ export default function AccountsReceivable() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const subtotal = parseFloat(formData.subtotal) || 0;
+    const vatAmount = parseFloat(formData.vat_amount) || 0;
+    const total = subtotal + vatAmount;
+    
     const invoiceData = {
       ...formData,
-      amount: parseFloat(formData.amount),
+      subtotal,
+      vat_amount: vatAmount,
+      amount: total,
     };
     
     if (editingInvoice) {
@@ -55,6 +63,8 @@ export default function AccountsReceivable() {
       invoice_number: '',
       invoice_date: format(new Date(), 'yyyy-MM-dd'),
       due_date: format(new Date(), 'yyyy-MM-dd'),
+      subtotal: '',
+      vat_amount: '',
       amount: '',
       description: '',
       status: 'unpaid',
@@ -69,6 +79,8 @@ export default function AccountsReceivable() {
       invoice_number: invoice.invoice_number,
       invoice_date: invoice.invoice_date,
       due_date: invoice.due_date,
+      subtotal: (invoice.subtotal || 0).toString(),
+      vat_amount: (invoice.vat_amount || 0).toString(),
       amount: invoice.amount.toString(),
       description: invoice.description || '',
       status: invoice.status,
@@ -171,7 +183,7 @@ export default function AccountsReceivable() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="invoice_date">Invoice Date *</Label>
                   <Input
@@ -192,16 +204,41 @@ export default function AccountsReceivable() {
                     required
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Amount *</Label>
+                  <Label htmlFor="subtotal">Subtotal *</Label>
                   <Input
-                    id="amount"
+                    id="subtotal"
                     type="number"
                     step="0.01"
-                    value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    value={formData.subtotal}
+                    onChange={(e) => setFormData({ ...formData, subtotal: e.target.value })}
                     placeholder="0.00"
                     required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="vat_amount">Output VAT (12.5%)</Label>
+                  <Input
+                    id="vat_amount"
+                    type="number"
+                    step="0.01"
+                    value={formData.vat_amount}
+                    onChange={(e) => setFormData({ ...formData, vat_amount: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="total">Total</Label>
+                  <Input
+                    id="total"
+                    type="number"
+                    step="0.01"
+                    value={(parseFloat(formData.subtotal || '0') + parseFloat(formData.vat_amount || '0')).toFixed(2)}
+                    disabled
+                    className="bg-muted"
                   />
                 </div>
               </div>
@@ -257,9 +294,10 @@ export default function AccountsReceivable() {
                   <TableHead>Invoice #</TableHead>
                   <TableHead>Invoice Date</TableHead>
                   <TableHead>Due Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Paid</TableHead>
-                  <TableHead>Balance</TableHead>
+                  <TableHead className="text-right">Subtotal</TableHead>
+                  <TableHead className="text-right">Output VAT</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Balance</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -267,7 +305,7 @@ export default function AccountsReceivable() {
               <TableBody>
                 {invoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center text-muted-foreground">
                       No invoices found. Add your first invoice to get started.
                     </TableCell>
                   </TableRow>
@@ -278,9 +316,10 @@ export default function AccountsReceivable() {
                       <TableCell>{invoice.invoice_number}</TableCell>
                       <TableCell>{format(new Date(invoice.invoice_date), 'MMM dd, yyyy')}</TableCell>
                       <TableCell>{format(new Date(invoice.due_date), 'MMM dd, yyyy')}</TableCell>
-                      <TableCell className="font-mono">${invoice.amount.toLocaleString()}</TableCell>
-                      <TableCell className="font-mono">${invoice.amount_paid.toLocaleString()}</TableCell>
-                      <TableCell className="font-mono">${(invoice.amount - invoice.amount_paid).toLocaleString()}</TableCell>
+                      <TableCell className="font-mono text-right">${(invoice.subtotal || 0).toFixed(2)}</TableCell>
+                      <TableCell className="font-mono text-right">${(invoice.vat_amount || 0).toFixed(2)}</TableCell>
+                      <TableCell className="font-mono text-right font-bold">${invoice.amount.toFixed(2)}</TableCell>
+                      <TableCell className="font-mono text-right">${(invoice.amount - invoice.amount_paid).toFixed(2)}</TableCell>
                       <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">

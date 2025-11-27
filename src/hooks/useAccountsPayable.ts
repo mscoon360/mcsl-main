@@ -12,6 +12,8 @@ export interface AccountPayable {
   due_date: string;
   amount: number;
   amount_paid: number;
+  subtotal: number;
+  vat_amount: number;
   status: string;
   description?: string;
   payment_date?: string;
