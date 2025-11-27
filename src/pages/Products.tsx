@@ -426,8 +426,8 @@ export default function Products() {
                   <Input id="name" name="name" required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="sku">SKU *</Label>
-                  <Input id="sku" name="sku" required />
+                  <Label htmlFor="supplier_name">Supplier Name *</Label>
+                  <Input id="supplier_name" name="supplier_name" required />
                 </div>
               </div>
 
@@ -547,8 +547,8 @@ export default function Products() {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="supplier_name">Supplier Name *</Label>
-                  <Input id="supplier_name" name="supplier_name" required />
+                  <Label htmlFor="sku">SKU *</Label>
+                  <Input id="sku" name="sku" required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="min_stock">Minimum Stock *</Label>
@@ -823,9 +823,14 @@ export default function Products() {
                   <Input id="edit-name" name="name" defaultValue={editingProduct.name} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-sku">SKU *</Label>
-                  <Input id="edit-sku" name="sku" defaultValue={editingProduct.sku} required />
+                  <Label htmlFor="edit-supplier_name">Supplier Name *</Label>
+                  <Input id="edit-supplier_name" name="supplier_name" defaultValue={editingProduct.supplier_name} required />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-sku">SKU *</Label>
+                <Input id="edit-sku" name="sku" defaultValue={editingProduct.sku} required />
               </div>
 
               <div className="space-y-2">
