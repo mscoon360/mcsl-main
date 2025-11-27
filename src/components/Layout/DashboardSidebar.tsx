@@ -131,6 +131,11 @@ const navigation: NavigationSection[] = [
           { name: "Fuel", href: "/fuel" }
         ]
       },
+    ]
+  },
+  {
+    title: "Operational Divisions",
+    items: [
       { 
         name: "Maintenance", 
         icon: Wrench,
@@ -162,6 +167,7 @@ export function DashboardSidebar() {
     "Main": true,
     "Finance Department": true,
     "Procurement & Logistics Department": true,
+    "Operational Divisions": true,
     "Divisional Sales & Contracts Department": true,
     "Group Supporting Departments": true
   });
