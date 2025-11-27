@@ -234,17 +234,21 @@ export function DashboardSidebar() {
     return false;
   };
 
-  const toggleDropdown = (itemName: string, nextOpen: boolean) => {
-    setOpenDropdowns(nextOpen ? { [itemName]: true } : {});
+  const toggleDropdown = (itemName: string) => {
+    setOpenDropdowns(prev => {
+      const isCurrentlyOpen = prev[itemName];
+      // Close all dropdowns, then open only the clicked one if it was closed
+      return isCurrentlyOpen ? {} : { [itemName]: true };
+    });
   };
 
   const toggleSection = (sectionName: string) => {
-    setOpenSections(prev => {
-      const isCurrentlyOpen = prev[sectionName];
-      // Close all sections, then open only the clicked one if it was closed
-      return isCurrentlyOpen ? {} : { [sectionName]: true };
-    });
+    setOpenSections(prev => ({
+      ...prev,
+      [sectionName]: !prev[sectionName]
+    }));
   };
+
   return (
     <Sidebar 
       className={`${isCollapsed ? "w-16" : "w-64"}`} 
@@ -271,9 +275,7 @@ export function DashboardSidebar() {
           <Collapsible
             key={section.title}
             open={openSections[section.title]}
-            onOpenChange={(open) =>
-              setOpenSections(open ? { [section.title]: true } : {})
-            }
+            onOpenChange={() => toggleSection(section.title)}
           >
             <SidebarGroup>
               {!isCollapsed && (
@@ -293,8 +295,8 @@ export function DashboardSidebar() {
                   <SidebarMenuItem key={item.name}>
                     {item.subItems ? (
                       <Collapsible 
-                        open={openDropdowns[item.name]} 
-                        onOpenChange={(open) => toggleDropdown(item.name, open)}
+                        open={openDropdowns[item.name] || isGroupActive(item)} 
+                        onOpenChange={() => toggleDropdown(item.name)}
                       >
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton 
@@ -308,7 +310,7 @@ export function DashboardSidebar() {
                             {!isCollapsed && <span className="font-medium text-sm">{item.name}</span>}
                             {!isCollapsed && (
                               <ChevronDown className={`ml-auto h-3 w-3 md:h-4 md:w-4 transition-transform ${
-                                openDropdowns[item.name] ? 'rotate-180' : ''
+                                openDropdowns[item.name] || isGroupActive(item) ? 'rotate-180' : ''
                               }`} />
                             )}
                           </SidebarMenuButton>
