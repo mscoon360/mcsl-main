@@ -325,52 +325,50 @@ export function DashboardSidebar() {
                           </Tooltip>
                         </CollapsibleTrigger>
                         
-                        {!isCollapsed && (
-                          <CollapsibleContent>
-                            <SidebarMenuSub>
-                              {item.subItems.map((subItem) => (
-                                <SidebarMenuSubItem key={subItem.name}>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <SidebarMenuSubButton asChild>
-                                        <NavLink
-                                          to={subItem.href}
-                                          className={({ isActive: navIsActive }) =>
-                                            `flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-lg transition-colors text-sm ${
-                                              isActive(subItem.href)
-                                                ? "bg-primary text-primary-foreground"
-                                                : "text-sidebar-foreground hover:bg-sidebar-accent"
-                                            }`
-                                          }
-                                        >
-                                           {subItem.name === "Collections" ? (
-                                            <CreditCard className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                                          ) : subItem.name === "Overview" ? (
-                                            <BarChart3 className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                                          ) : subItem.name === "Income" ? (
-                                            <DollarSign className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                                           ) : subItem.name === "Expenditure" ? (
-                                            <FileText className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                                          ) : subItem.name === "Invoices" ? (
-                                            <Receipt className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                                          ) : subItem.name === "Sales" ? (
-                                            <ShoppingCart className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                                          ) : (
-                                            <FileText className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                                          )}
-                                          <span className="font-medium truncate">{subItem.name}</span>
-                                        </NavLink>
-                                      </SidebarMenuSubButton>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="right">
-                                      <p>{subItem.name}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        )}
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {item.subItems.map((subItem) => (
+                              <SidebarMenuSubItem key={subItem.name}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <SidebarMenuSubButton asChild>
+                                      <NavLink
+                                        to={subItem.href}
+                                        className={({ isActive: navIsActive }) =>
+                                          `flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-lg transition-colors text-sm ${
+                                            isActive(subItem.href)
+                                              ? "bg-primary text-primary-foreground"
+                                              : "text-sidebar-foreground hover:bg-sidebar-accent"
+                                          }`
+                                        }
+                                      >
+                                         {subItem.name === "Collections" ? (
+                                          <CreditCard className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                                        ) : subItem.name === "Overview" ? (
+                                          <BarChart3 className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                                        ) : subItem.name === "Income" ? (
+                                          <DollarSign className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                                         ) : subItem.name === "Expenditure" ? (
+                                          <FileText className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                                        ) : subItem.name === "Invoices" ? (
+                                          <Receipt className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                                        ) : subItem.name === "Sales" ? (
+                                          <ShoppingCart className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                                        ) : (
+                                          <FileText className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                                        )}
+                                        <span className="font-medium truncate">{subItem.name}</span>
+                                      </NavLink>
+                                    </SidebarMenuSubButton>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right">
+                                    <p>{subItem.name}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
                       </Collapsible>
                     ) : (
                       <Tooltip>
