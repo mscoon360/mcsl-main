@@ -10,6 +10,8 @@ export interface Product {
   rental_price?: number;
   sku: string;
   category?: string;
+  division_id?: string;
+  subdivision_id?: string;
   units?: string;
   stock: number;
   status: string;

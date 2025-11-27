@@ -1044,6 +1044,7 @@ export type Database = {
           cost_price: number | null
           created_at: string | null
           description: string | null
+          division_id: string | null
           id: string
           is_rental: boolean | null
           is_rental_only: boolean | null
@@ -1056,6 +1057,7 @@ export type Database = {
           sku: string
           status: string | null
           stock: number | null
+          subdivision_id: string | null
           supplier_name: string | null
           units: string | null
           updated_at: string | null
@@ -1066,6 +1068,7 @@ export type Database = {
           cost_price?: number | null
           created_at?: string | null
           description?: string | null
+          division_id?: string | null
           id?: string
           is_rental?: boolean | null
           is_rental_only?: boolean | null
@@ -1078,6 +1081,7 @@ export type Database = {
           sku: string
           status?: string | null
           stock?: number | null
+          subdivision_id?: string | null
           supplier_name?: string | null
           units?: string | null
           updated_at?: string | null
@@ -1088,6 +1092,7 @@ export type Database = {
           cost_price?: number | null
           created_at?: string | null
           description?: string | null
+          division_id?: string | null
           id?: string
           is_rental?: boolean | null
           is_rental_only?: boolean | null
@@ -1100,12 +1105,28 @@ export type Database = {
           sku?: string
           status?: string | null
           stock?: number | null
+          subdivision_id?: string | null
           supplier_name?: string | null
           units?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_subdivision_id_fkey"
+            columns: ["subdivision_id"]
+            isOneToOne: false
+            referencedRelation: "subdivisions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
