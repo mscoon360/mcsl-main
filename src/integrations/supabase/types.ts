@@ -64,8 +64,10 @@ export type Database = {
           payment_date: string | null
           payment_method: string | null
           status: string | null
+          subtotal: number | null
           updated_at: string | null
           user_id: string
+          vat_amount: number | null
           vendor_id: string | null
           vendor_name: string
         }
@@ -82,8 +84,10 @@ export type Database = {
           payment_date?: string | null
           payment_method?: string | null
           status?: string | null
+          subtotal?: number | null
           updated_at?: string | null
           user_id: string
+          vat_amount?: number | null
           vendor_id?: string | null
           vendor_name: string
         }
@@ -100,8 +104,10 @@ export type Database = {
           payment_date?: string | null
           payment_method?: string | null
           status?: string | null
+          subtotal?: number | null
           updated_at?: string | null
           user_id?: string
+          vat_amount?: number | null
           vendor_id?: string | null
           vendor_name?: string
         }
@@ -132,8 +138,10 @@ export type Database = {
           payment_date: string | null
           payment_method: string | null
           status: string | null
+          subtotal: number | null
           updated_at: string | null
           user_id: string
+          vat_amount: number | null
         }
         Insert: {
           amount: number
@@ -151,8 +159,10 @@ export type Database = {
           payment_date?: string | null
           payment_method?: string | null
           status?: string | null
+          subtotal?: number | null
           updated_at?: string | null
           user_id: string
+          vat_amount?: number | null
         }
         Update: {
           amount?: number
@@ -170,8 +180,10 @@ export type Database = {
           payment_date?: string | null
           payment_method?: string | null
           status?: string | null
+          subtotal?: number | null
           updated_at?: string | null
           user_id?: string
+          vat_amount?: number | null
         }
         Relationships: [
           {
