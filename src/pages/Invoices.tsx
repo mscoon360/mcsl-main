@@ -124,7 +124,7 @@ export default function Invoices() {
     }],
     taxRate: 10,
     notes: '',
-    paymentTerms: 'Net 30'
+    paymentTerms: 'Cash'
   });
 
   // Get available items for the selected customer (products + rental items)
@@ -425,7 +425,7 @@ export default function Invoices() {
       taxAmount: newInvoice.taxAmount || 0,
       total: newInvoice.total || 0,
       notes: newInvoice.notes,
-      paymentTerms: newInvoice.paymentTerms || 'Net 30'
+      paymentTerms: newInvoice.paymentTerms || 'Cash'
     };
     if (editingInvoice) {
       setInvoices(prev => prev.map(inv => inv.id === editingInvoice.id ? invoice : inv));
@@ -471,7 +471,7 @@ export default function Invoices() {
       }],
       taxRate: 10,
       notes: '',
-      paymentTerms: 'Net 30'
+      paymentTerms: 'Cash'
     });
     setShowForm(false);
     setEditingInvoice(null);
@@ -543,7 +543,7 @@ export default function Invoices() {
         taxAmount,
         total,
         notes: `Invoice created from Sale ID: ${sale.id}`,
-        paymentTerms: 'Net 30'
+        paymentTerms: 'Cash'
       });
       setShowForm(true);
       toast({
@@ -922,10 +922,9 @@ export default function Invoices() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Net 15">Net 15</SelectItem>
-                      <SelectItem value="Net 30">Net 30</SelectItem>
-                      <SelectItem value="Net 60">Net 60</SelectItem>
-                      <SelectItem value="Due on Receipt">Due on Receipt</SelectItem>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                      <SelectItem value="Cheque">Cheque</SelectItem>
+                      <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
