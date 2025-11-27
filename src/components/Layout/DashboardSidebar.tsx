@@ -138,7 +138,7 @@ const navigation: NavigationSection[] = [
     ]
   },
   {
-    title: "Group Supporting Department",
+    title: "Group Supporting Departments",
     items: [
       { name: "Legal Dept.", href: "/group-legal", icon: Scale },
       { name: "Finance Dept.", href: "/group-finance", icon: DollarSign },
@@ -162,7 +162,7 @@ export function DashboardSidebar() {
     "Finance Department": true,
     "Procurement & Logistics Department": true,
     "Divisional Sales & Contracts Department": true,
-    "Group Supporting Department": true
+    "Group Supporting Departments": true
   });
   const { isAdmin, user, signOut } = useAuth();
   const [allowedSections, setAllowedSections] = useState<string[]>([]);
