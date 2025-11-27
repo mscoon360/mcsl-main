@@ -64,7 +64,6 @@ const navigation: NavigationSection[] = [
   {
     title: "Main",
     items: [
-      { name: "Sales", href: "/sales", icon: ShoppingCart },
       { name: "Data Extractor (Coming Soon)", href: "/data-extractor", icon: ScanText },
       { name: "Fulfillment", href: "/fulfillment", icon: Truck },
     ]
@@ -73,6 +72,7 @@ const navigation: NavigationSection[] = [
     title: "Divisional Sales & Contracts Departments",
     items: [
       { name: "Dashboard", href: "/", icon: BarChart3 },
+      { name: "Sales", href: "/sales", icon: ShoppingCart },
       { name: "Promotions", href: "/promotions", icon: Tag },
       { name: "Contracts", href: "/rental-agreements", icon: FileText },
       { name: "Customer Database", href: "/customers", icon: Users },
