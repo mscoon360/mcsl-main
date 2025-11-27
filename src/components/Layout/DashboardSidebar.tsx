@@ -62,7 +62,7 @@ type NavigationSection = {
 
 const navigation: NavigationSection[] = [
   {
-    title: "Main",
+    title: "Group Supporting Departments",
     items: [
       { name: "Dashboard", href: "/", icon: BarChart3 },
       { name: "Sales", href: "/sales", icon: ShoppingCart },
