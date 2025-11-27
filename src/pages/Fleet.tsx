@@ -41,8 +41,13 @@ export default function Fleet() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const { vehicles, isLoading, addVehicle, deleteVehicle } = useFleetVehicles();
-  const { users, isLoading: usersLoading } = useUsers("procurement & logistics department");
+  const { users, isLoading: usersLoading, error: usersError } = useUsers("procurement");
   const { isAdmin } = useAuth();
+
+  // Show error toast if users fail to load
+  if (usersError) {
+    console.error("Failed to load users:", usersError);
+  }
 
   const handleDeleteVehicle = (vehicleId: string, licensePlate: string) => {
     if (!isAdmin) {
@@ -259,14 +264,18 @@ export default function Fleet() {
                     }}
                   >
                     <SelectTrigger className={errors.driverName ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select a driver" />
+                      <SelectValue placeholder={usersLoading ? "Loading drivers..." : users.length === 0 ? "No drivers available" : "Select a driver"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {users.map((user) => (
-                        <SelectItem key={user.id} value={user.name}>
-                          {user.name} ({user.username})
-                        </SelectItem>
-                      ))}
+                      {users.length === 0 ? (
+                        <SelectItem value="no-users" disabled>No drivers found</SelectItem>
+                      ) : (
+                        users.map((user) => (
+                          <SelectItem key={user.id} value={user.name}>
+                            {user.name} ({user.username})
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   {errors.driverName && <p className="text-sm text-destructive">{errors.driverName}</p>}

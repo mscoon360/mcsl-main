@@ -10,7 +10,7 @@ export interface User {
 }
 
 export function useUsers(department?: string) {
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading, error } = useQuery({
     queryKey: ["users", department],
     queryFn: async () => {
       const { data: profiles, error } = await supabase
@@ -21,17 +21,18 @@ export function useUsers(department?: string) {
 
       // Filter by department if provided
       if (department) {
-        return profiles.filter(
-          (profile) => profile.department.toLowerCase() === department.toLowerCase()
-        ) as User[];
+        return profiles?.filter(
+          (profile) => profile.department.toLowerCase().includes(department.toLowerCase())
+        ) as User[] || [];
       }
 
-      return profiles as User[];
+      return (profiles as User[]) || [];
     },
   });
 
   return {
     users,
     isLoading,
+    error,
   };
 }
