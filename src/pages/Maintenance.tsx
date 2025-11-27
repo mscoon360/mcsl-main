@@ -8,9 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Plus, Wrench } from 'lucide-react';
+import { Pencil, Trash2, Plus, Wrench, ClipboardCheck } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 export default function Maintenance() {
   const {
     dependencies,
@@ -24,7 +25,10 @@ export default function Maintenance() {
   } = useProducts();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [selectedDependencyId, setSelectedDependencyId] = useState<string>('');
+  const { toast } = useToast();
   const handleAddMaintenance = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -68,6 +72,50 @@ export default function Maintenance() {
     setEditingItem(item);
     setIsEditDialogOpen(true);
   };
+  const handleServiceMaintenance = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    
+    const dependencyId = formData.get('dependency_id') as string;
+    const quantityUsed = parseInt(formData.get('quantity_used') as string) || 0;
+    
+    const dependency = dependencies.find(d => d.id === dependencyId);
+    if (!dependency) {
+      toast({
+        title: 'Error',
+        description: 'Selected maintenance item not found.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const currentStock = dependency.current_stock || 0;
+    if (currentStock < quantityUsed) {
+      toast({
+        title: 'Insufficient Stock',
+        description: `Only ${currentStock} items available in stock.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    try {
+      await updateDependency(dependencyId, {
+        current_stock: currentStock - quantityUsed
+      });
+      setIsServiceDialogOpen(false);
+      setSelectedDependencyId('');
+      form.reset();
+      toast({
+        title: 'Service Recorded',
+        description: `${quantityUsed} item(s) used. Stock updated.`,
+      });
+    } catch (error) {
+      // Error handling is done in the hook
+    }
+  };
+
   const getProductName = (productId: string) => {
     const product = products.find(p => p.id === productId);
     return product?.name || 'Unknown Product';
@@ -83,13 +131,65 @@ export default function Maintenance() {
           <h1 className="text-3xl font-bold">Maintenance</h1>
           <p className="text-muted-foreground">Manage maintenance schedules for your products</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Maintenance Item
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Dialog open={isServiceDialogOpen} onOpenChange={setIsServiceDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="secondary">
+                <ClipboardCheck className="mr-2 h-4 w-4" />
+                Record Servicing
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-xl">
+              <DialogHeader>
+                <DialogTitle>Record Maintenance Servicing</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleServiceMaintenance} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dependency_id">Maintenance Item *</Label>
+                  <Select 
+                    name="dependency_id" 
+                    value={selectedDependencyId}
+                    onValueChange={setSelectedDependencyId}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select maintenance item" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dependencies.map(dep => <SelectItem key={dep.id} value={dep.id}>
+                            {dep.description || 'No description'} - {getProductName(dep.product_id)} (Stock: {dep.current_stock || 0})
+                          </SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="quantity_used">Quantity Used *</Label>
+                  <Input 
+                    id="quantity_used" 
+                    name="quantity_used" 
+                    type="number" 
+                    min="1" 
+                    placeholder="Enter quantity used" 
+                    required 
+                  />
+                </div>
+
+                <Button type="submit" className="w-full">
+                  <ClipboardCheck className="mr-2 h-4 w-4" />
+                  Record Service
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Maintenance Item
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-xl">
             <DialogHeader>
               <DialogTitle>Add New Maintenance Item</DialogTitle>
@@ -126,6 +226,7 @@ export default function Maintenance() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>
