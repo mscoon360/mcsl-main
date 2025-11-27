@@ -234,12 +234,8 @@ export function DashboardSidebar() {
     return false;
   };
 
-  const toggleDropdown = (itemName: string) => {
-    setOpenDropdowns(prev => {
-      const isCurrentlyOpen = prev[itemName];
-      // Close all dropdowns, then open only the clicked one if it was closed
-      return isCurrentlyOpen ? {} : { [itemName]: true };
-    });
+  const toggleDropdown = (itemName: string, nextOpen: boolean) => {
+    setOpenDropdowns(nextOpen ? { [itemName]: true } : {});
   };
 
   const toggleSection = (sectionName: string) => {
@@ -275,7 +271,9 @@ export function DashboardSidebar() {
           <Collapsible
             key={section.title}
             open={openSections[section.title]}
-            onOpenChange={() => toggleSection(section.title)}
+            onOpenChange={(open) =>
+              setOpenSections(open ? { [section.title]: true } : {})
+            }
           >
             <SidebarGroup>
               {!isCollapsed && (
@@ -296,7 +294,7 @@ export function DashboardSidebar() {
                     {item.subItems ? (
                       <Collapsible 
                         open={openDropdowns[item.name]} 
-                        onOpenChange={() => toggleDropdown(item.name)}
+                        onOpenChange={(open) => toggleDropdown(item.name, open)}
                       >
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton 
