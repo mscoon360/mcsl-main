@@ -475,6 +475,59 @@ export default function Products() {
         </div>
       </div>
 
+      {/* Divisions Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Divisions & Subdivisions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {divisionsLoading ? (
+            <p className="text-muted-foreground">Loading divisions...</p>
+          ) : divisions.length === 0 ? (
+            <p className="text-muted-foreground">No divisions created yet. Click "Add Division" to create one.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Division Name</TableHead>
+                  <TableHead>Subdivisions</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {divisions.map((division) => (
+                  <TableRow key={division.id}>
+                    <TableCell className="font-medium">{division.name}</TableCell>
+                    <TableCell>
+                      {division.subdivisions && division.subdivisions.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {division.subdivisions.map((sub) => (
+                            <Badge key={sub.id} variant="secondary">
+                              {sub.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">No subdivisions</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteDivision(division.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Product Catalog</CardTitle>
