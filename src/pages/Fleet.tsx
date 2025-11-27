@@ -41,7 +41,7 @@ export default function Fleet() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const { vehicles, isLoading, addVehicle, deleteVehicle } = useFleetVehicles();
-  const { users, isLoading: usersLoading, error: usersError } = useUsers("procurement");
+  const { users, isLoading: usersLoading, error: usersError } = useUsers();
   const { isAdmin } = useAuth();
 
   console.log("[Fleet] render", {
