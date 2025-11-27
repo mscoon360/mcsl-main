@@ -104,6 +104,71 @@ export const useDivisions = () => {
     }
   };
 
+  const updateDivision = async (id: string, divisionName: string, subdivisionNames: string[]) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No authenticated user');
+
+      // Update division name
+      const { error: divisionError } = await supabase
+        .from('divisions')
+        .update({ name: divisionName })
+        .eq('id', id);
+
+      if (divisionError) throw divisionError;
+
+      // Get existing subdivisions
+      const { data: existingSubdivisions, error: fetchError } = await supabase
+        .from('subdivisions')
+        .select('*')
+        .eq('division_id', id);
+
+      if (fetchError) throw fetchError;
+
+      // Delete removed subdivisions
+      if (existingSubdivisions && existingSubdivisions.length > subdivisionNames.length) {
+        const toDelete = existingSubdivisions.slice(subdivisionNames.length);
+        for (const sub of toDelete) {
+          await supabase.from('subdivisions').delete().eq('id', sub.id);
+        }
+      }
+
+      // Update or insert subdivisions
+      for (let i = 0; i < subdivisionNames.length; i++) {
+        if (existingSubdivisions && existingSubdivisions[i]) {
+          // Update existing
+          await supabase
+            .from('subdivisions')
+            .update({ name: subdivisionNames[i] })
+            .eq('id', existingSubdivisions[i].id);
+        } else {
+          // Insert new
+          await supabase
+            .from('subdivisions')
+            .insert({
+              division_id: id,
+              name: subdivisionNames[i],
+            });
+        }
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Division updated successfully',
+      });
+
+      fetchDivisions();
+    } catch (error: any) {
+      console.error('Error updating division:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update division',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   const deleteDivision = async (id: string) => {
     try {
       const { error } = await supabase
@@ -148,6 +213,7 @@ export const useDivisions = () => {
     divisions,
     loading,
     addDivision,
+    updateDivision,
     deleteDivision,
     refetch: fetchDivisions,
   };
