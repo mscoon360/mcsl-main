@@ -74,14 +74,6 @@ const navigation: NavigationSection[] = [
       { name: "Promotions", href: "/promotions", icon: Tag },
       { name: "Contracts", href: "/rental-agreements", icon: FileText },
       { name: "Fulfillment", href: "/fulfillment", icon: Truck },
-      { 
-        name: "Maintenance", 
-        icon: Wrench,
-        subItems: [
-          { name: "Maintenance", href: "/maintenance" },
-          { name: "Schedule", href: "/schedule" }
-        ]
-      },
     ]
   },
   {
@@ -118,6 +110,14 @@ const navigation: NavigationSection[] = [
       { name: "Inspections", href: "/inspections", icon: ClipboardCheck },
       { name: "Driver Companion", href: "/companion", icon: Shield },
       { name: "Fuel", href: "/fuel", icon: Fuel },
+      { 
+        name: "Maintenance", 
+        icon: Wrench,
+        subItems: [
+          { name: "Maintenance", href: "/maintenance" },
+          { name: "Schedule", href: "/schedule" }
+        ]
+      },
     ]
   }
 ];
