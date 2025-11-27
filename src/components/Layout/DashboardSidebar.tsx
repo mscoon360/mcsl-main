@@ -295,7 +295,7 @@ export function DashboardSidebar() {
                   <SidebarMenuItem key={item.name}>
                     {item.subItems ? (
                       <Collapsible 
-                        open={openDropdowns[item.name] || isGroupActive(item)} 
+                        open={openDropdowns[item.name]} 
                         onOpenChange={() => toggleDropdown(item.name)}
                       >
                         <CollapsibleTrigger asChild>
