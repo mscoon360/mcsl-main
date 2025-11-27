@@ -27,7 +27,7 @@ export const useDivisions = () => {
       const { data: divisionsData, error: divisionsError } = await supabase
         .from('divisions')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (divisionsError) throw divisionsError;
 
