@@ -34,6 +34,10 @@ export default function Products() {
   const [needsServicing, setNeedsServicing] = useState(false);
   const [divisionName, setDivisionName] = useState('');
   const [subdivisionNames, setSubdivisionNames] = useState<string[]>(['']);
+  const [selectedDivisionId, setSelectedDivisionId] = useState<string>('');
+  const [selectedSubdivisionId, setSelectedSubdivisionId] = useState<string>('');
+  const [editDivisionId, setEditDivisionId] = useState<string>('');
+  const [editSubdivisionId, setEditSubdivisionId] = useState<string>('');
 
   const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -43,7 +47,6 @@ export default function Products() {
     const name = formData.get('name') as string;
     const sku = formData.get('sku') as string;
     const description = formData.get('description') as string;
-    const category = formData.get('category') as string;
     const units = formData.get('units') as string;
     const stock = parseInt(formData.get('stock') as string) || 0;
     const supplier_name = formData.get('supplier_name') as string;
@@ -70,7 +73,8 @@ export default function Products() {
       description,
       price,
       rental_price,
-      category,
+      division_id: selectedDivisionId || null,
+      subdivision_id: selectedSubdivisionId || null,
       units,
       stock,
       status: stock > 10 ? 'active' : stock > 0 ? 'low_stock' : 'out_of_stock',
@@ -88,6 +92,8 @@ export default function Products() {
       form.reset();
       setProductType('sale_only');
       setNeedsServicing(false);
+      setSelectedDivisionId('');
+      setSelectedSubdivisionId('');
       
       toast({
         title: 'Product created',
@@ -121,7 +127,8 @@ export default function Products() {
       name: formData.get('name') as string,
       sku: formData.get('sku') as string,
       description: formData.get('description') as string,
-      category: formData.get('category') as string,
+      division_id: editDivisionId || null,
+      subdivision_id: editSubdivisionId || null,
       units: formData.get('units') as string,
       stock: newStock,
       status: newStock > 10 ? 'active' : newStock > 0 ? 'low_stock' : 'out_of_stock',
@@ -185,6 +192,8 @@ export default function Products() {
 
   const handleEdit = (product: any) => {
     setEditingProduct(product);
+    setEditDivisionId(product.division_id || '');
+    setEditSubdivisionId(product.subdivision_id || '');
     setIsEditDialogOpen(true);
   };
 
@@ -435,10 +444,42 @@ export default function Products() {
                 </div>
               )}
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Input id="category" name="category" />
+                  <Label htmlFor="division">Division</Label>
+                  <select
+                    id="division"
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    value={selectedDivisionId}
+                    onChange={(e) => {
+                      setSelectedDivisionId(e.target.value);
+                      setSelectedSubdivisionId('');
+                    }}
+                  >
+                    <option value="">Select Division</option>
+                    {divisions.map((div) => (
+                      <option key={div.id} value={div.id}>
+                        {div.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subdivision">Subdivision</Label>
+                  <select
+                    id="subdivision"
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    value={selectedSubdivisionId}
+                    onChange={(e) => setSelectedSubdivisionId(e.target.value)}
+                    disabled={!selectedDivisionId}
+                  >
+                    <option value="">Select Subdivision</option>
+                    {selectedDivisionId && divisions.find(d => d.id === selectedDivisionId)?.subdivisions?.map((sub) => (
+                      <option key={sub.id} value={sub.id}>
+                        {sub.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="stock">Initial Stock *</Label>
@@ -546,7 +587,8 @@ export default function Products() {
                   <TableHead>Name</TableHead>
                   <TableHead>SKU</TableHead>
                   <TableHead>Supplier</TableHead>
-                  <TableHead>Category</TableHead>
+                  <TableHead>Division</TableHead>
+                  <TableHead>Subdivision</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Cost Price</TableHead>
                   <TableHead>Stock</TableHead>
@@ -566,7 +608,16 @@ export default function Products() {
                     </TableCell>
                     <TableCell>{product.sku}</TableCell>
                     <TableCell>{product.supplier_name || '-'}</TableCell>
-                    <TableCell>{product.category || '-'}</TableCell>
+                    <TableCell>
+                      {product.division_id 
+                        ? divisions.find(d => d.id === product.division_id)?.name || '-'
+                        : '-'}
+                    </TableCell>
+                    <TableCell>
+                      {product.subdivision_id 
+                        ? divisions.find(d => d.id === product.division_id)?.subdivisions?.find(s => s.id === product.subdivision_id)?.name || '-'
+                        : '-'}
+                    </TableCell>
                     <TableCell>${product.price.toFixed(2)}</TableCell>
                     <TableCell>${product.cost_price?.toFixed(2) || '0.00'}</TableCell>
                     <TableCell>
@@ -655,14 +706,46 @@ export default function Products() {
                 <Textarea id="edit-description" name="description" defaultValue={editingProduct.description} />
               </div>
 
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-5 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-price">Price *</Label>
                   <Input id="edit-price" name="price" type="number" step="0.01" defaultValue={editingProduct.price} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-category">Category</Label>
-                  <Input id="edit-category" name="category" defaultValue={editingProduct.category} />
+                  <Label htmlFor="edit-division">Division</Label>
+                  <select
+                    id="edit-division"
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    value={editDivisionId}
+                    onChange={(e) => {
+                      setEditDivisionId(e.target.value);
+                      setEditSubdivisionId('');
+                    }}
+                  >
+                    <option value="">Select Division</option>
+                    {divisions.map((div) => (
+                      <option key={div.id} value={div.id}>
+                        {div.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-subdivision">Subdivision</Label>
+                  <select
+                    id="edit-subdivision"
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    value={editSubdivisionId}
+                    onChange={(e) => setEditSubdivisionId(e.target.value)}
+                    disabled={!editDivisionId}
+                  >
+                    <option value="">Select Subdivision</option>
+                    {editDivisionId && divisions.find(d => d.id === editDivisionId)?.subdivisions?.map((sub) => (
+                      <option key={sub.id} value={sub.id}>
+                        {sub.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-stock">Stock</Label>
@@ -704,8 +787,20 @@ export default function Products() {
                     <p className="font-semibold">{selectedProduct.description || 'N/A'}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Category</Label>
-                    <p className="font-semibold">{selectedProduct.category || 'N/A'}</p>
+                    <Label className="text-muted-foreground">Division</Label>
+                    <p className="font-semibold">
+                      {selectedProduct.division_id 
+                        ? divisions.find(d => d.id === selectedProduct.division_id)?.name || 'N/A'
+                        : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Subdivision</Label>
+                    <p className="font-semibold">
+                      {selectedProduct.subdivision_id 
+                        ? divisions.find(d => d.id === selectedProduct.division_id)?.subdivisions?.find(s => s.id === selectedProduct.subdivision_id)?.name || 'N/A'
+                        : 'N/A'}
+                    </p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Type</Label>
