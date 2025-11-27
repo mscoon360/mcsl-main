@@ -224,7 +224,7 @@ export default function AccountsPayable() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="vat_amount">Input VAT (12.5%)</Label>
+                  <Label htmlFor="vat_amount">Output VAT (12.5%)</Label>
                   <Input
                     id="vat_amount"
                     type="number"
