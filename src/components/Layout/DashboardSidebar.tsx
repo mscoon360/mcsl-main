@@ -138,16 +138,16 @@ const navigation: NavigationSection[] = [
     ]
   },
   {
-    title: "Group Departments",
+    title: "Group Supporting Department",
     items: [
-      { name: "Group Legal Department", href: "/group-legal", icon: Scale },
-      { name: "Group Finance Department", href: "/group-finance", icon: DollarSign },
-      { name: "Group Human Resource Department", href: "/group-hr", icon: Users },
-      { name: "Group Learning & Development Department", href: "/group-learning", icon: GraduationCap },
-      { name: "Group Policies & Standard Department", href: "/group-policies", icon: FileCheck },
-      { name: "Group HSSE Department", href: "/group-hsse", icon: HardHat },
-      { name: "Group Research Development & A.I Department", href: "/group-research", icon: Microscope },
-      { name: "Group Marketing Department", href: "/group-marketing", icon: Megaphone },
+      { name: "Legal Dept.", href: "/group-legal", icon: Scale },
+      { name: "Finance Dept.", href: "/group-finance", icon: DollarSign },
+      { name: "Human Resource Dept.", href: "/group-hr", icon: Users },
+      { name: "Learning & Development Dept.", href: "/group-learning", icon: GraduationCap },
+      { name: "Policies & Standard Dept.", href: "/group-policies", icon: FileCheck },
+      { name: "HSSE Dept.", href: "/group-hsse", icon: HardHat },
+      { name: "Research Development & A.I Dept.", href: "/group-research", icon: Microscope },
+      { name: "Marketing Dept.", href: "/group-marketing", icon: Megaphone },
     ]
   }
 ];
@@ -162,7 +162,7 @@ export function DashboardSidebar() {
     "Finance Department": true,
     "Procurement & Logistics Department": true,
     "Divisional Sales & Contracts Department": true,
-    "Group Departments": true
+    "Group Supporting Department": true
   });
   const { isAdmin, user, signOut } = useAuth();
   const [allowedSections, setAllowedSections] = useState<string[]>([]);
