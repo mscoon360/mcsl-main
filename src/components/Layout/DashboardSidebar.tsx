@@ -243,12 +243,12 @@ export function DashboardSidebar() {
   };
 
   const toggleSection = (sectionName: string) => {
-    setOpenSections(prev => ({
-      ...prev,
-      [sectionName]: !prev[sectionName]
-    }));
+    setOpenSections(prev => {
+      const isCurrentlyOpen = prev[sectionName];
+      // Close all sections, then open only the clicked one if it was closed
+      return isCurrentlyOpen ? {} : { [sectionName]: true };
+    });
   };
-
   return (
     <Sidebar 
       className={`${isCollapsed ? "w-16" : "w-64"}`} 
