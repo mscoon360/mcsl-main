@@ -66,15 +66,21 @@ const navigation: NavigationSection[] = [
     items: [
       { name: "Dashboard", href: "/", icon: BarChart3 },
       { name: "Sales", href: "/sales", icon: ShoppingCart },
-      { name: "Customers", href: "/customers", icon: Users },
       { name: "Data Extractor (Coming Soon)", href: "/data-extractor", icon: ScanText },
       { name: "Promotions", href: "/promotions", icon: Tag },
-      { name: "Contracts", href: "/rental-agreements", icon: FileText },
       { name: "Fulfillment", href: "/fulfillment", icon: Truck },
     ]
   },
   {
-    title: "Finance and Accounting Department",
+    title: "Divisional Sales & Contracts Departments",
+    items: [
+      { name: "Overview", href: "/", icon: BarChart3 },
+      { name: "Contracts", href: "/rental-agreements", icon: FileText },
+      { name: "Customer Database", href: "/customers", icon: Users },
+    ]
+  },
+  {
+    title: "Finance Department",
     items: [
       { name: "Overview", href: "/finance", icon: BarChart3 },
       { 
@@ -101,7 +107,7 @@ const navigation: NavigationSection[] = [
     ]
   },
   {
-    title: "Procurement and Logistics Department",
+    title: "Procurement & Logistics Department",
     items: [
       { name: "Product Catalog", href: "/products", icon: Package },
       { name: "Inventory", href: "/inventory", icon: Warehouse },
@@ -135,8 +141,9 @@ export function DashboardSidebar() {
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     "Main": true,
-    "Finance and Accounting Department": true,
-    "Procurement and Logistics Department": true
+    "Divisional Sales & Contracts Departments": true,
+    "Finance Department": true,
+    "Procurement & Logistics Department": true
   });
   const { isAdmin, user, signOut } = useAuth();
   const [allowedSections, setAllowedSections] = useState<string[]>([]);
