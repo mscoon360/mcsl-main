@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProducts } from '@/hooks/useProducts';
+import { useDivisions } from '@/hooks/useDivisions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Plus, Package, Barcode, Info } from 'lucide-react';
+import { Pencil, Trash2, Plus, Package, Barcode, Info, X } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
@@ -18,17 +19,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 export default function Products() {
   const { products, loading, addProduct, updateProduct, deleteProduct } = useProducts();
+  const { divisions, loading: divisionsLoading, addDivision, deleteDivision } = useDivisions();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isDivisionDialogOpen, setIsDivisionDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [productHistory, setProductHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [productType, setProductType] = useState<'sale_only' | 'rental_only' | 'both'>('sale_only');
   const [needsServicing, setNeedsServicing] = useState(false);
+  const [divisionName, setDivisionName] = useState('');
+  const [subdivisionNames, setSubdivisionNames] = useState<string[]>(['']);
 
   const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -219,6 +224,44 @@ export default function Products() {
     }
   };
 
+  const handleAddDivision = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!divisionName.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a division name',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const validSubdivisions = subdivisionNames.filter(name => name.trim() !== '');
+    
+    try {
+      await addDivision(divisionName, validSubdivisions);
+      setIsDivisionDialogOpen(false);
+      setDivisionName('');
+      setSubdivisionNames(['']);
+    } catch (error) {
+      // Error handled in hook
+    }
+  };
+
+  const addSubdivisionField = () => {
+    setSubdivisionNames([...subdivisionNames, '']);
+  };
+
+  const removeSubdivisionField = (index: number) => {
+    setSubdivisionNames(subdivisionNames.filter((_, i) => i !== index));
+  };
+
+  const updateSubdivisionName = (index: number, value: string) => {
+    const updated = [...subdivisionNames];
+    updated[index] = value;
+    setSubdivisionNames(updated);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -234,13 +277,81 @@ export default function Products() {
           <h1 className="text-3xl font-bold">Products</h1>
           <p className="text-muted-foreground">Manage your product catalog</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Product
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Dialog open={isDivisionDialogOpen} onOpenChange={setIsDivisionDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Division
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Add New Division</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleAddDivision} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="division-name">Division Name *</Label>
+                  <Input
+                    id="division-name"
+                    value={divisionName}
+                    onChange={(e) => setDivisionName(e.target.value)}
+                    placeholder="Enter division name"
+                    required
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Subdivisions</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addSubdivisionField}
+                    >
+                      <Plus className="mr-2 h-3 w-3" />
+                      Add Subdivision
+                    </Button>
+                  </div>
+
+                  {subdivisionNames.map((name, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        value={name}
+                        onChange={(e) => updateSubdivisionName(index, e.target.value)}
+                        placeholder={`Subdivision ${index + 1}`}
+                      />
+                      {subdivisionNames.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeSubdivisionField(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <Button type="submit" className="w-full">
+                  Create Division
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Product
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Product</DialogTitle>
@@ -361,6 +472,7 @@ export default function Products() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>
