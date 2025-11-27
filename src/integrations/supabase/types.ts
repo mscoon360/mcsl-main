@@ -368,6 +368,30 @@ export type Database = {
         }
         Relationships: []
       }
+      divisions: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       expenditures: {
         Row: {
           amount: number
@@ -1260,6 +1284,38 @@ export type Database = {
             columns: ["promotion_id"]
             isOneToOne: false
             referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subdivisions: {
+        Row: {
+          created_at: string
+          division_id: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          division_id: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          division_id?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subdivisions_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "divisions"
             referencedColumns: ["id"]
           },
         ]
