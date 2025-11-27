@@ -77,7 +77,7 @@ const navigation: NavigationSection[] = [
     ]
   },
   {
-    title: "Finance",
+    title: "Accounting and Finance",
     items: [
       { name: "Overview", href: "/finance", icon: BarChart3 },
       { 
@@ -127,6 +127,11 @@ export function DashboardSidebar() {
   const location = useLocation();
   const isCollapsed = state === "collapsed";
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    "Group Supporting Departments": true,
+    "Accounting and Finance": true,
+    "Procurement and Logistics Department": true
+  });
   const { isAdmin, user, signOut } = useAuth();
   const [allowedSections, setAllowedSections] = useState<string[]>([]);
 
@@ -204,6 +209,13 @@ export function DashboardSidebar() {
     }));
   };
 
+  const toggleSection = (sectionName: string) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [sectionName]: !prev[sectionName]
+    }));
+  };
+
   return (
     <Sidebar 
       className={`${isCollapsed ? "w-16" : "w-64"}`} 
@@ -227,14 +239,25 @@ export function DashboardSidebar() {
         </div>
 
         {filteredNavigation.map((section) => (
-          <SidebarGroup key={section.title}>
-            {!isCollapsed && (
-              <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs">
-                {section.title}
-              </SidebarGroupLabel>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu>
+          <Collapsible
+            key={section.title}
+            open={openSections[section.title]}
+            onOpenChange={() => toggleSection(section.title)}
+          >
+            <SidebarGroup>
+              {!isCollapsed && (
+                <CollapsibleTrigger asChild>
+                  <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs cursor-pointer hover:text-sidebar-foreground flex items-center justify-between w-full group">
+                    {section.title}
+                    <ChevronDown className={`h-3 w-3 transition-transform ${
+                      openSections[section.title] ? 'rotate-180' : ''
+                    }`} />
+                  </SidebarGroupLabel>
+                </CollapsibleTrigger>
+              )}
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
                 {section.items.map((item) => (
                   <SidebarMenuItem key={item.name}>
                     {item.subItems ? (
@@ -319,9 +342,11 @@ export function DashboardSidebar() {
                     )}
                   </SidebarMenuItem>
                 ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
         ))}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-2 md:p-4">
