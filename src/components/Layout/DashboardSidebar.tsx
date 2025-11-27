@@ -64,17 +64,16 @@ const navigation: NavigationSection[] = [
   {
     title: "Main",
     items: [
-      { name: "Dashboard", href: "/", icon: BarChart3 },
       { name: "Sales", href: "/sales", icon: ShoppingCart },
       { name: "Data Extractor (Coming Soon)", href: "/data-extractor", icon: ScanText },
-      { name: "Promotions", href: "/promotions", icon: Tag },
       { name: "Fulfillment", href: "/fulfillment", icon: Truck },
     ]
   },
   {
     title: "Divisional Sales & Contracts Departments",
     items: [
-      { name: "Overview", href: "/", icon: BarChart3 },
+      { name: "Dashboard", href: "/", icon: BarChart3 },
+      { name: "Promotions", href: "/promotions", icon: Tag },
       { name: "Contracts", href: "/rental-agreements", icon: FileText },
       { name: "Customer Database", href: "/customers", icon: Users },
     ]
