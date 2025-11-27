@@ -7,6 +7,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("[ProtectedRoute] state", { loading, hasUser: !!user, needsPasswordChange });
     if (!loading && !user) {
       navigate('/auth');
     } else if (!loading && user && needsPasswordChange) {
