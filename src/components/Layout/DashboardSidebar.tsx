@@ -235,10 +235,11 @@ export function DashboardSidebar() {
   };
 
   const toggleDropdown = (itemName: string) => {
-    setOpenDropdowns(prev => ({
-      ...prev,
-      [itemName]: !prev[itemName]
-    }));
+    setOpenDropdowns(prev => {
+      const isCurrentlyOpen = prev[itemName];
+      // Close all dropdowns, then open only the clicked one if it was closed
+      return isCurrentlyOpen ? {} : { [itemName]: true };
+    });
   };
 
   const toggleSection = (sectionName: string) => {
