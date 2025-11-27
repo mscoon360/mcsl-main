@@ -69,16 +69,6 @@ const navigation: NavigationSection[] = [
     ]
   },
   {
-    title: "Divisional Sales & Contracts Departments",
-    items: [
-      { name: "Dashboard", href: "/", icon: BarChart3 },
-      { name: "Sales", href: "/sales", icon: ShoppingCart },
-      { name: "Promotions", href: "/promotions", icon: Tag },
-      { name: "Contracts", href: "/rental-agreements", icon: FileText },
-      { name: "Customer Database", href: "/customers", icon: Users },
-    ]
-  },
-  {
     title: "Finance Department",
     items: [
       { name: "Overview", href: "/finance", icon: BarChart3 },
@@ -130,6 +120,16 @@ const navigation: NavigationSection[] = [
         ]
       },
     ]
+  },
+  {
+    title: "Divisional Sales & Contracts Department",
+    items: [
+      { name: "Dashboard", href: "/", icon: BarChart3 },
+      { name: "Sales", href: "/sales", icon: ShoppingCart },
+      { name: "Promotions", href: "/promotions", icon: Tag },
+      { name: "Contracts", href: "/rental-agreements", icon: FileText },
+      { name: "Customer Database", href: "/customers", icon: Users },
+    ]
   }
 ];
 
@@ -140,9 +140,9 @@ export function DashboardSidebar() {
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     "Main": true,
-    "Divisional Sales & Contracts Departments": true,
     "Finance Department": true,
-    "Procurement & Logistics Department": true
+    "Procurement & Logistics Department": true,
+    "Divisional Sales & Contracts Department": true
   });
   const { isAdmin, user, signOut } = useAuth();
   const [allowedSections, setAllowedSections] = useState<string[]>([]);
