@@ -310,7 +310,7 @@ export function DashboardSidebar() {
                             {!isCollapsed && <span className="font-medium text-sm">{item.name}</span>}
                             {!isCollapsed && (
                               <ChevronDown className={`ml-auto h-3 w-3 md:h-4 md:w-4 transition-transform ${
-                                openDropdowns[item.name] || isGroupActive(item) ? 'rotate-180' : ''
+                                openDropdowns[item.name] ? 'rotate-180' : ''
                               }`} />
                             )}
                           </SidebarMenuButton>
