@@ -145,34 +145,72 @@ export default function Customers() {
   // Get contract data from Supabase to calculate customer contract totals
   const [contractData, setContractData] = useState<Array<{
     customer_name: string;
-    total: number;
+    totalContractValue: number;
+    totalSales: number;
     date: string;
   }>>([]);
 
   useEffect(() => {
     const fetchContracts = async () => {
       // Fetch rental sales (contracts) with their totals
-      const { data, error } = await supabase
+      const { data: rentalData, error: rentalError } = await supabase
         .from('sale_items')
         .select(`
           price,
           quantity,
-          sales!inner(customer_name, date)
+          contract_length,
+          payment_period,
+          sales!inner(customer_name, date, total)
         `)
         .eq('is_rental', true);
       
-      if (!error && data) {
+      // Fetch all sales for total sales calculation
+      const { data: allSalesData, error: salesError } = await supabase
+        .from('sales')
+        .select('customer_name, total, date');
+      
+      if (!rentalError && rentalData) {
         // Transform data to calculate contract totals per customer
-        const contractsByCustomer = data.reduce((acc: any[], item: any) => {
+        const contractsByCustomer = rentalData.reduce((acc: any[], item: any) => {
           const customerName = item.sales.customer_name;
-          const total = item.price * item.quantity;
+          const monthlyPrice = item.price * item.quantity;
+          
+          // Parse contract length to get number of months
+          let totalMonths = 1; // Default to 1 if not specified
+          if (item.contract_length) {
+            const match = item.contract_length.match(/(\d+)\s*(month|year)/i);
+            if (match) {
+              const value = parseInt(match[1]);
+              const unit = match[2].toLowerCase();
+              totalMonths = unit === 'year' ? value * 12 : value;
+            }
+          }
+          
+          const totalContractValue = monthlyPrice * totalMonths;
           const date = item.sales.date;
           
-          acc.push({ customer_name: customerName, total, date });
+          acc.push({ customer_name: customerName, totalContractValue, date });
           return acc;
         }, []);
         
-        setContractData(contractsByCustomer);
+        // Calculate total sales per customer
+        const salesByCustomer: { [key: string]: number } = {};
+        if (!salesError && allSalesData) {
+          allSalesData.forEach((sale: any) => {
+            if (!salesByCustomer[sale.customer_name]) {
+              salesByCustomer[sale.customer_name] = 0;
+            }
+            salesByCustomer[sale.customer_name] += sale.total;
+          });
+        }
+        
+        // Merge contract data with sales data
+        const mergedData = contractsByCustomer.map(contract => ({
+          ...contract,
+          totalSales: salesByCustomer[contract.customer_name] || 0
+        }));
+        
+        setContractData(mergedData);
       }
     };
 
@@ -196,10 +234,13 @@ export default function Customers() {
     };
   }, []);
 
-  // Calculate actual customer contract values
+  // Calculate actual customer contract values and sales
   const customersWithContracts = customers.map(customer => {
     const customerContracts = contractData.filter(contract => contract.customer_name === customer.name);
-    const totalContractValue = customerContracts.reduce((sum, contract) => sum + contract.total, 0);
+    const totalContractValue = customerContracts.reduce((sum, contract) => sum + contract.totalContractValue, 0);
+    const totalSales = customerContracts.length > 0 
+      ? customerContracts[0].totalSales 
+      : 0;
     const lastPurchase = customerContracts.length > 0 
       ? customerContracts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date
       : customer.last_purchase;
@@ -207,6 +248,7 @@ export default function Customers() {
     return {
       ...customer,
       totalContractValue: totalContractValue || 0,
+      totalSales: totalSales || 0,
       lastPurchase: lastPurchase || customer.last_purchase || new Date().toISOString()
     };
   });
@@ -658,6 +700,7 @@ export default function Customers() {
                   <TableHead>Company</TableHead>
                   <TableHead>Zone</TableHead>
                   <TableHead>Total Contract Value</TableHead>
+                  <TableHead>Total Sales</TableHead>
                   <TableHead>Last Purchase</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
@@ -667,7 +710,7 @@ export default function Customers() {
                 {filteredCustomers.map(customer => (
                   editingCustomer === customer.id ? (
                     <TableRow key={customer.id}>
-                      <TableCell colSpan={8} className="p-4">
+                      <TableCell colSpan={9} className="p-4">
                         <form onSubmit={handleEditSubmit} className="space-y-4">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
@@ -793,6 +836,9 @@ export default function Customers() {
                       <TableCell className="font-bold text-success">
                         ${customer.totalContractValue.toFixed(2)}
                       </TableCell>
+                      <TableCell className="font-bold text-primary">
+                        ${customer.totalSales.toFixed(2)}
+                      </TableCell>
                       <TableCell>
                         {new Date(customer.lastPurchase).toLocaleDateString()}
                       </TableCell>
@@ -887,6 +933,10 @@ export default function Customers() {
                   <div>
                     <p className="text-sm text-muted-foreground">Total Contract Value</p>
                     <p className="font-medium text-success">${selectedCustomer.totalContractValue?.toFixed(2) || '0.00'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Sales</p>
+                    <p className="font-medium text-primary">${selectedCustomer.totalSales?.toFixed(2) || '0.00'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Status</p>
