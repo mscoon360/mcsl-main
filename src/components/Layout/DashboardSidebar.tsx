@@ -112,7 +112,7 @@ const navigation: NavigationSection[] = [
       },
       { name: "Chart of Accounts", href: "/chart-of-accounts", icon: BookOpen },
       { name: "Trial Balance", href: "/trial-balance", icon: Scale },
-      { name: "Collections", href: "/rental-payments", icon: CreditCard },
+      { name: "Receivables", href: "/rental-payments", icon: CreditCard },
     ]
   },
   {
@@ -339,7 +339,7 @@ export function DashboardSidebar() {
                                         }`
                                       }
                                     >
-                                      {subItem.name === "Collections" ? (
+                                      {subItem.name === "Receivables" ? (
                                         <CreditCard className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
                                       ) : subItem.name === "Overview" ? (
                                         <BarChart3 className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
