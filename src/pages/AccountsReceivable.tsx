@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle, DollarSign, Download, Check, Info } from 'lucide-react';
+import { AlertCircle, DollarSign, Download, Check, Info, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,11 +8,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { PDFDocument } from 'pdf-lib';
 import invoiceTemplate from '@/assets/invoice-template.pdf';
+import { cn } from '@/lib/utils';
 
 interface Invoice {
   id: string;
@@ -56,6 +59,8 @@ export default function AccountsReceivable() {
   const [transferReference, setTransferReference] = useState('');
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [infoInvoice, setInfoInvoice] = useState<Invoice | null>(null);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
 
   const fetchInvoices = async () => {
     try {
@@ -259,8 +264,16 @@ export default function AccountsReceivable() {
     };
   }, []);
 
-  const totalOwed = invoices.filter(i => i.status !== 'paid').reduce((sum, i) => sum + i.total, 0);
-  const overdueInvoices = invoices.filter(i => new Date(i.due_date) < new Date() && i.status !== 'paid');
+  // Filter invoices by date range
+  const filteredInvoices = invoices.filter(invoice => {
+    const issueDate = new Date(invoice.issue_date);
+    if (dateFrom && issueDate < dateFrom) return false;
+    if (dateTo && issueDate > dateTo) return false;
+    return true;
+  });
+
+  const totalOwed = filteredInvoices.filter(i => i.status !== 'paid').reduce((sum, i) => sum + i.total, 0);
+  const overdueInvoices = filteredInvoices.filter(i => new Date(i.due_date) < new Date() && i.status !== 'paid');
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
@@ -275,8 +288,69 @@ export default function AccountsReceivable() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Accounts Receivable</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "justify-start text-left font-normal",
+                  !dateFrom && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateFrom ? format(dateFrom, "MMM dd, yyyy") : "From Date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={dateFrom}
+                onSelect={setDateFrom}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+          
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "justify-start text-left font-normal",
+                  !dateTo && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateTo ? format(dateTo, "MMM dd, yyyy") : "To Date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={dateTo}
+                onSelect={setDateTo}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {(dateFrom || dateTo) && (
+            <Button 
+              variant="ghost" 
+              onClick={() => {
+                setDateFrom(undefined);
+                setDateTo(undefined);
+              }}
+            >
+              Clear Dates
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -297,7 +371,7 @@ export default function AccountsReceivable() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${invoices.reduce((sum, i) => sum + (i.tax_amount || 0), 0).toFixed(2)}
+              ${filteredInvoices.reduce((sum, i) => sum + (i.tax_amount || 0), 0).toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               VAT collected from customers
@@ -540,7 +614,10 @@ export default function AccountsReceivable() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>All Invoices ({invoices.length})</CardTitle>
+            <CardTitle>
+              All Invoices ({filteredInvoices.length}
+              {dateFrom || dateTo ? ` of ${invoices.length}` : ''})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -558,14 +635,14 @@ export default function AccountsReceivable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.length === 0 ? (
+                {filteredInvoices.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center text-muted-foreground">
-                      No invoices found.
+                      {invoices.length === 0 ? 'No invoices found.' : 'No invoices found in selected date range.'}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  invoices.map((invoice) => (
+                  filteredInvoices.map((invoice) => (
                     <TableRow key={invoice.id}>
                       <TableCell className="font-medium">{invoice.customer_name}</TableCell>
                       <TableCell>{invoice.invoice_number}</TableCell>

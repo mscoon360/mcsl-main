@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit, Trash2, AlertCircle, DollarSign } from 'lucide-react';
+import { Plus, Edit, Trash2, AlertCircle, DollarSign, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,13 +11,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAccountsPayable, AccountPayable } from '@/hooks/useAccountsPayable';
 import { useVendors } from '@/hooks/useVendors';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export default function AccountsPayable() {
   const { bills, loading, addBill, updateBill, deleteBill } = useAccountsPayable();
   const { vendors } = useVendors();
   const [showForm, setShowForm] = useState(false);
   const [editingBill, setEditingBill] = useState<AccountPayable | null>(null);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [formData, setFormData] = useState({
     vendor_id: '',
     vendor_name: '',
@@ -103,8 +108,16 @@ export default function AccountsPayable() {
     });
   };
 
-  const totalOwed = bills.filter(b => b.status !== 'paid').reduce((sum, b) => sum + (b.amount - b.amount_paid), 0);
-  const overdueBills = bills.filter(b => new Date(b.due_date) < new Date() && b.status !== 'paid');
+  // Filter bills by date range
+  const filteredBills = bills.filter(bill => {
+    const billDate = new Date(bill.bill_date);
+    if (dateFrom && billDate < dateFrom) return false;
+    if (dateTo && billDate > dateTo) return false;
+    return true;
+  });
+
+  const totalOwed = filteredBills.filter(b => b.status !== 'paid').reduce((sum, b) => sum + (b.amount - b.amount_paid), 0);
+  const overdueBills = filteredBills.filter(b => new Date(b.due_date) < new Date() && b.status !== 'paid');
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
@@ -118,12 +131,74 @@ export default function AccountsPayable() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Accounts Payable</h1>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Bill
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "justify-start text-left font-normal",
+                  !dateFrom && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateFrom ? format(dateFrom, "MMM dd, yyyy") : "From Date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={dateFrom}
+                onSelect={setDateFrom}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+          
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "justify-start text-left font-normal",
+                  !dateTo && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateTo ? format(dateTo, "MMM dd, yyyy") : "To Date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={dateTo}
+                onSelect={setDateTo}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {(dateFrom || dateTo) && (
+            <Button 
+              variant="ghost" 
+              onClick={() => {
+                setDateFrom(undefined);
+                setDateTo(undefined);
+              }}
+            >
+              Clear Dates
+            </Button>
+          )}
+          
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Bill
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -288,7 +363,10 @@ export default function AccountsPayable() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>All Bills ({bills.length})</CardTitle>
+            <CardTitle>
+              All Bills ({filteredBills.length}
+              {dateFrom || dateTo ? ` of ${bills.length}` : ''})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -307,14 +385,14 @@ export default function AccountsPayable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {bills.length === 0 ? (
+                {filteredBills.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={10} className="text-center text-muted-foreground">
-                      No bills found. Add your first bill to get started.
+                      {bills.length === 0 ? 'No bills found. Add your first bill to get started.' : 'No bills found in selected date range.'}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  bills.map((bill) => (
+                  filteredBills.map((bill) => (
                     <TableRow key={bill.id}>
                       <TableCell className="font-medium">{bill.vendor_name}</TableCell>
                       <TableCell>{bill.bill_number}</TableCell>
