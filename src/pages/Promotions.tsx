@@ -237,6 +237,67 @@ const Promotions = () => {
         </Card>
       </div>
 
+      {/* Promotional Sales History */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Promotional Sales History</CardTitle>
+          <CardDescription>Sales that used promotional bundles</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Promotion</TableHead>
+                <TableHead>Items</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sales
+                .filter(sale => sale.promotion_id)
+                .map(sale => {
+                  const promotion = promotions.find(p => p.id === sale.promotion_id);
+                  return (
+                    <TableRow key={sale.id}>
+                      <TableCell>{format(new Date(sale.date), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell>{sale.customer_name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          <Tag className="h-3 w-3 mr-1" />
+                          {promotion?.name || 'Unknown Promotion'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-muted-foreground">
+                          {sale.items.length} {sale.items.length === 1 ? 'item' : 'items'}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={sale.status === 'completed' ? 'default' : 'secondary'}>
+                          {sale.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-mono font-semibold">
+                        ${Number(sale.total).toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              {sales.filter(sale => sale.promotion_id).length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    No promotional sales yet
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4">
         {promotions.map((promotion) => {
           const originalTotal = promotion.bundle_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
