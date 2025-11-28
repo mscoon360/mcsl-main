@@ -156,9 +156,19 @@ const Promotions = () => {
   
   const monthlyPromotionalRevenue = monthlyPromotionalSales.reduce((sum, sale) => sum + Number(sale.total), 0);
   
-  // Calculate average margin (simplified)
-  const averageMargin = monthlyPromotionalSales.length > 0
-    ? (monthlyPromotionalRevenue * 0.25) / monthlyPromotionalRevenue * 100
+  // Calculate average margin based on actual cost prices
+  let totalCost = 0;
+  monthlyPromotionalSales.forEach(sale => {
+    sale.items.forEach(item => {
+      const product = products.find(p => p.name === item.product_name);
+      if (product && product.cost_price) {
+        totalCost += Number(product.cost_price) * item.quantity;
+      }
+    });
+  });
+  
+  const averageMargin = monthlyPromotionalRevenue > 0
+    ? ((monthlyPromotionalRevenue - totalCost) / monthlyPromotionalRevenue) * 100
     : 0;
 
   if (loading) return <div className="p-8">Loading promotions...</div>;
