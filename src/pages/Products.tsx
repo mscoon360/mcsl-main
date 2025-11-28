@@ -57,18 +57,12 @@ export default function Products() {
     const min_stock = parseInt(formData.get('min_stock') as string) || 0;
     const cost_price = parseFloat(formData.get('cost_price') as string) || 0;
     
-    // Handle prices based on product type
+    // Sales team will set prices later - default to 0
     let price = 0;
     let rental_price = null;
     
-    if (productType === 'both') {
-      price = parseFloat(formData.get('sale_price') as string) || 0;
-      rental_price = parseFloat(formData.get('rental_price') as string) || 0;
-    } else if (productType === 'rental_only') {
-      rental_price = parseFloat(formData.get('rental_price') as string) || 0;
-      price = rental_price; // Set price to rental_price for display purposes
-    } else {
-      price = parseFloat(formData.get('sale_price') as string) || 0;
+    if (productType === 'rental_only' || productType === 'both') {
+      rental_price = 0;
     }
 
     const newProduct = {
@@ -472,32 +466,6 @@ export default function Products() {
                 </div>
               )}
 
-              {productType === 'both' ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="sale_price">Sale Price *</Label>
-                    <Input id="sale_price" name="sale_price" type="number" step="0.01" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="rental_price">Rental Price *</Label>
-                    <Input id="rental_price" name="rental_price" type="number" step="0.01" required />
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Label htmlFor={productType === 'rental_only' ? 'rental_price' : 'sale_price'}>
-                    {productType === 'rental_only' ? 'Rental Price' : 'Sale Price'} *
-                  </Label>
-                  <Input 
-                    id={productType === 'rental_only' ? 'rental_price' : 'sale_price'} 
-                    name={productType === 'rental_only' ? 'rental_price' : 'sale_price'} 
-                    type="number" 
-                    step="0.01" 
-                    required 
-                  />
-                </div>
-              )}
-
               <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="division">Division</Label>
@@ -716,7 +684,6 @@ export default function Products() {
                   <TableHead>Supplier</TableHead>
                   <TableHead>Division</TableHead>
                   <TableHead>Subdivision</TableHead>
-                  <TableHead>Price</TableHead>
                   <TableHead>Cost Price</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Status</TableHead>
@@ -745,7 +712,6 @@ export default function Products() {
                         ? divisions.find(d => d.id === product.division_id)?.subdivisions?.find(s => s.id === product.subdivision_id)?.name || '-'
                         : '-'}
                     </TableCell>
-                    <TableCell>${product.price.toFixed(2)}</TableCell>
                     <TableCell>${product.cost_price?.toFixed(2) || '0.00'}</TableCell>
                     <TableCell>
                       {product.stock === 0 ? (
@@ -838,11 +804,7 @@ export default function Products() {
                 <Textarea id="edit-description" name="description" defaultValue={editingProduct.description} />
               </div>
 
-              <div className="grid grid-cols-5 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-price">Price *</Label>
-                  <Input id="edit-price" name="price" type="number" step="0.01" defaultValue={editingProduct.price} required />
-                </div>
+              <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-division">Division</Label>
                   <select
