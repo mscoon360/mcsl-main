@@ -162,21 +162,28 @@ const Promotions = () => {
 
       <div className="grid gap-4">
         {promotions.map((promotion) => {
+          const originalTotal = promotion.bundle_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
           const bundleTotal = calculateBundleTotal(
             promotion.bundle_items,
             { type: promotion.discount_type || 'none', value: promotion.discount_value }
           );
+          const totalSavings = originalTotal - bundleTotal;
+          const savingsPercentage = originalTotal > 0 ? (totalSavings / originalTotal) * 100 : 0;
 
           return (
             <Card key={promotion.id}>
               <CardHeader>
                 <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <CardTitle className="flex items-center gap-2 flex-wrap">
                       <Tag className="h-5 w-5" />
                       {promotion.name}
                       <Badge variant={promotion.is_active ? "default" : "secondary"}>
                         {promotion.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                      <Badge variant="outline" className="ml-2">
+                        <Package className="h-3 w-3 mr-1" />
+                        {promotion.bundle_items.length} {promotion.bundle_items.length === 1 ? 'Item' : 'Items'}
                       </Badge>
                     </CardTitle>
                     {promotion.description && <CardDescription className="mt-1">{promotion.description}</CardDescription>}
@@ -192,25 +199,80 @@ const Promotions = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-4">
+                  {/* Date Range */}
                   {(promotion.start_date || promotion.end_date) && (
-                    <div className="text-sm text-muted-foreground">
-                      {promotion.start_date && `From ${format(new Date(promotion.start_date), 'MMM dd, yyyy')}`}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className="font-medium">Valid:</span>
+                      {promotion.start_date && format(new Date(promotion.start_date), 'MMM dd, yyyy')}
                       {promotion.start_date && promotion.end_date && ' - '}
-                      {promotion.end_date && `To ${format(new Date(promotion.end_date), 'MMM dd, yyyy')}`}
+                      {promotion.end_date && format(new Date(promotion.end_date), 'MMM dd, yyyy')}
                     </div>
                   )}
+
+                  {/* Bundle Items */}
+                  <div className="border rounded-lg p-3 bg-muted/30">
+                    <div className="font-medium mb-2 text-sm">Bundle Contents:</div>
+                    <div className="space-y-2">
+                      {promotion.bundle_items.map((item, idx) => {
+                        const itemTotal = item.price * item.quantity;
+                        let itemDiscount = 0;
+                        if (item.discount_type === 'percentage') itemDiscount = (itemTotal * (item.discount_value || 0)) / 100;
+                        else if (item.discount_type === 'fixed') itemDiscount = item.discount_value || 0;
+                        const itemFinalPrice = itemTotal - itemDiscount;
+
+                        return (
+                          <div key={idx} className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="font-mono">
+                                {item.quantity}x
+                              </Badge>
+                              <span className="font-medium">{item.product_name}</span>
+                              {item.discount_type !== 'none' && (
+                                <Badge variant="outline" className="text-xs">
+                                  {item.discount_type === 'percentage' ? `-${item.discount_value}%` : `-$${item.discount_value}`}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {itemDiscount > 0 && (
+                                <span className="text-muted-foreground line-through text-xs">
+                                  ${itemTotal.toFixed(2)}
+                                </span>
+                              )}
+                              <span className="font-mono font-medium">
+                                ${itemFinalPrice.toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Pricing Summary */}
                   <div className="flex justify-between items-center pt-2 border-t">
-                    <div>
+                    <div className="space-y-1">
                       {promotion.discount_type !== 'none' && (
-                        <Badge variant="outline">
+                        <Badge variant="outline" className="mb-2">
                           Bundle Discount: {promotion.discount_type === 'percentage' ? `${promotion.discount_value}%` : `$${promotion.discount_value}`}
                         </Badge>
                       )}
+                      {totalSavings > 0 && (
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Save: </span>
+                          <span className="font-bold text-green-600">
+                            ${totalSavings.toFixed(2)} ({savingsPercentage.toFixed(1)}%)
+                          </span>
+                        </div>
+                      )}
+                      <div className="text-sm text-muted-foreground">
+                        <span className="line-through">Original: ${originalTotal.toFixed(2)}</span>
+                      </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm text-muted-foreground">Bundle Total</div>
-                      <div className="text-2xl font-bold text-primary">${bundleTotal.toFixed(2)}</div>
+                      <div className="text-sm text-muted-foreground">Bundle Price</div>
+                      <div className="text-3xl font-bold text-primary">${bundleTotal.toFixed(2)}</div>
                     </div>
                   </div>
                 </div>
