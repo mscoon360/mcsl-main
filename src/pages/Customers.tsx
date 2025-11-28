@@ -48,7 +48,8 @@ export default function Customers() {
     salesRep: string;
     contracts: any[];
     purchases: any[];
-  }>({ salesRep: '', contracts: [], purchases: [] });
+    divisions: string[];
+  }>({ salesRep: '', contracts: [], purchases: [], divisions: [] });
 
   const department = userDepartment;
 
@@ -316,10 +317,47 @@ export default function Customers() {
       .eq('customer_name', customer.name)
       .order('date', { ascending: false });
 
+    // Fetch divisions servicing this customer
+    const divisionNames: string[] = [];
+    if (purchasesData && purchasesData.length > 0) {
+      // Get all unique product names from purchases
+      const productNames = Array.from(
+        new Set(
+          purchasesData.flatMap(sale => 
+            sale.sale_items?.map((item: any) => item.product_name) || []
+          )
+        )
+      );
+
+      if (productNames.length > 0) {
+        // Fetch products with their divisions
+        const { data: productsData } = await supabase
+          .from('products')
+          .select(`
+            name,
+            divisions(name)
+          `)
+          .in('name', productNames)
+          .not('division_id', 'is', null);
+
+        if (productsData) {
+          const uniqueDivisions = Array.from(
+            new Set(
+              productsData
+                .map((p: any) => p.divisions?.name)
+                .filter(Boolean)
+            )
+          );
+          divisionNames.push(...uniqueDivisions);
+        }
+      }
+    }
+
     setCustomerDetails({
       salesRep: profileData?.name || profileData?.username || 'Unknown',
       contracts: contractsData || [],
-      purchases: purchasesData || []
+      purchases: purchasesData || [],
+      divisions: divisionNames
     });
   };
   return (
@@ -870,6 +908,29 @@ export default function Customers() {
                 <div className="bg-muted/50 p-4 rounded-lg">
                   <p className="font-medium">{customerDetails.salesRep}</p>
                 </div>
+              </div>
+
+              <Separator />
+
+              {/* Divisions Servicing Customer */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  Divisions Servicing Customer
+                </h3>
+                {customerDetails.divisions.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {customerDetails.divisions.map((division, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-sm">
+                        {division}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm bg-muted/50 p-4 rounded-lg">
+                    No divisions found - customer hasn't purchased products with assigned divisions
+                  </p>
+                )}
               </div>
 
               <Separator />
