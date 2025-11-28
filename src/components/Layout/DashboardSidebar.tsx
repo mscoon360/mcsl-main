@@ -128,7 +128,8 @@ const navigation: NavigationSection[] = [
           { name: "Fleet Management", href: "/fleet" },
           { name: "Inspections", href: "/inspections" },
           { name: "Driver Companion", href: "/companion" },
-          { name: "Fuel", href: "/fuel" }
+          { name: "Fuel Records", href: "/fuel" },
+          { name: "Parts & Maintenance", href: "/parts" },
         ]
       },
     ]

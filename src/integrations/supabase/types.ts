@@ -1410,6 +1410,65 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_parts: {
+        Row: {
+          cost: number | null
+          created_at: string
+          id: string
+          installation_date: string
+          lifespan_months: number
+          next_replacement_date: string
+          notes: string | null
+          part_category: string | null
+          part_name: string
+          status: string
+          supplier: string | null
+          updated_at: string
+          user_id: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          id?: string
+          installation_date: string
+          lifespan_months: number
+          next_replacement_date: string
+          notes?: string | null
+          part_category?: string | null
+          part_name: string
+          status?: string
+          supplier?: string | null
+          updated_at?: string
+          user_id: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          id?: string
+          installation_date?: string
+          lifespan_months?: number
+          next_replacement_date?: string
+          notes?: string | null
+          part_category?: string | null
+          part_name?: string
+          status?: string
+          supplier?: string | null
+          updated_at?: string
+          user_id?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_parts_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendors: {
         Row: {
           address: string | null
