@@ -50,9 +50,10 @@ export default function AccountsReceivable() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [chequeNumber, setChequeNumber] = useState('');
   const [chequeName, setChequeName] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [accountName, setAccountName] = useState('');
-  const [wtcNumber, setWtcNumber] = useState('');
+  const [transferDate, setTransferDate] = useState('');
+  const [transferAmount, setTransferAmount] = useState('');
+  const [transferDescription, setTransferDescription] = useState('');
+  const [transferReference, setTransferReference] = useState('');
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [infoInvoice, setInfoInvoice] = useState<Invoice | null>(null);
 
@@ -159,9 +160,10 @@ export default function AccountsReceivable() {
     setPaymentMethod(invoice.payment_terms || '');
     setChequeNumber('');
     setChequeName('');
-    setAccountNumber('');
-    setAccountName('');
-    setWtcNumber('');
+    setTransferDate('');
+    setTransferAmount('');
+    setTransferDescription('');
+    setTransferReference('');
     setShowPaymentDialog(true);
   };
 
@@ -197,9 +199,10 @@ export default function AccountsReceivable() {
       } else if (paymentMethod === 'Bank Transfer') {
         paymentDetails = {
           ...paymentDetails,
-          account_number: accountNumber,
-          account_name: accountName,
-          wtc_number: wtcNumber
+          transfer_date: transferDate,
+          transfer_amount: transferAmount,
+          transfer_description: transferDescription,
+          transfer_reference: transferReference
         };
       }
 
@@ -224,9 +227,10 @@ export default function AccountsReceivable() {
       setPaymentMethod('');
       setChequeNumber('');
       setChequeName('');
-      setAccountNumber('');
-      setAccountName('');
-      setWtcNumber('');
+      setTransferDate('');
+      setTransferAmount('');
+      setTransferDescription('');
+      setTransferReference('');
       fetchInvoices();
     } catch (error: any) {
       console.error('Error recording payment:', error);
@@ -380,32 +384,44 @@ export default function AccountsReceivable() {
             {paymentMethod === 'Bank Transfer' && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="accountNumber">Account Number *</Label>
+                  <Label htmlFor="transferDate">Transfer Date *</Label>
                   <Input
-                    id="accountNumber"
-                    value={accountNumber}
-                    onChange={(e) => setAccountNumber(e.target.value)}
-                    placeholder="Enter account number"
+                    id="transferDate"
+                    type="date"
+                    value={transferDate}
+                    onChange={(e) => setTransferDate(e.target.value)}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="accountName">Account Name *</Label>
+                  <Label htmlFor="transferAmount">Transfer Amount *</Label>
                   <Input
-                    id="accountName"
-                    value={accountName}
-                    onChange={(e) => setAccountName(e.target.value)}
-                    placeholder="Enter account name"
+                    id="transferAmount"
+                    type="number"
+                    step="0.01"
+                    value={transferAmount}
+                    onChange={(e) => setTransferAmount(e.target.value)}
+                    placeholder="0.00"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="wtcNumber">WTC Number *</Label>
+                  <Label htmlFor="transferDescription">Description *</Label>
                   <Input
-                    id="wtcNumber"
-                    value={wtcNumber}
-                    onChange={(e) => setWtcNumber(e.target.value)}
-                    placeholder="Enter WTC number"
+                    id="transferDescription"
+                    value={transferDescription}
+                    onChange={(e) => setTransferDescription(e.target.value)}
+                    placeholder="Enter description"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="transferReference">Reference Number *</Label>
+                  <Input
+                    id="transferReference"
+                    value={transferReference}
+                    onChange={(e) => setTransferReference(e.target.value)}
+                    placeholder="Enter reference number"
                     required
                   />
                 </div>
@@ -486,19 +502,23 @@ export default function AccountsReceivable() {
                             </div>
                           </>
                         )}
-                        {details.account_number && (
+                        {details.transfer_date && (
                           <>
                             <div>
-                              <Label className="text-muted-foreground">Account Number</Label>
-                              <p className="font-medium">{details.account_number}</p>
+                              <Label className="text-muted-foreground">Transfer Date</Label>
+                              <p className="font-medium">{format(new Date(details.transfer_date), 'MMM dd, yyyy')}</p>
                             </div>
                             <div>
-                              <Label className="text-muted-foreground">Account Name</Label>
-                              <p className="font-medium">{details.account_name}</p>
+                              <Label className="text-muted-foreground">Transfer Amount</Label>
+                              <p className="font-medium">${parseFloat(details.transfer_amount).toFixed(2)}</p>
                             </div>
                             <div>
-                              <Label className="text-muted-foreground">WTC Number</Label>
-                              <p className="font-medium">{details.wtc_number}</p>
+                              <Label className="text-muted-foreground">Description</Label>
+                              <p className="font-medium">{details.transfer_description}</p>
+                            </div>
+                            <div>
+                              <Label className="text-muted-foreground">Reference Number</Label>
+                              <p className="font-medium">{details.transfer_reference}</p>
                             </div>
                           </>
                         )}
