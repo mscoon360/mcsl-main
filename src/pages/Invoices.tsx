@@ -207,6 +207,19 @@ export default function Invoices() {
     };
   }, []);
 
+  // Update salesWithInvoices when invoices change
+  useEffect(() => {
+    const saleIds = new Set<string>();
+    invoices.forEach(invoice => {
+      const saleIdMatch = invoice.notes?.match(/Sale ID: (.+)/);
+      const matchedId = saleIdMatch?.[1]?.trim();
+      if (matchedId) {
+        saleIds.add(String(matchedId));
+      }
+    });
+    setSalesWithInvoices(saleIds);
+  }, [invoices]);
+
   // Get available items for the selected customer (products + rental items)
   const getAvailableItemsForCustomer = () => {
     const availableItems = [];
@@ -614,17 +627,6 @@ export default function Invoices() {
 
         // Generate and download PDF for new invoices
         generateInvoicePDF(invoice);
-
-        // Track if this invoice was created from a sale
-        const saleIdMatch = invoice.notes?.match(/Sale ID: (.+)/);
-        const matchedId = saleIdMatch?.[1]?.trim();
-        if (matchedId) {
-          setSalesWithInvoices(prev => {
-            const next = new Set(prev);
-            next.add(String(matchedId));
-            return next;
-          });
-        }
       }
 
       resetForm();
