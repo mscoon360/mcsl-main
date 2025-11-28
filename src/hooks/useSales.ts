@@ -9,6 +9,7 @@ export interface SaleWithRep {
   date: string;
   status: string;
   user_id: string;
+  promotion_id?: string | null;
   rep_name: string;
   rep_username: string;
   items: Array<{
@@ -71,6 +72,7 @@ export function useSales() {
           date: sale.date,
           status: sale.status || 'completed',
           user_id: sale.user_id,
+          promotion_id: sale.promotion_id,
           rep_name: profile?.name || 'Unknown',
           rep_username: profile?.username || 'Unknown',
           items: (itemsData || [])

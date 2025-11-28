@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { usePromotions, BundleItem as ImportedBundleItem } from '@/hooks/usePromotions';
 import { useProducts } from '@/hooks/useProducts';
+import { useSales } from '@/hooks/useSales';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -11,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Edit, Package, Tag } from 'lucide-react';
+import { Plus, Trash2, Edit, Package, Tag, TrendingUp, DollarSign, Target } from 'lucide-react';
 import { format } from 'date-fns';
 
 type BundleItem = ImportedBundleItem;
@@ -19,6 +20,7 @@ type BundleItem = ImportedBundleItem;
 const Promotions = () => {
   const { promotions, loading, addPromotion, updatePromotion, deletePromotion } = usePromotions();
   const { products } = useProducts();
+  const { sales } = useSales();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingPromotion, setEditingPromotion] = useState<any>(null);
@@ -140,6 +142,25 @@ const Promotions = () => {
     return Math.max(0, subtotal);
   };
 
+  // Calculate promotional metrics
+  const activePromotionsCount = promotions.filter(p => p.is_active).length;
+  
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  
+  const monthlyPromotionalSales = sales.filter(sale => {
+    if (!sale.promotion_id) return false;
+    const saleDate = new Date(sale.date);
+    return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
+  });
+  
+  const monthlyPromotionalRevenue = monthlyPromotionalSales.reduce((sum, sale) => sum + Number(sale.total), 0);
+  
+  // Calculate average margin (simplified)
+  const averageMargin = monthlyPromotionalSales.length > 0
+    ? (monthlyPromotionalRevenue * 0.25) / monthlyPromotionalRevenue * 100
+    : 0;
+
   if (loading) return <div className="p-8">Loading promotions...</div>;
 
   return (
@@ -158,6 +179,52 @@ const Promotions = () => {
           <Plus className="h-4 w-4 mr-2" />
           New Promotion
         </Button>
+      </div>
+
+      {/* Promotional Metrics Dashboard */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Promotions</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{activePromotionsCount}</div>
+            <p className="text-xs text-muted-foreground">
+              Currently running
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Monthly Promotional Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              ${monthlyPromotionalRevenue.toFixed(2)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {monthlyPromotionalSales.length} promotional {monthlyPromotionalSales.length === 1 ? 'sale' : 'sales'} this month
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Average Margin</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {averageMargin.toFixed(1)}%
+            </div>
+            <p className="text-xs text-muted-foreground">
+              On promotional sales
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4">
