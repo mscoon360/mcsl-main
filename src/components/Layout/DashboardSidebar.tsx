@@ -151,6 +151,7 @@ const navigation: NavigationSection[] = [
     items: [
       { name: "Dashboard", href: "/", icon: BarChart3 },
       { name: "Sales", href: "/sales", icon: ShoppingCart },
+      { name: "Product Pricing", href: "/sales-products", icon: Package },
       { name: "Promotions", href: "/promotions", icon: Tag },
       { name: "Contracts", href: "/rental-agreements", icon: FileText },
       { name: "Customer Database", href: "/customers", icon: Users },
