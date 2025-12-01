@@ -1,15 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { Search, Navigation, MapPin } from "lucide-react";
+import { Search, Navigation, MapPin, Loader2 } from "lucide-react";
 import { useNPStations } from "@/hooks/useNPStations";
 import { usePinnedLocations } from "@/hooks/usePinnedLocations";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DriverMapProps {
   onClose?: () => void;
@@ -18,7 +19,8 @@ interface DriverMapProps {
 const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('mapbox_api_key') || '');
+  const [apiKey, setApiKey] = useState('');
+  const [isLoadingToken, setIsLoadingToken] = useState(true);
   const [isMapReady, setIsMapReady] = useState(false);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,20 +37,38 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
   const { data: npStations = [], isLoading: stationsLoading } = useNPStations();
   const { pinnedLocations, addPinnedLocation, deletePinnedLocation } = usePinnedLocations();
 
+  // Fetch Mapbox token on mount
+  useEffect(() => {
+    const fetchMapboxToken = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        if (error) throw error;
+        if (data?.token) {
+          setApiKey(data.token);
+        } else {
+          toast({
+            title: "Configuration Error",
+            description: "Mapbox token not configured. Please contact support.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching Mapbox token:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load map configuration",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingToken(false);
+      }
+    };
+
+    fetchMapboxToken();
+  }, []);
+
   const initializeMap = () => {
-    if (!apiKey) {
-      toast({
-        title: "API Key Required",
-        description: "Please enter your Mapbox API key to use the map",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Save API key to localStorage
-    localStorage.setItem('mapbox_api_key', apiKey);
-
-    if (!mapContainer.current) return;
+    if (!apiKey || !mapContainer.current) return;
 
     mapboxgl.accessToken = apiKey;
 
@@ -460,8 +480,8 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
     }
   };
 
+  // Auto-initialize when API key is loaded
   useEffect(() => {
-    // Auto-initialize if API key is already saved
     if (apiKey && !isMapReady) {
       initializeMap();
     }
@@ -469,43 +489,14 @@ const DriverMap: React.FC<DriverMapProps> = ({ onClose }) => {
     return () => {
       map.current?.remove();
     };
-  }, []);
-  
-  // Update localStorage when API key changes
-  useEffect(() => {
-    if (apiKey) {
-      localStorage.setItem('mapbox_api_key', apiKey);
-    }
   }, [apiKey]);
 
   return (
     <div className="space-y-4">
-      {!isMapReady && (
-        <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-          <div className="space-y-2">
-            <Label htmlFor="mapbox-api-key">Mapbox API Key</Label>
-            <Input
-              id="mapbox-api-key"
-              type="text"
-              placeholder="Enter your Mapbox public token"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Get your API key from{' '}
-              <a
-                href="https://mapbox.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                mapbox.com
-              </a>
-            </p>
-          </div>
-          <Button onClick={initializeMap} className="w-full">
-            Load Map
-          </Button>
+      {isLoadingToken && (
+        <div className="flex items-center justify-center p-8 border rounded-lg bg-muted/50">
+          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+          <span>Loading map...</span>
         </div>
       )}
 
