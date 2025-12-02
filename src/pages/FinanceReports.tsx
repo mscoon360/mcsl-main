@@ -25,7 +25,8 @@ import { cn } from '@/lib/utils';
 import { useSales } from '@/hooks/useSales';
 import { useExpenditures } from '@/hooks/useExpenditures';
 import { useAccountsPayable } from '@/hooks/useAccountsPayable';
-import { useAccountsReceivable } from '@/hooks/useAccountsReceivable';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 import { 
   BarChart, 
   Bar, 
@@ -57,7 +58,21 @@ export default function FinanceReports() {
   const { sales } = useSales();
   const { expenditures } = useExpenditures();
   const { bills } = useAccountsPayable();
-  const { invoices } = useAccountsReceivable();
+  const [arInvoices, setArInvoices] = useState<any[]>([]);
+
+  // Fetch invoices directly from invoices table (same as AccountsReceivable page)
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('*')
+        .order('due_date', { ascending: true });
+      if (!error && data) {
+        setArInvoices(data);
+      }
+    };
+    fetchInvoices();
+  }, []);
 
   // Handle preset period changes
   const handlePeriodChange = (period: string) => {
@@ -106,11 +121,11 @@ export default function FinanceReports() {
   }, [bills, dateRange]);
 
   const filteredInvoices = useMemo(() => {
-    return invoices.filter(inv => {
-      const invDate = new Date(inv.invoice_date);
+    return arInvoices.filter(inv => {
+      const invDate = new Date(inv.issue_date);
       return invDate >= dateRange.from && invDate <= dateRange.to;
     });
-  }, [invoices, dateRange]);
+  }, [arInvoices, dateRange]);
 
   // Calculate metrics
   const metrics = useMemo(() => {
@@ -125,10 +140,10 @@ export default function FinanceReports() {
     const payablesOutstanding = filteredBills.filter(b => b.status !== 'paid').reduce((sum, b) => sum + (b.amount - b.amount_paid), 0);
     const inputVATFromBills = filteredBills.reduce((sum, b) => sum + (b.vat_amount || 0), 0);
     
-    const totalReceivables = filteredInvoices.reduce((sum, i) => sum + i.amount, 0);
-    const receivablesCollected = filteredInvoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.amount, 0);
-    const receivablesOutstanding = filteredInvoices.filter(i => i.status !== 'paid').reduce((sum, i) => sum + (i.amount - (i.amount_paid || 0)), 0);
-    const outputVATFromReceivables = filteredInvoices.reduce((sum, i) => sum + (i.vat_amount || 0), 0);
+    const totalReceivables = filteredInvoices.reduce((sum, i) => sum + (i.total || 0), 0);
+    const receivablesCollected = filteredInvoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + (i.total || 0), 0);
+    const receivablesOutstanding = filteredInvoices.filter(i => i.status !== 'paid').reduce((sum, i) => sum + (i.total || 0), 0);
+    const outputVATFromReceivables = filteredInvoices.reduce((sum, i) => sum + (i.tax_amount || 0), 0);
     
     const netVAT = outputVAT + outputVATFromReceivables - inputVAT - inputVATFromBills;
     const grossProfit = totalRevenue - totalExpenses;
