@@ -256,10 +256,15 @@ export function DashboardSidebar() {
   };
 
   const toggleSection = (sectionName: string) => {
-    setOpenSections(prev => ({
-      ...prev,
-      [sectionName]: !prev[sectionName]
-    }));
+    setOpenSections(prev => {
+      const isCurrentlyOpen = prev[sectionName];
+      // Close all sections, then open only the clicked one if it was closed
+      const allClosed = Object.keys(prev).reduce((acc, key) => {
+        acc[key] = false;
+        return acc;
+      }, {} as Record<string, boolean>);
+      return isCurrentlyOpen ? allClosed : { ...allClosed, [sectionName]: true };
+    });
   };
 
   return (
