@@ -121,7 +121,7 @@ const navigation: NavigationSection[] = [
   {
     title: "Procurement & Logistics Department",
     items: [
-      { name: "Product Catalog", href: "/products", icon: Package },
+      { name: "Divisional Sales Listing", href: "/products", icon: Package },
       { name: "Inventory", href: "/inventory", icon: Warehouse },
       { name: "Purchase Orders", href: "/purchase-orders", icon: ClipboardList },
       { name: "Barcode Scanner", href: "/barcode-scanner", icon: ScanBarcode },
@@ -139,6 +139,17 @@ const navigation: NavigationSection[] = [
     ]
   },
   {
+    title: "Divisional Sales & Contracts Department",
+    items: [
+      { name: "Dashboard", href: "/", icon: BarChart3 },
+      { name: "Sales", href: "/sales", icon: ShoppingCart },
+      { name: "Product Pricing", href: "/sales-products", icon: Package },
+      { name: "Promotions", href: "/promotions", icon: Tag },
+      { name: "Contracts", href: "/rental-agreements", icon: FileText },
+      { name: "Customer Database", href: "/customers", icon: Users },
+    ]
+  },
+  {
     title: "Operational Divisions",
     items: [
       { 
@@ -149,17 +160,6 @@ const navigation: NavigationSection[] = [
           { name: "Schedule", href: "/schedule" }
         ]
       },
-    ]
-  },
-  {
-    title: "Divisional Sales & Contracts Department",
-    items: [
-      { name: "Dashboard", href: "/", icon: BarChart3 },
-      { name: "Sales", href: "/sales", icon: ShoppingCart },
-      { name: "Product Pricing", href: "/sales-products", icon: Package },
-      { name: "Promotions", href: "/promotions", icon: Tag },
-      { name: "Contracts", href: "/rental-agreements", icon: FileText },
-      { name: "Customer Database", href: "/customers", icon: Users },
     ]
   }
 ];
