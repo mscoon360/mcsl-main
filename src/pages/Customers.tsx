@@ -31,14 +31,33 @@ const mockCustomers: Array<{
   status: string;
 }> = [];
 export default function Customers() {
-  const { toast } = useToast();
-  const { userDepartment, user } = useAuth();
-  const { customers, loading, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
+  const {
+    toast
+  } = useToast();
+  const {
+    userDepartment,
+    user
+  } = useAuth();
+  const {
+    customers,
+    loading,
+    addCustomer,
+    updateCustomer,
+    deleteCustomer
+  } = useCustomers();
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCustomer, setEditingCustomer] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    company: '', name: '', email: '', phone: '', address: '', address_2: '', zone: '', city: '', vatable: false
+    company: '',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    address_2: '',
+    zone: '',
+    city: '',
+    vatable: false
   });
   const [accessStatus, setAccessStatus] = useState<'none' | 'pending' | 'approved' | 'denied'>('none');
   const [requestingAccess, setRequestingAccess] = useState(false);
@@ -49,8 +68,12 @@ export default function Customers() {
     contracts: any[];
     purchases: any[];
     divisions: string[];
-  }>({ salesRep: '', contracts: [], purchases: [], divisions: [] });
-
+  }>({
+    salesRep: '',
+    contracts: [],
+    purchases: [],
+    divisions: []
+  });
   const department = userDepartment;
 
   // Check access for sales users
@@ -61,36 +84,29 @@ export default function Customers() {
       setAccessStatus('approved'); // Non-sales have automatic access
     }
   }, [department, user]);
-
   const checkAccessStatus = async () => {
     if (!user) return;
-
-    const { data, error } = await supabase
-      .from('access_requests')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('requested_at', { ascending: false })
-      .limit(1);
-
+    const {
+      data,
+      error
+    } = await supabase.from('access_requests').select('*').eq('user_id', user.id).order('requested_at', {
+      ascending: false
+    }).limit(1);
     if (error) {
       console.error('Failed to check access status:', error);
       setAccessStatus('denied');
       return;
     }
-
     if (!data || data.length === 0) {
       setAccessStatus('denied');
       return;
     }
-
     const latestRequest = data[0];
-    
     if (latestRequest.status === 'pending') {
       setAccessStatus('pending');
     } else if (latestRequest.status === 'approved') {
       const expiresAt = new Date(latestRequest.expires_at);
       const now = new Date();
-      
       if (now < expiresAt) {
         setAccessStatus('approved');
       } else {
@@ -100,19 +116,15 @@ export default function Customers() {
       setAccessStatus('denied');
     }
   };
-
   const handleRequestAccess = async () => {
     if (!user) return;
-    
     setRequestingAccess(true);
-
-    const { error } = await supabase
-      .from('access_requests')
-      .insert({
-        user_id: user.id,
-        status: 'pending'
-      });
-
+    const {
+      error
+    } = await supabase.from('access_requests').insert({
+      user_id: user.id,
+      status: 'pending'
+    });
     if (error) {
       toast({
         title: "Request Failed",
@@ -127,13 +139,10 @@ export default function Customers() {
       });
       checkAccessStatus();
     }
-
     setRequestingAccess(false);
   };
-
   const logActivity = async (action: 'created' | 'updated' | 'deleted', customerId: string, changes?: any) => {
     if (!user || department !== 'sales') return;
-
     await supabase.from('customer_activity_log').insert({
       user_id: user.id,
       customer_id: customerId,
@@ -149,32 +158,31 @@ export default function Customers() {
     totalSales: number;
     date: string;
   }>>([]);
-
   useEffect(() => {
     const fetchContracts = async () => {
       // Fetch rental sales (contracts) with their totals
-      const { data: rentalData, error: rentalError } = await supabase
-        .from('sale_items')
-        .select(`
+      const {
+        data: rentalData,
+        error: rentalError
+      } = await supabase.from('sale_items').select(`
           price,
           quantity,
           contract_length,
           payment_period,
           sales!inner(customer_name, date, total)
-        `)
-        .eq('is_rental', true);
-      
+        `).eq('is_rental', true);
+
       // Fetch all sales for total sales calculation
-      const { data: allSalesData, error: salesError } = await supabase
-        .from('sales')
-        .select('customer_name, total, date');
-      
+      const {
+        data: allSalesData,
+        error: salesError
+      } = await supabase.from('sales').select('customer_name, total, date');
       if (!rentalError && rentalData) {
         // Transform data to calculate contract totals per customer
         const contractsByCustomer = rentalData.reduce((acc: any[], item: any) => {
           const customerName = item.sales.customer_name;
           const monthlyPrice = item.price * item.quantity;
-          
+
           // Parse contract length to get number of months
           let totalMonths = 1; // Default to 1 if not specified
           if (item.contract_length) {
@@ -185,16 +193,20 @@ export default function Customers() {
               totalMonths = unit === 'year' ? value * 12 : value;
             }
           }
-          
           const totalContractValue = monthlyPrice * totalMonths;
           const date = item.sales.date;
-          
-          acc.push({ customer_name: customerName, totalContractValue, date });
+          acc.push({
+            customer_name: customerName,
+            totalContractValue,
+            date
+          });
           return acc;
         }, []);
-        
+
         // Calculate total sales per customer
-        const salesByCustomer: { [key: string]: number } = {};
+        const salesByCustomer: {
+          [key: string]: number;
+        } = {};
         if (!salesError && allSalesData) {
           allSalesData.forEach((sale: any) => {
             if (!salesByCustomer[sale.customer_name]) {
@@ -203,32 +215,27 @@ export default function Customers() {
             salesByCustomer[sale.customer_name] += sale.total;
           });
         }
-        
+
         // Merge contract data with sales data
         const mergedData = contractsByCustomer.map(contract => ({
           ...contract,
           totalSales: salesByCustomer[contract.customer_name] || 0
         }));
-        
         setContractData(mergedData);
       }
     };
-
     fetchContracts();
 
     // Subscribe to sales and sale_items changes
-    const salesChannel = supabase
-      .channel('customer-contracts-changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'sales' },
-        () => fetchContracts()
-      )
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'sale_items' },
-        () => fetchContracts()
-      )
-      .subscribe();
-
+    const salesChannel = supabase.channel('customer-contracts-changes').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'sales'
+    }, () => fetchContracts()).on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'sale_items'
+    }, () => fetchContracts()).subscribe();
     return () => {
       supabase.removeChannel(salesChannel);
     };
@@ -238,13 +245,8 @@ export default function Customers() {
   const customersWithContracts = customers.map(customer => {
     const customerContracts = contractData.filter(contract => contract.customer_name === customer.name);
     const totalContractValue = customerContracts.reduce((sum, contract) => sum + contract.totalContractValue, 0);
-    const totalSales = customerContracts.length > 0 
-      ? customerContracts[0].totalSales 
-      : 0;
-    const lastPurchase = customerContracts.length > 0 
-      ? customerContracts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date
-      : customer.last_purchase;
-    
+    const totalSales = customerContracts.length > 0 ? customerContracts[0].totalSales : 0;
+    const lastPurchase = customerContracts.length > 0 ? customerContracts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date : customer.last_purchase;
     return {
       ...customer,
       totalContractValue: totalContractValue || 0,
@@ -252,17 +254,9 @@ export default function Customers() {
       lastPurchase: lastPurchase || customer.last_purchase || new Date().toISOString()
     };
   });
-
-  const filteredCustomers = customersWithContracts.filter(customer => 
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    customer.company?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.city?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
+  const filteredCustomers = customersWithContracts.filter(customer => customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || customer.company?.toLowerCase().includes(searchTerm.toLowerCase()) || customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) || customer.city?.toLowerCase().includes(searchTerm.toLowerCase()));
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
       const customerData = await addCustomer({
         company: formData.company,
@@ -276,30 +270,37 @@ export default function Customers() {
         status: "active",
         vatable: formData.vatable
       });
-      
+
       // Log activity for sales users
       if (department === 'sales' && customerData) {
         await logActivity('created', customerData.id);
       }
-      
-      setFormData({ company: '', name: '', email: '', phone: '', address: '', address_2: '', zone: '', city: '', vatable: false });
+      setFormData({
+        company: '',
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        address_2: '',
+        zone: '',
+        city: '',
+        vatable: false
+      });
       setShowAddForm(false);
     } catch (error) {
       console.error('Failed to add customer:', error);
     }
   };
-
-  const handleEdit = (customer: { id: string }) => {
+  const handleEdit = (customer: {
+    id: string;
+  }) => {
     setEditingCustomer(customer.id);
   };
-
   const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const data = new FormData(form);
-    
     if (!editingCustomer) return;
-    
     try {
       await updateCustomer(editingCustomer, {
         company: String(data.get("company") || ""),
@@ -311,13 +312,11 @@ export default function Customers() {
         zone: String(data.get("zone") || ""),
         city: String(data.get("city") || "")
       });
-
       setEditingCustomer(null);
     } catch (error) {
       console.error('Failed to update customer:', error);
     }
   };
-
   const handleDelete = async (customerId: string) => {
     if (window.confirm("Are you sure you want to delete this customer?")) {
       try {
@@ -327,74 +326,52 @@ export default function Customers() {
       }
     }
   };
-
   const handleCustomerClick = async (customer: any) => {
     setSelectedCustomer(customer);
     setIsDetailsDialogOpen(true);
 
     // Fetch sales rep who added this customer
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('name, username')
-      .eq('id', customer.user_id)
-      .single();
+    const {
+      data: profileData
+    } = await supabase.from('profiles').select('name, username').eq('id', customer.user_id).single();
 
     // Fetch contracts (rental agreements with this customer)
-    const { data: contractsData } = await supabase
-      .from('sale_items')
-      .select(`
+    const {
+      data: contractsData
+    } = await supabase.from('sale_items').select(`
         *,
         sales!inner(customer_name, date, total)
-      `)
-      .eq('sales.customer_name', customer.name)
-      .eq('is_rental', true);
+      `).eq('sales.customer_name', customer.name).eq('is_rental', true);
 
     // Fetch purchases (all sales for this customer)
-    const { data: purchasesData } = await supabase
-      .from('sales')
-      .select(`
+    const {
+      data: purchasesData
+    } = await supabase.from('sales').select(`
         *,
         sale_items(product_name, quantity, price)
-      `)
-      .eq('customer_name', customer.name)
-      .order('date', { ascending: false });
+      `).eq('customer_name', customer.name).order('date', {
+      ascending: false
+    });
 
     // Fetch divisions servicing this customer
     const divisionNames: string[] = [];
     if (purchasesData && purchasesData.length > 0) {
       // Get all unique product names from purchases
-      const productNames = Array.from(
-        new Set(
-          purchasesData.flatMap(sale => 
-            sale.sale_items?.map((item: any) => item.product_name) || []
-          )
-        )
-      );
-
+      const productNames = Array.from(new Set(purchasesData.flatMap(sale => sale.sale_items?.map((item: any) => item.product_name) || [])));
       if (productNames.length > 0) {
         // Fetch products with their divisions
-        const { data: productsData } = await supabase
-          .from('products')
-          .select(`
+        const {
+          data: productsData
+        } = await supabase.from('products').select(`
             name,
             divisions(name)
-          `)
-          .in('name', productNames)
-          .not('division_id', 'is', null);
-
+          `).in('name', productNames).not('division_id', 'is', null);
         if (productsData) {
-          const uniqueDivisions = Array.from(
-            new Set(
-              productsData
-                .map((p: any) => p.divisions?.name)
-                .filter(Boolean)
-            )
-          );
+          const uniqueDivisions = Array.from(new Set(productsData.map((p: any) => p.divisions?.name).filter(Boolean)));
           divisionNames.push(...uniqueDivisions);
         }
       }
     }
-
     setCustomerDetails({
       salesRep: profileData?.name || profileData?.username || 'Unknown',
       contracts: contractsData || [],
@@ -402,8 +379,7 @@ export default function Customers() {
       divisions: divisionNames
     });
   };
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
@@ -413,8 +389,7 @@ export default function Customers() {
       </div>
 
         {/* Sales users can always add customers */}
-        {department === 'sales' && (
-          <Card>
+        {department === 'sales' && <Card>
             <CardHeader>
               <CardTitle>Add New Customer</CardTitle>
               <CardDescription>
@@ -426,77 +401,66 @@ export default function Customers() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="company">Company Name *</Label>
-                    <Input
-                      id="company"
-                      value={formData.company}
-                      onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                      required
-                    />
+                    <Input id="company" value={formData.company} onChange={e => setFormData({
+                ...formData,
+                company: e.target.value
+              })} required />
                   </div>
                   <div>
                     <Label htmlFor="name">Representative Name</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    />
+                    <Input id="name" value={formData.name} onChange={e => setFormData({
+                ...formData,
+                name: e.target.value
+              })} />
                   </div>
                   <div>
                     <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    />
+                    <Input id="email" type="email" value={formData.email} onChange={e => setFormData({
+                ...formData,
+                email: e.target.value
+              })} />
                   </div>
                   <div>
                     <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    />
+                    <Input id="phone" value={formData.phone} onChange={e => setFormData({
+                ...formData,
+                phone: e.target.value
+              })} />
                   </div>
                   <div>
                     <Label htmlFor="address">Address #1</Label>
-                    <Input
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    />
+                    <Input id="address" value={formData.address} onChange={e => setFormData({
+                ...formData,
+                address: e.target.value
+              })} />
                   </div>
                   <div>
                     <Label htmlFor="address_2">Address #2</Label>
-                    <Input
-                      id="address_2"
-                      value={formData.address_2}
-                      onChange={(e) => setFormData({ ...formData, address_2: e.target.value })}
-                    />
+                    <Input id="address_2" value={formData.address_2} onChange={e => setFormData({
+                ...formData,
+                address_2: e.target.value
+              })} />
                   </div>
                   <div>
                     <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    />
+                    <Input id="city" value={formData.city} onChange={e => setFormData({
+                ...formData,
+                city: e.target.value
+              })} />
                   </div>
                   <div>
                     <Label htmlFor="zone">Zone</Label>
-                    <Input
-                      id="zone"
-                      value={formData.zone}
-                      onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
-                    />
+                    <Input id="zone" value={formData.zone} onChange={e => setFormData({
+                ...formData,
+                zone: e.target.value
+              })} />
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="vatable" 
-                    checked={formData.vatable}
-                    onCheckedChange={(checked) => setFormData({ ...formData, vatable: checked as boolean })}
-                  />
+                  <Checkbox id="vatable" checked={formData.vatable} onCheckedChange={checked => setFormData({
+              ...formData,
+              vatable: checked as boolean
+            })} />
                   <Label htmlFor="vatable" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                     VATable Customer (12.5% VAT will be applied to purchases)
                   </Label>
@@ -507,12 +471,10 @@ export default function Customers() {
                 </Button>
               </form>
             </CardContent>
-          </Card>
-        )}
+          </Card>}
 
         {/* Access status messages for sales users */}
-        {department === 'sales' && accessStatus === 'pending' && (
-          <Card className="border-yellow-500">
+        {department === 'sales' && accessStatus === 'pending' && <Card className="border-yellow-500">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
@@ -522,11 +484,9 @@ export default function Customers() {
                 Your request to view and edit customers is awaiting admin approval.
               </CardDescription>
             </CardHeader>
-          </Card>
-        )}
+          </Card>}
 
-        {department === 'sales' && accessStatus === 'denied' && (
-          <Card className="border-destructive">
+        {department === 'sales' && accessStatus === 'denied' && <Card className="border-destructive">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">
                 <AlertCircle className="h-5 w-5" />
@@ -542,11 +502,9 @@ export default function Customers() {
                 Request Access to View Customers
               </Button>
             </CardContent>
-          </Card>
-        )}
+          </Card>}
 
-        {department === 'sales' && accessStatus === 'approved' && (
-          <Card className="border-green-500 bg-green-50 dark:bg-green-950">
+        {department === 'sales' && accessStatus === 'approved' && <Card className="border-green-500 bg-green-50 dark:bg-green-950">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
                 <CheckCircle className="h-5 w-5" />
@@ -556,12 +514,10 @@ export default function Customers() {
                 You have temporary access to view and edit the customer database
               </CardDescription>
             </CardHeader>
-          </Card>
-        )}
+          </Card>}
 
         {/* Main Content - Only show if user has access */}
-        {(department !== 'sales' || accessStatus === 'approved') && (
-          <>
+        {(department !== 'sales' || accessStatus === 'approved') && <>
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">Customer Database</h2>
@@ -569,17 +525,14 @@ export default function Customers() {
                   {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} found
                 </p>
               </div>
-              {department !== 'sales' && (
-                <Button onClick={() => setShowAddForm(!showAddForm)}>
+              {department !== 'sales' && <Button onClick={() => setShowAddForm(!showAddForm)}>
                   <Plus className="mr-2 h-4 w-4" />
                   {showAddForm ? 'Cancel' : 'Add Customer'}
-                </Button>
-              )}
+                </Button>}
             </div>
 
             {/* Add customer form for non-sales */}
-            {showAddForm && department !== 'sales' && (
-              <Card>
+            {showAddForm && department !== 'sales' && <Card>
                 <CardHeader>
                   <CardTitle>Add New Customer</CardTitle>
                 </CardHeader>
@@ -588,77 +541,66 @@ export default function Customers() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="company-form">Company Name *</Label>
-                        <Input
-                          id="company-form"
-                          value={formData.company}
-                          onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                          required
-                        />
+                        <Input id="company-form" value={formData.company} onChange={e => setFormData({
+                  ...formData,
+                  company: e.target.value
+                })} required />
                       </div>
                       <div>
                         <Label htmlFor="name-form">Representative Name</Label>
-                        <Input
-                          id="name-form"
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        />
+                        <Input id="name-form" value={formData.name} onChange={e => setFormData({
+                  ...formData,
+                  name: e.target.value
+                })} />
                       </div>
                       <div>
                         <Label htmlFor="email-form">Email</Label>
-                        <Input
-                          id="email-form"
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        />
+                        <Input id="email-form" type="email" value={formData.email} onChange={e => setFormData({
+                  ...formData,
+                  email: e.target.value
+                })} />
                       </div>
                       <div>
                         <Label htmlFor="phone-form">Phone</Label>
-                        <Input
-                          id="phone-form"
-                          value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        />
+                        <Input id="phone-form" value={formData.phone} onChange={e => setFormData({
+                  ...formData,
+                  phone: e.target.value
+                })} />
                       </div>
                       <div>
                         <Label htmlFor="address-form">Address #1</Label>
-                        <Input
-                          id="address-form"
-                          value={formData.address}
-                          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        />
+                        <Input id="address-form" value={formData.address} onChange={e => setFormData({
+                  ...formData,
+                  address: e.target.value
+                })} />
                       </div>
                       <div>
                         <Label htmlFor="address_2-form">Address #2</Label>
-                        <Input
-                          id="address_2-form"
-                          value={formData.address_2}
-                          onChange={(e) => setFormData({ ...formData, address_2: e.target.value })}
-                        />
+                        <Input id="address_2-form" value={formData.address_2} onChange={e => setFormData({
+                  ...formData,
+                  address_2: e.target.value
+                })} />
                       </div>
                       <div>
                         <Label htmlFor="city-form">City</Label>
-                        <Input
-                          id="city-form"
-                          value={formData.city}
-                          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                        />
+                        <Input id="city-form" value={formData.city} onChange={e => setFormData({
+                  ...formData,
+                  city: e.target.value
+                })} />
                       </div>
                       <div>
                         <Label htmlFor="zone-form">Zone</Label>
-                        <Input
-                          id="zone-form"
-                          value={formData.zone}
-                          onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
-                        />
+                        <Input id="zone-form" value={formData.zone} onChange={e => setFormData({
+                  ...formData,
+                  zone: e.target.value
+                })} />
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="vatable-form" 
-                        checked={formData.vatable}
-                        onCheckedChange={(checked) => setFormData({ ...formData, vatable: checked as boolean })}
-                      />
+                      <Checkbox id="vatable-form" checked={formData.vatable} onCheckedChange={checked => setFormData({
+                ...formData,
+                vatable: checked as boolean
+              })} />
                       <Label htmlFor="vatable-form" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                         VATable Customer (12.5% VAT will be applied to purchases)
                       </Label>
@@ -669,25 +611,17 @@ export default function Customers() {
                     </Button>
                   </form>
                 </CardContent>
-              </Card>
-            )}
+              </Card>}
 
             {/* Search Bar */}
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search customers by name, email, company, or city..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+                <Input placeholder="Search customers by name, email, company, or city..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
-              {searchTerm && (
-                <Button variant="ghost" size="icon" onClick={() => setSearchTerm('')}>
+              {searchTerm && <Button variant="ghost" size="icon" onClick={() => setSearchTerm('')}>
                   <X className="h-4 w-4" />
-                </Button>
-              )}
+                </Button>}
             </div>
 
             <Card>
@@ -695,7 +629,7 @@ export default function Customers() {
           {filteredCustomers.length > 0 ? <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Customer</TableHead>
+                  <TableHead>Company Name/Customer</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Company</TableHead>
                   <TableHead>Zone</TableHead>
@@ -707,105 +641,59 @@ export default function Customers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.map(customer => (
-                  editingCustomer === customer.id ? (
-                    <TableRow key={customer.id}>
+                {filteredCustomers.map(customer => editingCustomer === customer.id ? <TableRow key={customer.id}>
                       <TableCell colSpan={9} className="p-4">
                         <form onSubmit={handleEditSubmit} className="space-y-4">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
                               <Label htmlFor={`edit-company-${customer.id}`}>Company *</Label>
-                              <Input
-                                id={`edit-company-${customer.id}`}
-                                name="company"
-                                defaultValue={customer.company}
-                                required
-                              />
+                              <Input id={`edit-company-${customer.id}`} name="company" defaultValue={customer.company} required />
                             </div>
                             <div>
                               <Label htmlFor={`edit-name-${customer.id}`}>Representative Name</Label>
-                              <Input
-                                id={`edit-name-${customer.id}`}
-                                name="name"
-                                defaultValue={customer.name}
-                              />
+                              <Input id={`edit-name-${customer.id}`} name="name" defaultValue={customer.name} />
                             </div>
                             <div>
                               <Label htmlFor={`edit-email-${customer.id}`}>Email</Label>
-                              <Input
-                                id={`edit-email-${customer.id}`}
-                                name="email"
-                                type="email"
-                                defaultValue={customer.email}
-                              />
+                              <Input id={`edit-email-${customer.id}`} name="email" type="email" defaultValue={customer.email} />
                             </div>
                             <div>
                               <Label htmlFor={`edit-phone-${customer.id}`}>Phone</Label>
-                              <Input
-                                id={`edit-phone-${customer.id}`}
-                                name="phone"
-                                defaultValue={customer.phone}
-                              />
+                              <Input id={`edit-phone-${customer.id}`} name="phone" defaultValue={customer.phone} />
                             </div>
                             <div>
                               <Label htmlFor={`edit-address-${customer.id}`}>Address #1</Label>
-                              <Input
-                                id={`edit-address-${customer.id}`}
-                                name="address"
-                                defaultValue={customer.address}
-                              />
+                              <Input id={`edit-address-${customer.id}`} name="address" defaultValue={customer.address} />
                             </div>
                             <div>
                               <Label htmlFor={`edit-address-2-${customer.id}`}>Address #2</Label>
-                              <Input
-                                id={`edit-address-2-${customer.id}`}
-                                name="address_2"
-                                defaultValue={customer.address_2}
-                              />
+                              <Input id={`edit-address-2-${customer.id}`} name="address_2" defaultValue={customer.address_2} />
                             </div>
                             <div>
                               <Label htmlFor={`edit-city-${customer.id}`}>City</Label>
-                              <Input
-                                id={`edit-city-${customer.id}`}
-                                name="city"
-                                defaultValue={customer.city}
-                              />
+                              <Input id={`edit-city-${customer.id}`} name="city" defaultValue={customer.city} />
                             </div>
                             <div>
                               <Label htmlFor={`edit-zone-${customer.id}`}>Zone</Label>
-                              <Input
-                                id={`edit-zone-${customer.id}`}
-                                name="zone"
-                                defaultValue={customer.zone}
-                              />
+                              <Input id={`edit-zone-${customer.id}`} name="zone" defaultValue={customer.zone} />
                             </div>
                           </div>
                           <div className="flex gap-2">
                             <Button type="submit" size="sm">Save</Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setEditingCustomer(null)}
-                            >
+                            <Button type="button" variant="outline" size="sm" onClick={() => setEditingCustomer(null)}>
                               Cancel
                             </Button>
                           </div>
                         </form>
                       </TableCell>
-                    </TableRow>
-                  ) : (
-                    <TableRow key={customer.id}>
+                    </TableRow> : <TableRow key={customer.id}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
                             <User className="h-5 w-5" />
                           </div>
                           <div>
-                            <button 
-                              onClick={() => handleCustomerClick(customer)}
-                              className="font-semibold hover:underline text-left cursor-pointer"
-                            >
+                            <button onClick={() => handleCustomerClick(customer)} className="font-semibold hover:underline text-left cursor-pointer">
                               {customer.name}
                             </button>
                             <p className="text-sm text-muted-foreground">{customer.city}</p>
@@ -849,25 +737,15 @@ export default function Customers() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(customer)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => handleEdit(customer)}>
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(customer.id)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => handleDelete(customer.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
-                    </TableRow>
-                  )
-                ))}
+                    </TableRow>)}
               </TableBody>
             </Table> : <div className="text-center py-12">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
@@ -886,8 +764,7 @@ export default function Customers() {
             </div>}
         </CardContent>
       </Card>
-          </>
-        )}
+          </>}
 
       {/* Customer Details Dialog */}
       <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
@@ -897,8 +774,7 @@ export default function Customers() {
             <DialogDescription>Complete information about this customer</DialogDescription>
           </DialogHeader>
 
-          {selectedCustomer && (
-            <div className="space-y-6">
+          {selectedCustomer && <div className="space-y-6">
               {/* Customer Info */}
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -968,19 +844,13 @@ export default function Customers() {
                   <Building className="h-5 w-5" />
                   Divisions Servicing Customer
                 </h3>
-                {customerDetails.divisions.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {customerDetails.divisions.map((division, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-sm">
+                {customerDetails.divisions.length > 0 ? <div className="flex flex-wrap gap-2">
+                    {customerDetails.divisions.map((division, idx) => <Badge key={idx} variant="secondary" className="text-sm">
                         {division}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm bg-muted/50 p-4 rounded-lg">
+                      </Badge>)}
+                  </div> : <p className="text-muted-foreground text-sm bg-muted/50 p-4 rounded-lg">
                     No divisions found - customer hasn't purchased products with assigned divisions
-                  </p>
-                )}
+                  </p>}
               </div>
 
               <Separator />
@@ -991,10 +861,8 @@ export default function Customers() {
                   <FileText className="h-5 w-5" />
                   Rental Contracts ({customerDetails.contracts.length})
                 </h3>
-                {customerDetails.contracts.length > 0 ? (
-                  <div className="space-y-2">
-                    {customerDetails.contracts.map((contract, idx) => (
-                      <div key={idx} className="bg-muted/50 p-3 rounded-lg flex justify-between items-center">
+                {customerDetails.contracts.length > 0 ? <div className="space-y-2">
+                    {customerDetails.contracts.map((contract, idx) => <div key={idx} className="bg-muted/50 p-3 rounded-lg flex justify-between items-center">
                         <div>
                           <p className="font-medium">{contract.product_name}</p>
                           <p className="text-sm text-muted-foreground">
@@ -1002,12 +870,8 @@ export default function Customers() {
                           </p>
                         </div>
                         <p className="font-semibold">${contract.price?.toFixed(2) || '0.00'}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm bg-muted/50 p-4 rounded-lg">No rental contracts found</p>
-                )}
+                      </div>)}
+                  </div> : <p className="text-muted-foreground text-sm bg-muted/50 p-4 rounded-lg">No rental contracts found</p>}
               </div>
 
               <Separator />
@@ -1018,10 +882,8 @@ export default function Customers() {
                   <ShoppingCart className="h-5 w-5" />
                   Purchase History ({customerDetails.purchases.length})
                 </h3>
-                {customerDetails.purchases.length > 0 ? (
-                  <div className="space-y-3">
-                    {customerDetails.purchases.map((purchase) => (
-                      <div key={purchase.id} className="bg-muted/50 p-3 rounded-lg">
+                {customerDetails.purchases.length > 0 ? <div className="space-y-3">
+                    {customerDetails.purchases.map(purchase => <div key={purchase.id} className="bg-muted/50 p-3 rounded-lg">
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <p className="font-medium">Sale #{purchase.id.slice(0, 8)}</p>
@@ -1031,33 +893,23 @@ export default function Customers() {
                           </div>
                           <Badge>{purchase.status}</Badge>
                         </div>
-                        {purchase.sale_items && purchase.sale_items.length > 0 && (
-                          <div className="mt-2 space-y-1">
-                            {purchase.sale_items.map((item: any, idx: number) => (
-                              <div key={idx} className="text-sm flex justify-between">
+                        {purchase.sale_items && purchase.sale_items.length > 0 && <div className="mt-2 space-y-1">
+                            {purchase.sale_items.map((item: any, idx: number) => <div key={idx} className="text-sm flex justify-between">
                                 <span>{item.product_name} x{item.quantity}</span>
                                 <span className="text-muted-foreground">${item.price?.toFixed(2) || '0.00'}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                              </div>)}
+                          </div>}
                         <div className="mt-2 pt-2 border-t border-border">
                           <div className="flex justify-between font-semibold">
                             <span>Total</span>
                             <span className="text-success">${purchase.total?.toFixed(2) || '0.00'}</span>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm bg-muted/50 p-4 rounded-lg">No purchases found</p>
-                )}
+                      </div>)}
+                  </div> : <p className="text-muted-foreground text-sm bg-muted/50 p-4 rounded-lg">No purchases found</p>}
               </div>
-            </div>
-          )}
+            </div>}
         </DialogContent>
       </Dialog>
-      </div>
-  );
+      </div>;
 }
