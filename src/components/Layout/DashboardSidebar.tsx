@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { 
+import {
   BarChart3, 
   Users, 
   Package, 
@@ -32,6 +32,7 @@ import {
   HardHat,
   Microscope,
   Megaphone,
+  ClipboardList,
 } from "lucide-react";
 import magicCareLogo from "@/assets/magic-care-logo.png";
 import {
@@ -114,6 +115,7 @@ const navigation: NavigationSection[] = [
       { name: "Trial Balance", href: "/trial-balance", icon: Scale },
       { name: "Reports", href: "/finance-reports", icon: FileText },
       { name: "Receivables", href: "/rental-payments", icon: CreditCard },
+      { name: "Purchase Orders", href: "/finance-purchase-orders", icon: ClipboardList },
     ]
   },
   {
@@ -121,6 +123,7 @@ const navigation: NavigationSection[] = [
     items: [
       { name: "Product Catalog", href: "/products", icon: Package },
       { name: "Inventory", href: "/inventory", icon: Warehouse },
+      { name: "Purchase Orders", href: "/purchase-orders", icon: ClipboardList },
       { name: "Barcode Scanner", href: "/barcode-scanner", icon: ScanBarcode },
       { 
         name: "Fleet", 

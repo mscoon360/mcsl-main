@@ -1203,6 +1203,83 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_orders: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          items: Json
+          notes: string | null
+          order_number: string
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          requested_by: string | null
+          status: string
+          subtotal: number
+          total: number
+          updated_at: string | null
+          user_id: string
+          vat_amount: number | null
+          vendor_id: string | null
+          vendor_name: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          order_number: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          requested_by?: string | null
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string | null
+          user_id: string
+          vat_amount?: number | null
+          vendor_id?: string | null
+          vendor_name: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          order_number?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          requested_by?: string | null
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string | null
+          user_id?: string
+          vat_amount?: number | null
+          vendor_id?: string | null
+          vendor_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sale_items: {
         Row: {
           contract_length: string | null
