@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -30,21 +31,25 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, FileText, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Trash2, FileText, Clock, CheckCircle, XCircle, PackageCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useVendors } from "@/hooks/useVendors";
+import { useProducts } from "@/hooks/useProducts";
 
 interface OrderItem {
   description: string;
   quantity: number;
   unitPrice: number;
   total: number;
+  productId?: string;
+  units?: string;
 }
 
 export default function PurchaseOrders() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { vendors } = useVendors();
+  const { products } = useProducts();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [purpose, setPurpose] = useState<string>("");
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
@@ -84,6 +89,27 @@ export default function PurchaseOrders() {
     onError: (error) => {
       toast.error("Failed to create purchase order");
       console.error(error);
+    },
+  });
+
+  const fulfillMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const { error } = await supabase
+        .from("purchase_orders")
+        .update({
+          is_fulfilled: true,
+          fulfilled_at: new Date().toISOString(),
+          fulfilled_by: user?.id,
+        })
+        .eq("id", orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+      toast.success("Purchase order marked as fulfilled");
+    },
+    onError: () => {
+      toast.error("Failed to mark as fulfilled");
     },
   });
 
@@ -129,6 +155,28 @@ export default function PurchaseOrders() {
     if (field === "quantity" || field === "unitPrice") {
       newItems[index].total = newItems[index].quantity * newItems[index].unitPrice;
     }
+    setItems(newItems);
+  };
+
+  const handleProductSelect = (index: number, productId: string) => {
+    const product = products.find((p) => p.id === productId);
+    if (product) {
+      const newItems = [...items];
+      newItems[index] = {
+        ...newItems[index],
+        productId: product.id,
+        description: product.name,
+        unitPrice: product.cost_price || product.price,
+        units: product.units || "units",
+        total: newItems[index].quantity * (product.cost_price || product.price),
+      };
+      setItems(newItems);
+    }
+  };
+
+  const handleUnitsChange = (index: number, units: string) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], units };
     setItems(newItems);
   };
 
@@ -182,6 +230,10 @@ export default function PurchaseOrders() {
   const pendingCount = orders.filter((o) => o.status === "pending").length;
   const approvedCount = orders.filter((o) => o.status === "approved").length;
   const rejectedCount = orders.filter((o) => o.status === "rejected").length;
+  const approvedOrders = orders.filter((o) => o.status === "approved");
+  const unfulfilledApprovedOrders = approvedOrders.filter((o) => !o.is_fulfilled);
+
+  const isRestockPurpose = purpose === "Restock";
 
   return (
     <div className="space-y-6">
@@ -263,8 +315,9 @@ export default function PurchaseOrders() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Description</TableHead>
+                        <TableHead>{isRestockPurpose ? "Product" : "Description"}</TableHead>
                         <TableHead className="w-24">Qty</TableHead>
+                        {isRestockPurpose && <TableHead className="w-28">Units</TableHead>}
                         <TableHead className="w-32">Unit Price</TableHead>
                         <TableHead className="w-32">Total</TableHead>
                         <TableHead className="w-12"></TableHead>
@@ -274,12 +327,30 @@ export default function PurchaseOrders() {
                       {items.map((item, index) => (
                         <TableRow key={index}>
                           <TableCell>
-                            <Input
-                              value={item.description}
-                              onChange={(e) => updateItem(index, "description", e.target.value)}
-                              placeholder="Item description"
-                              required
-                            />
+                            {isRestockPurpose ? (
+                              <Select
+                                value={item.productId || ""}
+                                onValueChange={(value) => handleProductSelect(index, value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select product" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {products.map((product) => (
+                                    <SelectItem key={product.id} value={product.id}>
+                                      {product.name} ({product.sku})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <Input
+                                value={item.description}
+                                onChange={(e) => updateItem(index, "description", e.target.value)}
+                                placeholder="Item description"
+                                required
+                              />
+                            )}
                           </TableCell>
                           <TableCell>
                             <Input
@@ -289,6 +360,23 @@ export default function PurchaseOrders() {
                               onChange={(e) => updateItem(index, "quantity", parseInt(e.target.value) || 1)}
                             />
                           </TableCell>
+                          {isRestockPurpose && (
+                            <TableCell>
+                              <Select
+                                value={item.units || "units"}
+                                onValueChange={(value) => handleUnitsChange(index, value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="units">Units</SelectItem>
+                                  <SelectItem value="gallons">Gallons</SelectItem>
+                                  <SelectItem value="cases">Cases</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                          )}
                           <TableCell>
                             <Input
                               type="number"
@@ -393,6 +481,53 @@ export default function PurchaseOrders() {
         </Card>
       </div>
 
+      {/* Approved Orders Awaiting Fulfillment */}
+      {unfulfilledApprovedOrders.length > 0 && (
+        <Card className="border-green-200 bg-green-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-800">
+              <PackageCheck className="h-5 w-5" />
+              Approved Orders - Awaiting Fulfillment ({unfulfilledApprovedOrders.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order #</TableHead>
+                  <TableHead>Vendor</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Approved Date</TableHead>
+                  <TableHead>Fulfilled</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {unfulfilledApprovedOrders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">{order.order_number}</TableCell>
+                    <TableCell>{order.vendor_name}</TableCell>
+                    <TableCell className="max-w-xs truncate">{order.description || "-"}</TableCell>
+                    <TableCell>${Number(order.total).toFixed(2)}</TableCell>
+                    <TableCell>{order.approved_at ? new Date(order.approved_at).toLocaleDateString() : "-"}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={order.is_fulfilled || false}
+                          onCheckedChange={() => fulfillMutation.mutate(order.id)}
+                          disabled={fulfillMutation.isPending}
+                        />
+                        <span className="text-sm text-muted-foreground">Mark as fulfilled</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -414,6 +549,7 @@ export default function PurchaseOrders() {
                   <TableHead>Description</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Fulfilled</TableHead>
                   <TableHead>Date</TableHead>
                 </TableRow>
               </TableHeader>
@@ -425,6 +561,19 @@ export default function PurchaseOrders() {
                     <TableCell className="max-w-xs truncate">{order.description || "-"}</TableCell>
                     <TableCell>${Number(order.total).toFixed(2)}</TableCell>
                     <TableCell>{getStatusBadge(order.status)}</TableCell>
+                    <TableCell>
+                      {order.status === "approved" ? (
+                        order.is_fulfilled ? (
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                            <CheckCircle className="h-3 w-3 mr-1" />Fulfilled
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline">Pending</Badge>
+                        )
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
                     <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
                   </TableRow>
                 ))}

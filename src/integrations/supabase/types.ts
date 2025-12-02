@@ -1041,6 +1041,7 @@ export type Database = {
       products: {
         Row: {
           category: string | null
+          container_size: string | null
           cost_price: number | null
           created_at: string | null
           description: string | null
@@ -1065,6 +1066,7 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          container_size?: string | null
           cost_price?: number | null
           created_at?: string | null
           description?: string | null
@@ -1089,6 +1091,7 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          container_size?: string | null
           cost_price?: number | null
           created_at?: string | null
           description?: string | null
@@ -1209,7 +1212,10 @@ export type Database = {
           approved_by: string | null
           created_at: string | null
           description: string | null
+          fulfilled_at: string | null
+          fulfilled_by: string | null
           id: string
+          is_fulfilled: boolean | null
           items: Json
           notes: string | null
           order_number: string
@@ -1231,7 +1237,10 @@ export type Database = {
           approved_by?: string | null
           created_at?: string | null
           description?: string | null
+          fulfilled_at?: string | null
+          fulfilled_by?: string | null
           id?: string
+          is_fulfilled?: boolean | null
           items?: Json
           notes?: string | null
           order_number: string
@@ -1253,7 +1262,10 @@ export type Database = {
           approved_by?: string | null
           created_at?: string | null
           description?: string | null
+          fulfilled_at?: string | null
+          fulfilled_by?: string | null
           id?: string
+          is_fulfilled?: boolean | null
           items?: Json
           notes?: string | null
           order_number?: string

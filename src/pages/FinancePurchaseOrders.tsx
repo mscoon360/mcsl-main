@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle, XCircle, Eye, FileText, DollarSign } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Eye, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 interface OrderItem {
@@ -29,6 +29,8 @@ interface OrderItem {
   quantity: number;
   unitPrice: number;
   total: number;
+  productId?: string;
+  units?: string;
 }
 
 export default function FinancePurchaseOrders() {
@@ -52,7 +54,8 @@ export default function FinancePurchaseOrders() {
   });
 
   const approveMutation = useMutation({
-    mutationFn: async (orderId: string) => {
+    mutationFn: async (order: any) => {
+      // First approve the order
       const { error } = await supabase
         .from("purchase_orders")
         .update({
@@ -60,12 +63,45 @@ export default function FinancePurchaseOrders() {
           approved_by: user?.id,
           approved_at: new Date().toISOString(),
         })
-        .eq("id", orderId);
+        .eq("id", order.id);
       if (error) throw error;
+
+      // If it's a restock order, update product stock levels
+      const isRestockOrder = order.description?.includes("[Restock]");
+      if (isRestockOrder) {
+        const items = parseItems(order.items);
+        for (const item of items) {
+          if (item.productId) {
+            // Get current product stock
+            const { data: product, error: fetchError } = await supabase
+              .from("products")
+              .select("stock")
+              .eq("id", item.productId)
+              .maybeSingle();
+            
+            if (fetchError) {
+              console.error("Error fetching product:", fetchError);
+              continue;
+            }
+
+            if (product) {
+              const newStock = (product.stock || 0) + item.quantity;
+              const { error: updateError } = await supabase
+                .from("products")
+                .update({ stock: newStock })
+                .eq("id", item.productId);
+              
+              if (updateError) {
+                console.error("Error updating stock:", updateError);
+              }
+            }
+          }
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-orders-finance"] });
-      toast.success("Purchase order approved");
+      toast.success("Purchase order approved and stock updated");
       setIsViewDialogOpen(false);
     },
     onError: () => {
@@ -251,6 +287,7 @@ export default function FinancePurchaseOrders() {
                   <TableHead>Description</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Fulfilled</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -263,6 +300,19 @@ export default function FinancePurchaseOrders() {
                     <TableCell className="max-w-xs truncate">{order.description || "-"}</TableCell>
                     <TableCell>${Number(order.total).toFixed(2)}</TableCell>
                     <TableCell>{getStatusBadge(order.status)}</TableCell>
+                    <TableCell>
+                      {order.status === "approved" ? (
+                        order.is_fulfilled ? (
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                            <CheckCircle className="h-3 w-3 mr-1" />Fulfilled
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline">Pending</Badge>
+                        )
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
                     <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Button size="sm" variant="ghost" onClick={() => handleViewOrder(order)}>
@@ -329,7 +379,7 @@ export default function FinancePurchaseOrders() {
                   <TableBody>
                     {parseItems(selectedOrder.items).map((item: OrderItem, index: number) => (
                       <TableRow key={index}>
-                        <TableCell>{item.description}</TableCell>
+                        <TableCell>{item.description} {item.units && `(${item.units})`}</TableCell>
                         <TableCell className="text-right">{item.quantity}</TableCell>
                         <TableCell className="text-right">${Number(item.unitPrice).toFixed(2)}</TableCell>
                         <TableCell className="text-right">${Number(item.total).toFixed(2)}</TableCell>
@@ -380,7 +430,7 @@ export default function FinancePurchaseOrders() {
                     Reject
                   </Button>
                   <Button
-                    onClick={() => approveMutation.mutate(selectedOrder.id)}
+                    onClick={() => approveMutation.mutate(selectedOrder)}
                     disabled={approveMutation.isPending}
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
