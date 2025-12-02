@@ -42,6 +42,27 @@ export default function Products() {
   const [selectedSubdivisionId, setSelectedSubdivisionId] = useState<string>('');
   const [editDivisionId, setEditDivisionId] = useState<string>('');
   const [editSubdivisionId, setEditSubdivisionId] = useState<string>('');
+  const [selectedUnit, setSelectedUnit] = useState<string>('');
+  const [isForRepackaging, setIsForRepackaging] = useState(false);
+  const [packageSize, setPackageSize] = useState<string>('');
+  const [rawStock, setRawStock] = useState<number>(0);
+
+  const PACKAGE_SIZES = [
+    { value: '3785.41', label: '1 Gallon' },
+    { value: '750', label: '750ml' },
+    { value: '500', label: '500ml' },
+    { value: '250', label: '250ml' },
+    { value: '175', label: '175ml' },
+  ];
+
+  const calculateRepackagedStock = (gallons: number, packageSizeMl: number): number => {
+    const totalMl = gallons * 3785.41; // 1 gallon = 3785.41 ml
+    return Math.floor(totalMl / packageSizeMl);
+  };
+
+  const repackagedStock = selectedUnit === 'gallons' && isForRepackaging && packageSize
+    ? calculateRepackagedStock(rawStock, parseFloat(packageSize))
+    : rawStock;
 
   const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -51,11 +72,19 @@ export default function Products() {
     const name = formData.get('name') as string;
     const sku = formData.get('sku') as string;
     const description = formData.get('description') as string;
-    const units = formData.get('units') as string;
-    const stock = parseInt(formData.get('stock') as string) || 0;
     const supplier_name = formData.get('supplier_name') as string;
     const min_stock = parseInt(formData.get('min_stock') as string) || 0;
     const cost_price = parseFloat(formData.get('cost_price') as string) || 0;
+    
+    // Determine units and stock based on repackaging
+    let units = selectedUnit;
+    let stock = rawStock;
+    
+    if (selectedUnit === 'gallons' && isForRepackaging && packageSize) {
+      const selectedPackage = PACKAGE_SIZES.find(p => p.value === packageSize);
+      units = selectedPackage?.label || selectedUnit;
+      stock = repackagedStock;
+    }
     
     // Sales team will set prices later - default to 0
     let price = 0;
@@ -92,6 +121,10 @@ export default function Products() {
       setNeedsServicing(false);
       setSelectedDivisionId('');
       setSelectedSubdivisionId('');
+      setSelectedUnit('');
+      setIsForRepackaging(false);
+      setPackageSize('');
+      setRawStock(0);
       
       toast({
         title: 'Product created',
@@ -504,14 +537,91 @@ export default function Products() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="stock">Initial Stock *</Label>
-                  <Input id="stock" name="stock" type="number" required />
+                  <Label htmlFor="stock">
+                    {selectedUnit === 'gallons' ? 'Stock (Gallons) *' : 'Initial Stock *'}
+                  </Label>
+                  <Input 
+                    id="stock" 
+                    name="stock" 
+                    type="number" 
+                    required 
+                    value={rawStock || ''}
+                    onChange={(e) => setRawStock(parseInt(e.target.value) || 0)}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="units">Units</Label>
-                  <Input id="units" name="units" placeholder="e.g., cases, ml, litres" />
+                  <Label htmlFor="units">Units *</Label>
+                  <select
+                    id="units"
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    value={selectedUnit}
+                    onChange={(e) => {
+                      setSelectedUnit(e.target.value);
+                      if (e.target.value !== 'gallons') {
+                        setIsForRepackaging(false);
+                        setPackageSize('');
+                      }
+                    }}
+                    required
+                  >
+                    <option value="">Select Unit</option>
+                    <option value="gallons">Gallons</option>
+                    <option value="cases">Cases</option>
+                    <option value="individual">Individual Units</option>
+                  </select>
                 </div>
               </div>
+
+              {selectedUnit === 'gallons' && (
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="is_repackaging" 
+                      checked={isForRepackaging}
+                      onCheckedChange={(checked) => {
+                        setIsForRepackaging(checked as boolean);
+                        if (!checked) setPackageSize('');
+                      }}
+                    />
+                    <Label htmlFor="is_repackaging" className="font-medium cursor-pointer">
+                      Is this for repackaging?
+                    </Label>
+                  </div>
+
+                  {isForRepackaging && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="package_size">Package Size</Label>
+                        <select
+                          id="package_size"
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          value={packageSize}
+                          onChange={(e) => setPackageSize(e.target.value)}
+                          required
+                        >
+                          <option value="">Select Package Size</option>
+                          {PACKAGE_SIZES.map((size) => (
+                            <option key={size.value} value={size.value}>
+                              {size.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {packageSize && rawStock > 0 && (
+                        <div className="p-3 bg-primary/10 rounded-md border border-primary/20">
+                          <p className="text-sm font-medium">
+                            Stock Available After Repackaging: <span className="text-primary text-lg">{repackagedStock}</span> {PACKAGE_SIZES.find(p => p.value === packageSize)?.label} units
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            ({rawStock} gallons × 3785.41ml ÷ {packageSize}ml = {repackagedStock} units)
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
