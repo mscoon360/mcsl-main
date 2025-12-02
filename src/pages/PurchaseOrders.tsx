@@ -46,6 +46,7 @@ export default function PurchaseOrders() {
   const queryClient = useQueryClient();
   const { vendors } = useVendors();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [purpose, setPurpose] = useState<string>("");
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
   const [vendorName, setVendorName] = useState("");
   const [description, setDescription] = useState("");
@@ -87,6 +88,7 @@ export default function PurchaseOrders() {
   });
 
   const resetForm = () => {
+    setPurpose("");
     setSelectedVendorId("");
     setVendorName("");
     setDescription("");
@@ -139,7 +141,10 @@ export default function PurchaseOrders() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !purpose) {
+      if (!purpose) toast.error("Please select a purpose");
+      return;
+    }
 
     const { subtotal, vat, total } = calculateTotals();
 
@@ -148,7 +153,7 @@ export default function PurchaseOrders() {
       vendor_id: selectedVendorId || null,
       vendor_name: vendorName,
       order_number: generateOrderNumber(),
-      description,
+      description: `[${purpose}] ${description}`.trim(),
       items: JSON.stringify(items),
       subtotal,
       vat_amount: vat,
@@ -197,6 +202,19 @@ export default function PurchaseOrders() {
               <DialogTitle>Create Purchase Order Request</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Purpose of Purchase Order *</Label>
+                <Select value={purpose} onValueChange={setPurpose} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select purpose" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Restock">Restock</SelectItem>
+                    <SelectItem value="Mechanic Bill">Mechanic Bill</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Vendor</Label>
