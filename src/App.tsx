@@ -38,6 +38,7 @@ import Companion from "./pages/Companion";
 import Inspections from "./pages/Inspections";
 import Fuel from "./pages/Fuel";
 import Parts from "./pages/Parts";
+import FinanceReports from "./pages/FinanceReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,7 @@ const App = () => (
               <Route path="expenditure" element={<Expenditure />} />
               <Route path="chart-of-accounts" element={<ChartOfAccounts />} />
               <Route path="trial-balance" element={<TrialBalance />} />
+              <Route path="finance-reports" element={<FinanceReports />} />
               <Route path="accounts-payable" element={<AccountsPayable />} />
               <Route path="accounts-receivable" element={<AccountsReceivable />} />
               <Route path="vendors" element={<Vendors />} />

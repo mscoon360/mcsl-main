@@ -112,6 +112,7 @@ const navigation: NavigationSection[] = [
       },
       { name: "Chart of Accounts", href: "/chart-of-accounts", icon: BookOpen },
       { name: "Trial Balance", href: "/trial-balance", icon: Scale },
+      { name: "Reports", href: "/finance-reports", icon: FileText },
       { name: "Receivables", href: "/rental-payments", icon: CreditCard },
     ]
   },
