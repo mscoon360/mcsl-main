@@ -16,7 +16,6 @@ import { useToast } from '@/hooks/use-toast';
 import { PDFDocument } from 'pdf-lib';
 import invoiceTemplate from '@/assets/invoice-template.pdf';
 import { cn } from '@/lib/utils';
-
 interface Invoice {
   id: string;
   user_id: string;
@@ -34,16 +33,16 @@ interface Invoice {
   created_at?: string;
   updated_at?: string;
 }
-
 interface InvoiceItem {
   description: string;
   quantity: number;
   unit_price: number;
   total: number;
 }
-
 export default function AccountsReceivable() {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [invoiceItems, setInvoiceItems] = useState<Record<string, InvoiceItem[]>>({});
   const [loading, setLoading] = useState(true);
@@ -61,25 +60,24 @@ export default function AccountsReceivable() {
   const [infoInvoice, setInfoInvoice] = useState<Invoice | null>(null);
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
-
   const fetchInvoices = async () => {
     try {
-      const { data: invoicesData, error: invoicesError } = await supabase
-        .from('invoices')
-        .select('*')
-        .order('due_date', { ascending: true });
-
+      const {
+        data: invoicesData,
+        error: invoicesError
+      } = await supabase.from('invoices').select('*').order('due_date', {
+        ascending: true
+      });
       if (invoicesError) throw invoicesError;
-
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('invoice_items')
-        .select('*');
-
+      const {
+        data: itemsData,
+        error: itemsError
+      } = await supabase.from('invoice_items').select('*');
       if (itemsError) throw itemsError;
 
       // Group items by invoice_id
       const itemsByInvoice: Record<string, InvoiceItem[]> = {};
-      itemsData?.forEach((item) => {
+      itemsData?.forEach(item => {
         if (!itemsByInvoice[item.invoice_id]) {
           itemsByInvoice[item.invoice_id] = [];
         }
@@ -87,10 +85,9 @@ export default function AccountsReceivable() {
           description: item.description,
           quantity: item.quantity,
           unit_price: item.unit_price,
-          total: item.total,
+          total: item.total
         });
       });
-
       setInvoiceItems(itemsByInvoice);
       setInvoices((invoicesData || []) as Invoice[]);
     } catch (error: any) {
@@ -98,19 +95,17 @@ export default function AccountsReceivable() {
       toast({
         title: 'Error loading invoices',
         description: error.message,
-        variant: 'destructive',
+        variant: 'destructive'
       });
     } finally {
       setLoading(false);
     }
   };
-
   const downloadInvoicePDF = async (invoice: Invoice) => {
     try {
       const templateBytes = await fetch(invoiceTemplate).then(res => res.arrayBuffer());
       const pdfDoc = await PDFDocument.load(templateBytes);
       const form = pdfDoc.getForm();
-
       const setField = (name: string, value: string) => {
         try {
           form.getTextField(name).setText(value);
@@ -118,47 +113,42 @@ export default function AccountsReceivable() {
           console.log(`${name} field not found`);
         }
       };
-
       setField('Customer Name', invoice.customer_name);
       setField('Text17', format(new Date(invoice.issue_date), 'dd/MM/yyyy'));
       setField('Text18', invoice.invoice_number);
-
       const items = invoiceItems[invoice.id] || [];
       for (let i = 0; i < 10; i++) {
         const item = items[i];
         setField(`Item ${i + 1}`, item?.description || '');
         setField(`Amount ${i + 1}`, item ? item.total.toFixed(2) : '');
       }
-
       setField('Text41', invoice.subtotal.toFixed(2));
       setField('Text42', invoice.tax_amount.toFixed(2));
       setField('Text43', invoice.total.toFixed(2));
-
       form.flatten();
-
       const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+      const blob = new Blob([new Uint8Array(pdfBytes)], {
+        type: 'application/pdf'
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `Invoice_${invoice.invoice_number}.pdf`;
       link.click();
       URL.revokeObjectURL(url);
-
       toast({
         title: 'Invoice Downloaded',
-        description: `Invoice ${invoice.invoice_number} has been downloaded.`,
+        description: `Invoice ${invoice.invoice_number} has been downloaded.`
       });
     } catch (error: any) {
       console.error('Error downloading invoice:', error);
       toast({
         title: 'Download Error',
         description: error.message,
-        variant: 'destructive',
+        variant: 'destructive'
       });
     }
   };
-
   const handleRecordPayment = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
     setPaymentAmount(invoice.total.toString());
@@ -171,12 +161,10 @@ export default function AccountsReceivable() {
     setTransferReference('');
     setShowPaymentDialog(true);
   };
-
   const handleViewInfo = (invoice: Invoice) => {
     setInfoInvoice(invoice);
     setShowInfoDialog(true);
   };
-
   const parsePaymentDetails = (notes: string | null | undefined) => {
     if (!notes) return null;
     try {
@@ -185,16 +173,14 @@ export default function AccountsReceivable() {
       return null;
     }
   };
-
   const submitPayment = async () => {
     if (!selectedInvoice) return;
-
     try {
       const amount = parseFloat(paymentAmount);
       const newStatus = amount >= selectedInvoice.total ? 'paid' : 'partially-paid';
-
-      let paymentDetails: any = { payment_method: paymentMethod };
-      
+      let paymentDetails: any = {
+        payment_method: paymentMethod
+      };
       if (paymentMethod === 'Cheque') {
         paymentDetails = {
           ...paymentDetails,
@@ -210,22 +196,17 @@ export default function AccountsReceivable() {
           transfer_reference: transferReference
         };
       }
-
-      const { error } = await supabase
-        .from('invoices')
-        .update({ 
-          status: newStatus,
-          notes: JSON.stringify(paymentDetails)
-        })
-        .eq('id', selectedInvoice.id);
-
+      const {
+        error
+      } = await supabase.from('invoices').update({
+        status: newStatus,
+        notes: JSON.stringify(paymentDetails)
+      }).eq('id', selectedInvoice.id);
       if (error) throw error;
-
       toast({
         title: 'Payment Recorded',
-        description: `Payment of $${amount.toFixed(2)} recorded for invoice ${selectedInvoice.invoice_number}.`,
+        description: `Payment of $${amount.toFixed(2)} recorded for invoice ${selectedInvoice.invoice_number}.`
       });
-
       setShowPaymentDialog(false);
       setSelectedInvoice(null);
       setPaymentAmount('');
@@ -242,23 +223,17 @@ export default function AccountsReceivable() {
       toast({
         title: 'Error recording payment',
         description: error.message,
-        variant: 'destructive',
+        variant: 'destructive'
       });
     }
   };
-
   useEffect(() => {
     fetchInvoices();
-
-    const channel = supabase
-      .channel('invoices-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'invoices' },
-        () => fetchInvoices()
-      )
-      .subscribe();
-
+    const channel = supabase.channel('invoices-changes').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'invoices'
+    }, () => fetchInvoices()).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
@@ -271,85 +246,52 @@ export default function AccountsReceivable() {
     if (dateTo && issueDate > dateTo) return false;
     return true;
   });
-
   const totalOwed = filteredInvoices.filter(i => i.status !== 'paid').reduce((sum, i) => sum + i.total, 0);
   const overdueInvoices = filteredInvoices.filter(i => new Date(i.due_date) < new Date() && i.status !== 'paid');
-
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
       paid: 'default',
       'partially-paid': 'secondary',
       sent: 'outline',
       draft: 'secondary',
-      overdue: 'destructive',
+      overdue: 'destructive'
     };
     return <Badge variant={variants[status] || 'default'}>{status.replace('-', ' ').toUpperCase()}</Badge>;
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Accounts Receivable</h1>
         <div className="flex flex-wrap items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "justify-start text-left font-normal",
-                  !dateFrom && "text-muted-foreground"
-                )}
-              >
+              <Button variant="outline" className={cn("justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {dateFrom ? format(dateFrom, "MMM dd, yyyy") : "From Date"}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={dateFrom}
-                onSelect={setDateFrom}
-                initialFocus
-                className={cn("p-3 pointer-events-auto")}
-              />
+              <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
             </PopoverContent>
           </Popover>
           
           <Popover>
             <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "justify-start text-left font-normal",
-                  !dateTo && "text-muted-foreground"
-                )}
-              >
+              <Button variant="outline" className={cn("justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {dateTo ? format(dateTo, "MMM dd, yyyy") : "To Date"}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={dateTo}
-                onSelect={setDateTo}
-                initialFocus
-                className={cn("p-3 pointer-events-auto")}
-              />
+              <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className={cn("p-3 pointer-events-auto")} />
             </PopoverContent>
           </Popover>
 
-          {(dateFrom || dateTo) && (
-            <Button 
-              variant="ghost" 
-              onClick={() => {
-                setDateFrom(undefined);
-                setDateTo(undefined);
-              }}
-            >
+          {(dateFrom || dateTo) && <Button variant="ghost" onClick={() => {
+          setDateFrom(undefined);
+          setDateTo(undefined);
+        }}>
               Clear Dates
-            </Button>
-          )}
+            </Button>}
         </div>
       </div>
 
@@ -366,7 +308,7 @@ export default function AccountsReceivable() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Input VAT</CardTitle>
+            <CardTitle className="text-sm font-medium">Output VAT</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -406,15 +348,7 @@ export default function AccountsReceivable() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="paymentAmount">Payment Amount *</Label>
-              <Input
-                id="paymentAmount"
-                type="number"
-                step="0.01"
-                value={paymentAmount}
-                onChange={(e) => setPaymentAmount(e.target.value)}
-                placeholder="0.00"
-                required
-              />
+              <Input id="paymentAmount" type="number" step="0.01" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} placeholder="0.00" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="paymentMethod">Payment Method *</Label>
@@ -430,77 +364,35 @@ export default function AccountsReceivable() {
               </Select>
             </div>
 
-            {paymentMethod === 'Cheque' && (
-              <>
+            {paymentMethod === 'Cheque' && <>
                 <div className="space-y-2">
                   <Label htmlFor="chequeNumber">Cheque Number *</Label>
-                  <Input
-                    id="chequeNumber"
-                    value={chequeNumber}
-                    onChange={(e) => setChequeNumber(e.target.value)}
-                    placeholder="Enter cheque number"
-                    required
-                  />
+                  <Input id="chequeNumber" value={chequeNumber} onChange={e => setChequeNumber(e.target.value)} placeholder="Enter cheque number" required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="chequeName">Name on Cheque *</Label>
-                  <Input
-                    id="chequeName"
-                    value={chequeName}
-                    onChange={(e) => setChequeName(e.target.value)}
-                    placeholder="Enter name on cheque"
-                    required
-                  />
+                  <Input id="chequeName" value={chequeName} onChange={e => setChequeName(e.target.value)} placeholder="Enter name on cheque" required />
                 </div>
-              </>
-            )}
+              </>}
 
-            {paymentMethod === 'Bank Transfer' && (
-              <>
+            {paymentMethod === 'Bank Transfer' && <>
                 <div className="space-y-2">
                   <Label htmlFor="transferDate">Transfer Date *</Label>
-                  <Input
-                    id="transferDate"
-                    type="date"
-                    value={transferDate}
-                    onChange={(e) => setTransferDate(e.target.value)}
-                    required
-                  />
+                  <Input id="transferDate" type="date" value={transferDate} onChange={e => setTransferDate(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="transferAmount">Transfer Amount *</Label>
-                  <Input
-                    id="transferAmount"
-                    type="number"
-                    step="0.01"
-                    value={transferAmount}
-                    onChange={(e) => setTransferAmount(e.target.value)}
-                    placeholder="0.00"
-                    required
-                  />
+                  <Input id="transferAmount" type="number" step="0.01" value={transferAmount} onChange={e => setTransferAmount(e.target.value)} placeholder="0.00" required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="transferDescription">Description *</Label>
-                  <Input
-                    id="transferDescription"
-                    value={transferDescription}
-                    onChange={(e) => setTransferDescription(e.target.value)}
-                    placeholder="Enter description"
-                    required
-                  />
+                  <Input id="transferDescription" value={transferDescription} onChange={e => setTransferDescription(e.target.value)} placeholder="Enter description" required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="transferReference">Reference Number *</Label>
-                  <Input
-                    id="transferReference"
-                    value={transferReference}
-                    onChange={(e) => setTransferReference(e.target.value)}
-                    placeholder="Enter reference number"
-                    required
-                  />
+                  <Input id="transferReference" value={transferReference} onChange={e => setTransferReference(e.target.value)} placeholder="Enter reference number" required />
                 </div>
-              </>
-            )}
+              </>}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
@@ -550,22 +442,18 @@ export default function AccountsReceivable() {
               </div>
             </div>
 
-            {infoInvoice?.notes && parsePaymentDetails(infoInvoice.notes) && (
-              <div className="border-t pt-4 mt-4">
+            {infoInvoice?.notes && parsePaymentDetails(infoInvoice.notes) && <div className="border-t pt-4 mt-4">
                 <Label className="text-lg font-semibold">Payment Details</Label>
                 <div className="mt-3 space-y-2">
                   {(() => {
-                    const details = parsePaymentDetails(infoInvoice.notes);
-                    if (!details) return null;
-                    
-                    return (
-                      <>
+                const details = parsePaymentDetails(infoInvoice.notes);
+                if (!details) return null;
+                return <>
                         <div>
                           <Label className="text-muted-foreground">Payment Method</Label>
                           <p className="font-medium">{details.payment_method}</p>
                         </div>
-                        {details.cheque_number && (
-                          <>
+                        {details.cheque_number && <>
                             <div>
                               <Label className="text-muted-foreground">Cheque Number</Label>
                               <p className="font-medium">{details.cheque_number}</p>
@@ -574,10 +462,8 @@ export default function AccountsReceivable() {
                               <Label className="text-muted-foreground">Name on Cheque</Label>
                               <p className="font-medium">{details.cheque_name}</p>
                             </div>
-                          </>
-                        )}
-                        {details.transfer_date && (
-                          <>
+                          </>}
+                        {details.transfer_date && <>
                             <div>
                               <Label className="text-muted-foreground">Transfer Date</Label>
                               <p className="font-medium">{format(new Date(details.transfer_date), 'MMM dd, yyyy')}</p>
@@ -594,14 +480,11 @@ export default function AccountsReceivable() {
                               <Label className="text-muted-foreground">Reference Number</Label>
                               <p className="font-medium">{details.transfer_reference}</p>
                             </div>
-                          </>
-                        )}
-                      </>
-                    );
-                  })()}
+                          </>}
+                      </>;
+              })()}
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
           <DialogFooter>
             <Button onClick={() => setShowInfoDialog(false)}>Close</Button>
@@ -609,10 +492,7 @@ export default function AccountsReceivable() {
         </DialogContent>
       </Dialog>
 
-      {loading ? (
-        <div className="text-center py-8">Loading invoices...</div>
-      ) : (
-        <Card>
+      {loading ? <div className="text-center py-8">Loading invoices...</div> : <Card>
           <CardHeader>
             <CardTitle>
               All Invoices ({filteredInvoices.length}
@@ -635,15 +515,11 @@ export default function AccountsReceivable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInvoices.length === 0 ? (
-                  <TableRow>
+                {filteredInvoices.length === 0 ? <TableRow>
                     <TableCell colSpan={9} className="text-center text-muted-foreground">
                       {invoices.length === 0 ? 'No invoices found.' : 'No invoices found in selected date range.'}
                     </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredInvoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
+                  </TableRow> : filteredInvoices.map(invoice => <TableRow key={invoice.id}>
                       <TableCell className="font-medium">{invoice.customer_name}</TableCell>
                       <TableCell>{invoice.invoice_number}</TableCell>
                       <TableCell>{format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</TableCell>
@@ -654,42 +530,21 @@ export default function AccountsReceivable() {
                       <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => downloadInvoicePDF(invoice)}
-                            title="Download Invoice"
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => downloadInvoicePDF(invoice)} title="Download Invoice">
                             <Download className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleViewInfo(invoice)}
-                            title="View Details"
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => handleViewInfo(invoice)} title="View Details">
                             <Info className="h-4 w-4" />
                           </Button>
-                          {invoice.status !== 'paid' && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleRecordPayment(invoice)}
-                              title="Record Payment"
-                            >
+                          {invoice.status !== 'paid' && <Button variant="ghost" size="icon" onClick={() => handleRecordPayment(invoice)} title="Record Payment">
                               <Check className="h-4 w-4" />
-                            </Button>
-                          )}
+                            </Button>}
                         </div>
                       </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                    </TableRow>)}
               </TableBody>
             </Table>
           </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+        </Card>}
+    </div>;
 }
