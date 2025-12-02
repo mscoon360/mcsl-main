@@ -10,6 +10,7 @@ export interface SaleWithRep {
   status: string;
   user_id: string;
   promotion_id?: string | null;
+  vat_amount?: number | null;
   rep_name: string;
   rep_username: string;
   items: Array<{
@@ -73,6 +74,7 @@ export function useSales() {
           status: sale.status || 'completed',
           user_id: sale.user_id,
           promotion_id: sale.promotion_id,
+          vat_amount: sale.vat_amount ? Number(sale.vat_amount) : null,
           rep_name: profile?.name || 'Unknown',
           rep_username: profile?.username || 'Unknown',
           items: (itemsData || [])
