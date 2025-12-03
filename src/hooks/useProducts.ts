@@ -22,6 +22,7 @@ export interface Product {
   min_stock?: number;
   cost_price?: number;
   needs_servicing?: boolean;
+  container_size?: string;
 }
 
 export const useProducts = () => {

@@ -94,6 +94,11 @@ export default function Products() {
       rental_price = 0;
     }
 
+    // Determine container_size if repackaging
+    const containerSize = (selectedUnit === 'gallons' && isForRepackaging && packageSize) 
+      ? PACKAGE_SIZES.find(p => p.value === packageSize)?.label || null
+      : null;
+
     const newProduct = {
       name,
       sku,
@@ -111,6 +116,7 @@ export default function Products() {
       min_stock,
       cost_price,
       needs_servicing: (productType !== 'sale_only') && needsServicing,
+      container_size: containerSize,
     };
 
     try {
@@ -796,6 +802,7 @@ export default function Products() {
                   <TableHead>Subdivision</TableHead>
                   <TableHead>Cost Price</TableHead>
                   <TableHead>Stock</TableHead>
+                  <TableHead>Units After Repackaging</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -835,6 +842,13 @@ export default function Products() {
                             </Badge>
                           )}
                         </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {product.container_size ? (
+                        <span>{product.stock} × {product.container_size}</span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>
