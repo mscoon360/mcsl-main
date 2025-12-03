@@ -1215,6 +1215,7 @@ export type Database = {
           fulfilled_at: string | null
           fulfilled_by: string | null
           id: string
+          inventory_status: string | null
           is_fulfilled: boolean | null
           items: Json
           notes: string | null
@@ -1224,6 +1225,7 @@ export type Database = {
           rejection_reason: string | null
           requested_by: string | null
           status: string
+          stock_updated: boolean | null
           subtotal: number
           total: number
           updated_at: string | null
@@ -1240,6 +1242,7 @@ export type Database = {
           fulfilled_at?: string | null
           fulfilled_by?: string | null
           id?: string
+          inventory_status?: string | null
           is_fulfilled?: boolean | null
           items?: Json
           notes?: string | null
@@ -1249,6 +1252,7 @@ export type Database = {
           rejection_reason?: string | null
           requested_by?: string | null
           status?: string
+          stock_updated?: boolean | null
           subtotal?: number
           total?: number
           updated_at?: string | null
@@ -1265,6 +1269,7 @@ export type Database = {
           fulfilled_at?: string | null
           fulfilled_by?: string | null
           id?: string
+          inventory_status?: string | null
           is_fulfilled?: boolean | null
           items?: Json
           notes?: string | null
@@ -1274,6 +1279,7 @@ export type Database = {
           rejection_reason?: string | null
           requested_by?: string | null
           status?: string
+          stock_updated?: boolean | null
           subtotal?: number
           total?: number
           updated_at?: string | null

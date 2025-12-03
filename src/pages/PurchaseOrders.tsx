@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,7 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, FileText, Clock, CheckCircle, XCircle, PackageCheck } from "lucide-react";
+import { Plus, Trash2, FileText, Clock, CheckCircle, XCircle, PackageCheck, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { useVendors } from "@/hooks/useVendors";
 import { useProducts } from "@/hooks/useProducts";
@@ -48,6 +49,7 @@ interface OrderItem {
 export default function PurchaseOrders() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { vendors } = useVendors();
   const { products } = useProducts();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -57,6 +59,30 @@ export default function PurchaseOrders() {
   const [description, setDescription] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<OrderItem[]>([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+
+  // Handle URL params for creating PO from product page
+  useEffect(() => {
+    const productId = searchParams.get("product");
+    const action = searchParams.get("action");
+    
+    if (productId && action === "create" && products.length > 0) {
+      const product = products.find((p) => p.id === productId);
+      if (product) {
+        setPurpose("Restock");
+        setItems([{
+          productId: product.id,
+          description: product.name,
+          quantity: 1,
+          unitPrice: product.cost_price || product.price,
+          units: product.units || "units",
+          total: product.cost_price || product.price,
+        }]);
+        setIsDialogOpen(true);
+        // Clear the URL params
+        setSearchParams({});
+      }
+    }
+  }, [searchParams, products, setSearchParams]);
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["purchase-orders"],
@@ -110,6 +136,66 @@ export default function PurchaseOrders() {
     },
     onError: () => {
       toast.error("Failed to mark as fulfilled");
+    },
+  });
+
+  const updateInventoryStatusMutation = useMutation({
+    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
+      const order = orders.find((o) => o.id === orderId);
+      if (!order) throw new Error("Order not found");
+
+      // Update the inventory status
+      const updateData: any = { inventory_status: status };
+
+      // If marking as received, also update stock levels
+      if (status === "received" && !order.stock_updated) {
+        const orderItems = typeof order.items === "string" ? JSON.parse(order.items) : order.items || [];
+        
+        for (const item of orderItems) {
+          if (item.productId) {
+            const { data: product, error: fetchError } = await supabase
+              .from("products")
+              .select("stock")
+              .eq("id", item.productId)
+              .maybeSingle();
+            
+            if (fetchError) {
+              console.error("Error fetching product:", fetchError);
+              continue;
+            }
+
+            if (product) {
+              const newStock = (product.stock || 0) + item.quantity;
+              const { error: updateError } = await supabase
+                .from("products")
+                .update({ stock: newStock })
+                .eq("id", item.productId);
+              
+              if (updateError) {
+                console.error("Error updating stock:", updateError);
+              }
+            }
+          }
+        }
+        updateData.stock_updated = true;
+      }
+
+      const { error } = await supabase
+        .from("purchase_orders")
+        .update(updateData)
+        .eq("id", orderId);
+      if (error) throw error;
+    },
+    onSuccess: (_, { status }) => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+      if (status === "received") {
+        toast.success("Inventory received - stock levels updated");
+      } else {
+        toast.success("Inventory status updated");
+      }
+    },
+    onError: () => {
+      toast.error("Failed to update inventory status");
     },
   });
 
@@ -232,8 +318,27 @@ export default function PurchaseOrders() {
   const rejectedCount = orders.filter((o) => o.status === "rejected").length;
   const approvedOrders = orders.filter((o) => o.status === "approved");
   const unfulfilledApprovedOrders = approvedOrders.filter((o) => !o.is_fulfilled);
+  
+  // Filter for arriving inventory (approved restock orders with inventory_status)
+  const arrivingInventory = orders.filter(
+    (o) => o.status === "approved" && 
+    o.description?.includes("[Restock]") && 
+    o.inventory_status && 
+    o.inventory_status !== "received"
+  );
 
   const isRestockPurpose = purpose === "Restock";
+
+  const getInventoryStatusBadge = (status: string | null) => {
+    switch (status) {
+      case "ordered":
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200"><Truck className="h-3 w-3 mr-1" />Ordered</Badge>;
+      case "received":
+        return <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Received</Badge>;
+      default:
+        return <Badge variant="outline">-</Badge>;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -480,6 +585,62 @@ export default function PurchaseOrders() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Arriving Inventory Section */}
+      {arrivingInventory.length > 0 && (
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-800">
+              <Truck className="h-5 w-5" />
+              Arriving Inventory ({arrivingInventory.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order #</TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Vendor</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {arrivingInventory.map((order) => {
+                  const orderItems = typeof order.items === "string" ? JSON.parse(order.items) : order.items || [];
+                  const productNames = orderItems.map((item: any) => item.description).join(", ");
+                  return (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">{order.order_number}</TableCell>
+                      <TableCell className="max-w-xs truncate">{productNames || "-"}</TableCell>
+                      <TableCell>{order.vendor_name}</TableCell>
+                      <TableCell>${Number(order.total).toFixed(2)}</TableCell>
+                      <TableCell>{getInventoryStatusBadge(order.inventory_status)}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={order.inventory_status || "ordered"}
+                          onValueChange={(value) => updateInventoryStatusMutation.mutate({ orderId: order.id, status: value })}
+                          disabled={updateInventoryStatusMutation.isPending}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ordered">Ordered</SelectItem>
+                            <SelectItem value="received">Received</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Approved Orders Awaiting Fulfillment */}
       {unfulfilledApprovedOrders.length > 0 && (
