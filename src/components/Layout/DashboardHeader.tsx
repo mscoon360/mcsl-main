@@ -1,4 +1,4 @@
-import { Bell, Search, User, AlertCircle } from "lucide-react";
+import { Bell, Search, User, AlertCircle, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -10,7 +10,7 @@ import { useExpiringContracts } from "@/hooks/useExpiringContracts";
 import { useProducts } from "@/hooks/useProducts";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
-import { Package } from "lucide-react";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 export function DashboardHeader() {
   const {
     user,
@@ -51,6 +51,7 @@ export function DashboardHeader() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
+          <ThemeSwitcher />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
