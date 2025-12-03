@@ -228,7 +228,7 @@ export default function SalesProducts() {
               </div>
 
               <div className="space-y-2">
-                <Label>Cost Price (Reference)</Label>
+                <Label>Cost Price per Unit (Reference)</Label>
                 <Input 
                   value={editingProduct?.cost_price ? `$${editingProduct.cost_price.toFixed(2)}` : 'N/A'} 
                   disabled 
@@ -303,7 +303,7 @@ export default function SalesProducts() {
                   <TableHead>Division</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead className="text-right">Stock</TableHead>
-                  <TableHead className="text-right">Cost Price</TableHead>
+                  <TableHead className="text-right">Cost Price (per unit)</TableHead>
                   <TableHead className="text-right">Sale Price</TableHead>
                   <TableHead className="text-right">Rental Price</TableHead>
                   <TableHead className="text-right">Margin</TableHead>
