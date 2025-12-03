@@ -46,6 +46,7 @@ export default function Products() {
   const [isForRepackaging, setIsForRepackaging] = useState(false);
   const [packageSize, setPackageSize] = useState<string>('');
   const [rawStock, setRawStock] = useState<number>(0);
+  const [rawCostPrice, setRawCostPrice] = useState<number>(0);
 
   const PACKAGE_SIZES = [
     { value: '3785.41', label: '1 Gallon' },
@@ -60,9 +61,18 @@ export default function Products() {
     return Math.floor(totalMl / packageSizeMl);
   };
 
+  const calculateCostPerRepackagedUnit = (costPerGallon: number, packageSizeMl: number): number => {
+    // Cost per unit = (cost per gallon * package size in ml) / ml per gallon
+    return (costPerGallon * packageSizeMl) / 3785.41;
+  };
+
   const repackagedStock = selectedUnit === 'gallons' && isForRepackaging && packageSize
     ? calculateRepackagedStock(rawStock, parseFloat(packageSize))
     : rawStock;
+
+  const calculatedCostPerUnit = selectedUnit === 'gallons' && isForRepackaging && packageSize && rawCostPrice > 0
+    ? calculateCostPerRepackagedUnit(rawCostPrice, parseFloat(packageSize))
+    : null;
 
   const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -74,16 +84,19 @@ export default function Products() {
     const description = formData.get('description') as string;
     const supplier_name = formData.get('supplier_name') as string;
     const min_stock = parseInt(formData.get('min_stock') as string) || 0;
-    const cost_price = parseFloat(formData.get('cost_price') as string) || 0;
+    const rawCostPrice = parseFloat(formData.get('cost_price') as string) || 0;
     
     // Determine units and stock based on repackaging
     let units = selectedUnit;
     let stock = rawStock;
+    let cost_price = rawCostPrice;
     
     if (selectedUnit === 'gallons' && isForRepackaging && packageSize) {
       const selectedPackage = PACKAGE_SIZES.find(p => p.value === packageSize);
       units = selectedPackage?.label || selectedUnit;
       stock = repackagedStock;
+      // Calculate cost price per repackaged unit
+      cost_price = calculateCostPerRepackagedUnit(rawCostPrice, parseFloat(packageSize));
     }
     
     // Sales team will set prices later - default to 0
@@ -131,6 +144,7 @@ export default function Products() {
       setIsForRepackaging(false);
       setPackageSize('');
       setRawStock(0);
+      setRawCostPrice(0);
       
       toast({
         title: 'Product created',
@@ -615,13 +629,24 @@ export default function Products() {
                       </div>
 
                       {packageSize && rawStock > 0 && (
-                        <div className="p-3 bg-primary/10 rounded-md border border-primary/20">
+                        <div className="p-3 bg-primary/10 rounded-md border border-primary/20 space-y-2">
                           <p className="text-sm font-medium">
                             Stock Available After Repackaging: <span className="text-primary text-lg">{repackagedStock}</span> {PACKAGE_SIZES.find(p => p.value === packageSize)?.label} units
                           </p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs text-muted-foreground">
                             ({rawStock} gallons × 3785.41ml ÷ {packageSize}ml = {repackagedStock} units)
                           </p>
+                          {calculatedCostPerUnit !== null && (
+                            <>
+                              <Separator className="my-2" />
+                              <p className="text-sm font-medium">
+                                Cost Price per {PACKAGE_SIZES.find(p => p.value === packageSize)?.label}: <span className="text-primary text-lg">${calculatedCostPerUnit.toFixed(2)}</span>
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                (${rawCostPrice.toFixed(2)} per gallon × {packageSize}ml ÷ 3785.41ml = ${calculatedCostPerUnit.toFixed(2)})
+                              </p>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
@@ -639,8 +664,18 @@ export default function Products() {
                   <Input id="min_stock" name="min_stock" type="number" required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="cost_price">Cost Price *</Label>
-                  <Input id="cost_price" name="cost_price" type="number" step="0.01" required />
+                  <Label htmlFor="cost_price">
+                    {selectedUnit === 'gallons' && isForRepackaging ? 'Cost Price per Gallon *' : 'Cost Price per Unit *'}
+                  </Label>
+                  <Input 
+                    id="cost_price" 
+                    name="cost_price" 
+                    type="number" 
+                    step="0.01" 
+                    required 
+                    value={rawCostPrice || ''}
+                    onChange={(e) => setRawCostPrice(parseFloat(e.target.value) || 0)}
+                  />
                 </div>
               </div>
 
