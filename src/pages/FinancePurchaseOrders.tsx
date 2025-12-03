@@ -55,53 +55,22 @@ export default function FinancePurchaseOrders() {
 
   const approveMutation = useMutation({
     mutationFn: async (order: any) => {
-      // First approve the order
+      // Approve the order - stock will be updated when procurement marks it as received
+      const isRestockOrder = order.description?.includes("[Restock]");
       const { error } = await supabase
         .from("purchase_orders")
         .update({
           status: "approved",
           approved_by: user?.id,
           approved_at: new Date().toISOString(),
+          inventory_status: isRestockOrder ? "ordered" : null,
         })
         .eq("id", order.id);
       if (error) throw error;
-
-      // If it's a restock order, update product stock levels
-      const isRestockOrder = order.description?.includes("[Restock]");
-      if (isRestockOrder) {
-        const items = parseItems(order.items);
-        for (const item of items) {
-          if (item.productId) {
-            // Get current product stock
-            const { data: product, error: fetchError } = await supabase
-              .from("products")
-              .select("stock")
-              .eq("id", item.productId)
-              .maybeSingle();
-            
-            if (fetchError) {
-              console.error("Error fetching product:", fetchError);
-              continue;
-            }
-
-            if (product) {
-              const newStock = (product.stock || 0) + item.quantity;
-              const { error: updateError } = await supabase
-                .from("products")
-                .update({ stock: newStock })
-                .eq("id", item.productId);
-              
-              if (updateError) {
-                console.error("Error updating stock:", updateError);
-              }
-            }
-          }
-        }
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-orders-finance"] });
-      toast.success("Purchase order approved and stock updated");
+      toast.success("Purchase order approved - awaiting inventory receipt");
       setIsViewDialogOpen(false);
     },
     onError: () => {
