@@ -44,7 +44,25 @@ interface OrderItem {
   total: number;
   productId?: string;
   units?: string;
+  containerSize?: string;
 }
+
+const ML_PER_GALLON = 3785.41;
+
+const PACKAGE_SIZES: { value: string; label: string; ml: number }[] = [
+  { value: "3785", label: "1 Gallon", ml: 3785 },
+  { value: "750", label: "750ml", ml: 750 },
+  { value: "500", label: "500ml", ml: 500 },
+  { value: "250", label: "250ml", ml: 250 },
+  { value: "175", label: "175ml", ml: 175 },
+];
+
+const calculateRepackagedUnits = (quantity: number, units: string, containerSizeMl: number): number => {
+  const gallonsMultiplier = units === "52_gallon_drum" ? 52 : units === "gallons" ? 1 : 0;
+  if (gallonsMultiplier === 0) return 0;
+  const totalMl = quantity * gallonsMultiplier * ML_PER_GALLON;
+  return Math.floor(totalMl / containerSizeMl);
+};
 
 export default function PurchaseOrders() {
   const { user } = useAuth();
@@ -254,6 +272,7 @@ export default function PurchaseOrders() {
         description: product.name,
         unitPrice: product.cost_price || product.price,
         units: product.units || "units",
+        containerSize: product.container_size || undefined,
         total: newItems[index].quantity * (product.cost_price || product.price),
       };
       setItems(newItems);
@@ -477,6 +496,7 @@ export default function PurchaseOrders() {
                                 <SelectContent>
                                   <SelectItem value="units">Units</SelectItem>
                                   <SelectItem value="gallons">Gallons</SelectItem>
+                                  <SelectItem value="52_gallon_drum">52 Gallon Drum</SelectItem>
                                   <SelectItem value="cases">Cases</SelectItem>
                                 </SelectContent>
                               </Select>
@@ -510,6 +530,31 @@ export default function PurchaseOrders() {
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Repackaging Preview */}
+                {isRestockPurpose && items.some(item => 
+                  item.containerSize && 
+                  (item.units === "gallons" || item.units === "52_gallon_drum")
+                ) && (
+                  <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
+                    <h4 className="font-medium text-sm mb-2">Repackaging Preview</h4>
+                    {items.filter(item => 
+                      item.containerSize && 
+                      (item.units === "gallons" || item.units === "52_gallon_drum")
+                    ).map((item, idx) => {
+                      const containerSizeMl = parseFloat(item.containerSize || "0");
+                      const repackagedUnits = calculateRepackagedUnits(item.quantity, item.units || "", containerSizeMl);
+                      const packageLabel = PACKAGE_SIZES.find(p => p.value === item.containerSize)?.label || `${item.containerSize}ml`;
+                      return (
+                        <div key={idx} className="text-sm text-muted-foreground">
+                          <span className="font-medium text-foreground">{item.description}:</span>{" "}
+                          {item.quantity} {item.units === "52_gallon_drum" ? "52 Gallon Drum(s)" : "Gallon(s)"} → {" "}
+                          <span className="font-bold text-primary">{repackagedUnits.toLocaleString()} × {packageLabel}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end">
