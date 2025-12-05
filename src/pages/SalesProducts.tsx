@@ -109,10 +109,10 @@ export default function SalesProducts() {
     return division?.name || 'N/A';
   };
 
-  const calculateMargin = (salePrice: number, costPrice: number) => {
+  const calculateMarkup = (salePrice: number, costPrice: number) => {
     if (!costPrice || costPrice === 0) return 'N/A';
-    const margin = ((salePrice - costPrice) / salePrice) * 100;
-    return `${margin.toFixed(1)}%`;
+    const markup = ((salePrice - costPrice) / costPrice) * 100;
+    return `${markup.toFixed(1)}%`;
   };
 
   // Calculate statistics
@@ -255,7 +255,7 @@ export default function SalesProducts() {
                   />
                   {editingProduct?.cost_price && salePrice && (
                     <p className="text-sm text-muted-foreground">
-                      Margin: {calculateMargin(parseFloat(salePrice), editingProduct.cost_price)}
+                      Markup: {calculateMarkup(parseFloat(salePrice), editingProduct.cost_price)}
                     </p>
                   )}
                 </div>
@@ -306,7 +306,7 @@ export default function SalesProducts() {
                   <TableHead className="text-right">Cost Price (per unit)</TableHead>
                   <TableHead className="text-right">Sale Price</TableHead>
                   <TableHead className="text-right">Rental Price</TableHead>
-                  <TableHead className="text-right">Margin</TableHead>
+                  <TableHead className="text-right">Markup</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -343,7 +343,7 @@ export default function SalesProducts() {
                       <TableCell className="text-right">
                         {product.is_rental_only 
                           ? 'N/A' 
-                          : calculateMargin(product.price || 0, product.cost_price || 0)
+                          : calculateMarkup(product.price || 0, product.cost_price || 0)
                         }
                       </TableCell>
                       <TableCell>{getStatusBadge(product.status)}</TableCell>
