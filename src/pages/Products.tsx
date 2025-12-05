@@ -921,17 +921,6 @@ export default function Products() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => navigate({
-                            pathname: '/purchase-orders',
-                            search: `?product=${product.id}&action=create`
-                          })}
-                          title="Create Purchase Order"
-                        >
-                          <ShoppingCart className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
                           onClick={() => navigate(`/products/${product.id}/barcodes`)}
                           title="View Barcodes"
                         >
