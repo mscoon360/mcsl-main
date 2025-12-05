@@ -67,10 +67,38 @@ export default function FinancePurchaseOrders() {
         })
         .eq("id", order.id);
       if (error) throw error;
+
+      // Create accounts payable entry for this approved PO
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 30); // Default 30-day payment terms
+
+      const { error: apError } = await supabase
+        .from("accounts_payable")
+        .insert({
+          user_id: user?.id,
+          vendor_id: order.vendor_id || null,
+          vendor_name: order.vendor_name,
+          bill_number: order.order_number,
+          bill_date: new Date().toISOString().split('T')[0],
+          due_date: dueDate.toISOString().split('T')[0],
+          subtotal: order.subtotal,
+          vat_amount: order.vat_amount || 0,
+          amount: order.total,
+          status: "unpaid",
+          description: `Purchase Order: ${order.description || order.order_number}`,
+          notes: order.notes,
+        });
+      
+      if (apError) {
+        console.error("Error creating AP entry:", apError);
+        // Don't throw - PO is already approved, AP entry failure shouldn't reverse it
+        toast.error("PO approved but failed to create Accounts Payable entry");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-orders-finance"] });
-      toast.success("Purchase order approved - awaiting inventory receipt");
+      queryClient.invalidateQueries({ queryKey: ["accounts-payable"] });
+      toast.success("Purchase order approved - added to Accounts Payable");
       setIsViewDialogOpen(false);
     },
     onError: () => {
