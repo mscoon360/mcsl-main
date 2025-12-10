@@ -9,13 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Plus, Package, Barcode, Info, X, ShoppingCart } from 'lucide-react';
+import { Pencil, Trash2, Plus, Package, Barcode, Info, X, ShoppingCart, Link2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
+import { SupportingProductsDialog } from '@/components/products/SupportingProductsDialog';
 
 export default function Products() {
   const { products, loading, addProduct, updateProduct, deleteProduct } = useProducts();
@@ -47,6 +48,8 @@ export default function Products() {
   const [packageSize, setPackageSize] = useState<string>('');
   const [rawStock, setRawStock] = useState<number>(0);
   const [rawCostPrice, setRawCostPrice] = useState<number>(0);
+  const [isSupportingDialogOpen, setIsSupportingDialogOpen] = useState(false);
+  const [supportingDialogProduct, setSupportingDialogProduct] = useState<any>(null);
 
   const PACKAGE_SIZES = [
     { value: '3785.41', label: '1 Gallon' },
@@ -294,6 +297,11 @@ export default function Products() {
     } finally {
       setLoadingHistory(false);
     }
+  };
+
+  const handleOpenSupportingProducts = (product: any) => {
+    setSupportingDialogProduct(product);
+    setIsSupportingDialogOpen(true);
   };
 
   const handleAddDivision = async (e: React.FormEvent) => {
@@ -931,6 +939,14 @@ export default function Products() {
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  onClick={() => handleOpenSupportingProducts(product)}
+                                  title="Supporting Products"
+                                >
+                                  <Link2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
                                   onClick={() => navigate(`/products/${product.id}/barcodes`)}
                                   title="View Barcodes"
                                 >
@@ -1032,6 +1048,14 @@ export default function Products() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenSupportingProducts(product)}
+                                title="Supporting Products"
+                              >
+                                <Link2 className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -1140,6 +1164,14 @@ export default function Products() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenSupportingProducts(product)}
+                            title="Supporting Products"
+                          >
+                            <Link2 className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -1417,6 +1449,15 @@ export default function Products() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Supporting Products Dialog */}
+      <SupportingProductsDialog
+        open={isSupportingDialogOpen}
+        onOpenChange={setIsSupportingDialogOpen}
+        product={supportingDialogProduct}
+        allProducts={products}
+        divisions={divisions}
+      />
     </div>
   );
 }
