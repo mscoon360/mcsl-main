@@ -766,23 +766,42 @@ export default function Products() {
         </CardContent>
       </Card>
 
-      {/* Product Listings by Subdivision */}
-      {divisions.map((division) => (
-        division.subdivisions && division.subdivisions.length > 0 ? (
-          division.subdivisions.map((subdivision) => {
-            const subdivisionProducts = products.filter(
-              p => p.division_id === division.id && p.subdivision_id === subdivision.id
-            );
+      {/* Product Listings by Division */}
+      {divisions.map((division) => {
+        const hasSubdivisions = division.subdivisions && division.subdivisions.length > 0;
+        const divisionProductsWithoutSubdiv = products.filter(
+          p => p.division_id === division.id && !p.subdivision_id
+        );
+        
+        // Only render division section if it has subdivisions with products or products without subdivisions
+        const subdivisionProductCounts = hasSubdivisions 
+          ? division.subdivisions.map((sub: any) => products.filter(p => p.division_id === division.id && p.subdivision_id === sub.id).length)
+          : [];
+        const hasAnyProducts = hasSubdivisions 
+          ? subdivisionProductCounts.some((count: number) => count > 0) || divisionProductsWithoutSubdiv.length > 0
+          : divisionProductsWithoutSubdiv.length > 0;
+        
+        if (!hasAnyProducts) return null;
+        
+        return (
+          <div key={division.id} className="space-y-4">
+            {/* Division Heading */}
+            <h2 className="text-2xl font-bold text-foreground border-b pb-2">{division.name}</h2>
             
-            return (
-              <Card key={subdivision.id}>
-                <CardHeader>
-                  <CardTitle>Product Listing - {division.name} {subdivision.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {subdivisionProducts.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-6">No products in this subdivision.</p>
-                  ) : (
+            {/* Subdivision Tables */}
+            {hasSubdivisions && division.subdivisions.map((subdivision: any) => {
+              const subdivisionProducts = products.filter(
+                p => p.division_id === division.id && p.subdivision_id === subdivision.id
+              );
+              
+              if (subdivisionProducts.length === 0) return null;
+              
+              return (
+                <Card key={subdivision.id}>
+                  <CardHeader>
+                    <CardTitle>Product Listing - Subdivision {subdivision.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -875,22 +894,16 @@ export default function Products() {
                         ))}
                       </TableBody>
                     </Table>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })
-        ) : (
-          // Division without subdivisions - show products directly under division
-          (() => {
-            const divisionProducts = products.filter(
-              p => p.division_id === division.id && !p.subdivision_id
-            );
+                  </CardContent>
+                </Card>
+              );
+            })}
             
-            return divisionProducts.length > 0 ? (
-              <Card key={division.id}>
+            {/* Products in division without subdivision */}
+            {divisionProductsWithoutSubdiv.length > 0 && (
+              <Card>
                 <CardHeader>
-                  <CardTitle>Product Listing - {division.name}</CardTitle>
+                  <CardTitle>Product Listing - Uncategorized Subdivision</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -908,7 +921,7 @@ export default function Products() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {divisionProducts.map((product) => (
+                      {divisionProductsWithoutSubdiv.map((product) => (
                         <TableRow key={product.id}>
                           <TableCell 
                             className="font-medium text-primary cursor-pointer hover:underline"
@@ -987,10 +1000,10 @@ export default function Products() {
                   </Table>
                 </CardContent>
               </Card>
-            ) : null;
-          })()
-        )
-      ))}
+            )}
+          </div>
+        );
+      })}
 
       {/* Uncategorized Products */}
       {(() => {
