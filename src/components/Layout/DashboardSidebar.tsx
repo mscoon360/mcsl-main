@@ -121,7 +121,7 @@ const navigation: NavigationSection[] = [
   {
     title: "Procurement & Logistics Department",
     items: [
-      { name: "Divisional Sales Listing", href: "/products", icon: Package },
+      { name: "Inventory", href: "/products", icon: Package },
       { name: "Inventory", href: "/inventory", icon: Warehouse },
       { name: "Purchase Orders", href: "/purchase-orders", icon: ClipboardList },
       { name: "Barcode Scanner", href: "/barcode-scanner", icon: ScanBarcode },
