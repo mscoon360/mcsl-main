@@ -396,7 +396,7 @@ export default function Products() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Products</h1>
+          <h1 className="text-3xl font-bold">Inventory</h1>
           <p className="text-muted-foreground">Manage your product catalog</p>
         </div>
         <div className="flex gap-2">
@@ -704,132 +704,7 @@ export default function Products() {
         </div>
       </div>
 
-      {/* Divisions Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Divisions & Subdivisions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {divisionsLoading ? (
-            <p className="text-muted-foreground">Loading divisions...</p>
-          ) : divisions.length === 0 ? (
-            <p className="text-muted-foreground">No divisions created yet. Click "Add Division" to create one.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Division Name</TableHead>
-                  <TableHead>Subdivisions</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {divisions.map((division) => (
-                  <TableRow key={division.id}>
-                    <TableCell className="font-medium">{division.name}</TableCell>
-                    <TableCell>
-                      {division.subdivisions && division.subdivisions.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {division.subdivisions.map((sub) => (
-                            <Badge key={sub.id} variant="secondary">
-                              {sub.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">No subdivisions</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditDivision(division)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteDivision(division.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Edit Division Dialog */}
-      <Dialog open={isEditDivisionDialogOpen} onOpenChange={setIsEditDivisionDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit Division</DialogTitle>
-          </DialogHeader>
-          {editingDivision && (
-            <form onSubmit={handleUpdateDivision} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-division-name">Division Name *</Label>
-                <Input
-                  id="edit-division-name"
-                  value={editDivisionName}
-                  onChange={(e) => setEditDivisionName(e.target.value)}
-                  placeholder="Enter division name"
-                  required
-                />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Subdivisions</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addEditSubdivisionField}
-                  >
-                    <Plus className="mr-2 h-3 w-3" />
-                    Add Subdivision
-                  </Button>
-                </div>
-
-                {editSubdivisionNames.map((name, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      value={name}
-                      onChange={(e) => updateEditSubdivisionName(index, e.target.value)}
-                      placeholder={`Subdivision ${index + 1}`}
-                    />
-                    {editSubdivisionNames.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeEditSubdivisionField(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <Button type="submit" className="w-full">
-                Update Division
-              </Button>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-
+      {/* Product Catalog */}
       <Card>
         <CardHeader>
           <CardTitle>Product Catalog</CardTitle>
@@ -937,6 +812,68 @@ export default function Products() {
                           variant="destructive"
                           size="sm"
                           onClick={() => handleDelete(product.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Divisions & Subdivisions Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Divisions & Subdivisions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {divisionsLoading ? (
+            <p className="text-muted-foreground">Loading divisions...</p>
+          ) : divisions.length === 0 ? (
+            <p className="text-muted-foreground">No divisions created yet. Click "Add Division" to create one.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Division Name</TableHead>
+                  <TableHead>Subdivisions</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {divisions.map((division) => (
+                  <TableRow key={division.id}>
+                    <TableCell className="font-medium">{division.name}</TableCell>
+                    <TableCell>
+                      {division.subdivisions && division.subdivisions.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {division.subdivisions.map((sub) => (
+                            <Badge key={sub.id} variant="secondary">
+                              {sub.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">No subdivisions</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditDivision(division)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteDivision(division.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
