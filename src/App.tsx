@@ -12,7 +12,7 @@ import Sales from "./pages/Sales";
 import Customers from "./pages/Customers";
 import Products from "./pages/Products";
 import SalesProducts from "./pages/SalesProducts";
-import Inventory from "./pages/Inventory";
+
 import ProductBarcodes from "./pages/ProductBarcodes";
 import BarcodeScanner from "./pages/BarcodeScanner";
 import DataExtractor from "./pages/DataExtractor";
@@ -63,7 +63,7 @@ const App = () => (
               <Route path="customers" element={<Customers />} />
             <Route path="products" element={<Products />} />
             <Route path="sales-products" element={<SalesProducts />} />
-            <Route path="inventory" element={<Inventory />} />
+            
             <Route path="products/:productId/barcodes" element={<ProductBarcodes />} />
             <Route path="barcode-scanner" element={<BarcodeScanner />} />
             <Route path="data-extractor" element={<DataExtractor />} />
