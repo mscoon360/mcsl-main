@@ -942,7 +942,8 @@ export default function Products() {
                                   onClick={() => handleOpenSupportingProducts(product)}
                                   title="Supporting Products"
                                 >
-                                  <Link2 className="h-4 w-4" />
+                                  <Link2 className="h-4 w-4 mr-1" />
+                                  Supporting
                                 </Button>
                                 <Button
                                   variant="outline"
@@ -1054,7 +1055,8 @@ export default function Products() {
                                 onClick={() => handleOpenSupportingProducts(product)}
                                 title="Supporting Products"
                               >
-                                <Link2 className="h-4 w-4" />
+                                <Link2 className="h-4 w-4 mr-1" />
+                                Supporting
                               </Button>
                               <Button
                                 variant="outline"
@@ -1170,7 +1172,8 @@ export default function Products() {
                             onClick={() => handleOpenSupportingProducts(product)}
                             title="Supporting Products"
                           >
-                            <Link2 className="h-4 w-4" />
+                            <Link2 className="h-4 w-4 mr-1" />
+                            Supporting
                           </Button>
                           <Button
                             variant="outline"
