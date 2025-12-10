@@ -861,7 +861,7 @@ export default function Products() {
               return (
                 <Card key={subdivision.id}>
                   <CardHeader>
-                    <CardTitle>Product Listing - Subdivision {subdivision.name}</CardTitle>
+                    <CardTitle>Product Listing - {subdivision.name}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Table>
