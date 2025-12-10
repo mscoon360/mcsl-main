@@ -97,6 +97,82 @@ export default function Products() {
     const formData = new FormData(form);
 
     const name = formData.get('name') as string;
+
+    // If this is a supporting item, use simplified data
+    if (isSupportingItem) {
+      if (assignToProductIds.length === 0) {
+        toast({
+          title: 'Error',
+          description: 'Please select at least one product to assign this supporting item to',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const newProduct = {
+        name,
+        sku: `SUP-${Date.now()}`,
+        description: '',
+        price: 0,
+        rental_price: null,
+        division_id: null,
+        subdivision_id: null,
+        units: 'individual',
+        stock: 0,
+        status: 'active',
+        is_rental: false,
+        is_rental_only: false,
+        supplier_name: null,
+        min_stock: 0,
+        cost_price: 0,
+        needs_servicing: false,
+        container_size: null,
+      };
+
+      try {
+        const addedProduct = await addProduct(newProduct);
+        
+        // Create relationships with selected products
+        if (addedProduct) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const relationships = assignToProductIds.map(productId => ({
+              product_id: productId,
+              supporting_product_id: addedProduct.id,
+              user_id: user.id,
+            }));
+            
+            const { error: relError } = await supabase
+              .from('product_supporting_items')
+              .insert(relationships);
+            
+            if (relError) {
+              console.error('Error creating supporting relationships:', relError);
+              toast({
+                title: 'Warning',
+                description: 'Supporting item created but failed to assign to products',
+                variant: 'destructive',
+              });
+            }
+          }
+        }
+        
+        setIsAddDialogOpen(false);
+        form.reset();
+        setIsSupportingItem(false);
+        setAssignToProductIds([]);
+        
+        toast({
+          title: 'Supporting item created',
+          description: `Assigned to ${assignToProductIds.length} product(s)`,
+        });
+      } catch (error) {
+        // Error handling is done in the hook
+      }
+      return;
+    }
+
+    // Regular product creation flow
     const sku = formData.get('sku') as string;
     const description = formData.get('description') as string;
     const supplier_name = formData.get('supplier_name') as string;
@@ -152,31 +228,6 @@ export default function Products() {
     try {
       const addedProduct = await addProduct(newProduct);
       
-      // If this is a supporting item, create relationships with selected products
-      if (isSupportingItem && assignToProductIds.length > 0 && addedProduct) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const relationships = assignToProductIds.map(productId => ({
-            product_id: productId,
-            supporting_product_id: addedProduct.id,
-            user_id: user.id,
-          }));
-          
-          const { error: relError } = await supabase
-            .from('product_supporting_items')
-            .insert(relationships);
-          
-          if (relError) {
-            console.error('Error creating supporting relationships:', relError);
-            toast({
-              title: 'Warning',
-              description: 'Product created but failed to assign as supporting item',
-              variant: 'destructive',
-            });
-          }
-        }
-      }
-      
       setIsAddDialogOpen(false);
       form.reset();
       setProductType('sale_only');
@@ -193,9 +244,7 @@ export default function Products() {
       
       toast({
         title: 'Product created',
-        description: isSupportingItem && assignToProductIds.length > 0 
-          ? `Product created and assigned to ${assignToProductIds.length} product(s)`
-          : 'View barcodes for this product',
+        description: 'View barcodes for this product',
         action: (
           <Button
             variant="outline"
@@ -581,15 +630,10 @@ export default function Products() {
               <DialogTitle>Add New Product</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleAddProduct} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Product Name *</Label>
-                  <Input id="name" name="name" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="supplier_name">Supplier Name *</Label>
-                  <Input id="supplier_name" name="supplier_name" required />
-                </div>
+              {/* Product Name - Always visible */}
+              <div className="space-y-2">
+                <Label htmlFor="name">Product Name *</Label>
+                <Input id="name" name="name" required />
               </div>
 
               {/* Supporting Item Checkbox */}
@@ -615,8 +659,8 @@ export default function Products() {
 
                 {isSupportingItem && (
                   <div className="space-y-2 mt-4">
-                    <Label>Assign to Products</Label>
-                    <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+                    <Label>Assign to Products *</Label>
+                    <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2 bg-background">
                       {products.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No products available</p>
                       ) : (
@@ -649,48 +693,56 @@ export default function Products() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" name="description" />
-              </div>
+              {/* Regular product fields - hidden when supporting item */}
+              {!isSupportingItem && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="supplier_name">Supplier Name *</Label>
+                    <Input id="supplier_name" name="supplier_name" required={!isSupportingItem} />
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Product Availability</Label>
-                <RadioGroup value={productType} onValueChange={(value: any) => setProductType(value)}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="sale_only" id="sale_only" />
-                    <Label htmlFor="sale_only">Available for Sale Only</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea id="description" name="description" />
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="rental_only" id="rental_only" />
-                    <Label htmlFor="rental_only">Available for Rental Only</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="both" id="both" />
-                    <Label htmlFor="both">Available for Both</Label>
-                  </div>
-                </RadioGroup>
-              </div>
 
-              {(productType === 'rental_only' || productType === 'both') && (
-                <div className="flex items-center space-x-2 p-4 border rounded-lg bg-muted/50">
-                  <Checkbox 
-                    id="needs_servicing" 
-                    checked={needsServicing}
-                    onCheckedChange={(checked) => setNeedsServicing(checked as boolean)}
-                  />
-                  <div className="flex flex-col">
-                    <Label htmlFor="needs_servicing" className="font-medium cursor-pointer">
-                      This item requires servicing
-                    </Label>
-                    <span className="text-sm text-muted-foreground">
-                      Enable this for items like bins that need liner replacements or regular maintenance
-                    </span>
+                  <div className="space-y-2">
+                    <Label>Product Availability</Label>
+                    <RadioGroup value={productType} onValueChange={(value: any) => setProductType(value)}>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="sale_only" id="sale_only" />
+                        <Label htmlFor="sale_only">Available for Sale Only</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="rental_only" id="rental_only" />
+                        <Label htmlFor="rental_only">Available for Rental Only</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="both" id="both" />
+                        <Label htmlFor="both">Available for Both</Label>
+                      </div>
+                    </RadioGroup>
                   </div>
-                </div>
-              )}
 
-              <div className="grid grid-cols-4 gap-4">
+                  {(productType === 'rental_only' || productType === 'both') && (
+                    <div className="flex items-center space-x-2 p-4 border rounded-lg bg-muted/50">
+                      <Checkbox 
+                        id="needs_servicing" 
+                        checked={needsServicing}
+                        onCheckedChange={(checked) => setNeedsServicing(checked as boolean)}
+                      />
+                      <div className="flex flex-col">
+                        <Label htmlFor="needs_servicing" className="font-medium cursor-pointer">
+                          This item requires servicing
+                        </Label>
+                        <span className="text-sm text-muted-foreground">
+                          Enable this for items like bins that need liner replacements or regular maintenance
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="division">Division</Label>
                   <select
@@ -852,10 +904,12 @@ export default function Products() {
                   />
                 </div>
               </div>
+                </>
+              )}
 
               <Button type="submit" className="w-full">
                 <Package className="mr-2 h-4 w-4" />
-                Add Product
+                {isSupportingItem ? 'Add Supporting Item' : 'Add Product'}
               </Button>
             </form>
           </DialogContent>
