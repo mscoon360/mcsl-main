@@ -1147,11 +1147,11 @@ export default function Products() {
                                 </div>
                               </TableCell>
                             </TableRow>
-                            {/* Supporting Products - Yellow */}
+                            {/* Supporting Products - Green */}
                             {getSupportingProductsForProduct(product.id).map((supportingProduct) => (
-                              <TableRow key={supportingProduct.id} className="bg-yellow-50 dark:bg-yellow-950/30">
+                              <TableRow key={supportingProduct.id} className="bg-green-50 dark:bg-green-950/30">
                                 <TableCell 
-                                  className="font-medium cursor-pointer hover:underline text-yellow-700 dark:text-yellow-300 pl-8"
+                                  className="font-medium cursor-pointer hover:underline text-green-700 dark:text-green-300 pl-8"
                                   onClick={() => handleViewDetails(supportingProduct)}
                                 >
                                   ↳ {supportingProduct.name}
@@ -1162,7 +1162,7 @@ export default function Products() {
                                 <TableCell className="text-muted-foreground">-</TableCell>
                                 <TableCell className="text-muted-foreground">-</TableCell>
                                 <TableCell>
-                                  <Badge variant="secondary" className="bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                  <Badge variant="secondary" className="bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200">
                                     Supporting
                                   </Badge>
                                 </TableCell>
@@ -1294,11 +1294,11 @@ export default function Products() {
                               </div>
                             </TableCell>
                           </TableRow>
-                          {/* Supporting Products - Yellow */}
+                          {/* Supporting Products - Green */}
                           {getSupportingProductsForProduct(product.id).map((supportingProduct) => (
-                            <TableRow key={supportingProduct.id} className="bg-yellow-50 dark:bg-yellow-950/30">
+                            <TableRow key={supportingProduct.id} className="bg-green-50 dark:bg-green-950/30">
                               <TableCell 
-                                className="font-medium cursor-pointer hover:underline text-yellow-700 dark:text-yellow-300 pl-8"
+                                className="font-medium cursor-pointer hover:underline text-green-700 dark:text-green-300 pl-8"
                                 onClick={() => handleViewDetails(supportingProduct)}
                               >
                                 ↳ {supportingProduct.name}
@@ -1309,7 +1309,7 @@ export default function Products() {
                               <TableCell className="text-muted-foreground">-</TableCell>
                               <TableCell className="text-muted-foreground">-</TableCell>
                               <TableCell>
-                                <Badge variant="secondary" className="bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                <Badge variant="secondary" className="bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200">
                                   Supporting
                                 </Badge>
                               </TableCell>
@@ -1445,11 +1445,11 @@ export default function Products() {
                           </div>
                         </TableCell>
                       </TableRow>
-                      {/* Supporting Products - Yellow */}
+                      {/* Supporting Products - Green */}
                       {getSupportingProductsForProduct(product.id).map((supportingProduct) => (
-                        <TableRow key={supportingProduct.id} className="bg-yellow-50 dark:bg-yellow-950/30">
+                        <TableRow key={supportingProduct.id} className="bg-green-50 dark:bg-green-950/30">
                           <TableCell 
-                            className="font-medium cursor-pointer hover:underline text-yellow-700 dark:text-yellow-300 pl-8"
+                            className="font-medium cursor-pointer hover:underline text-green-700 dark:text-green-300 pl-8"
                             onClick={() => handleViewDetails(supportingProduct)}
                           >
                             ↳ {supportingProduct.name}
@@ -1460,7 +1460,7 @@ export default function Products() {
                           <TableCell className="text-muted-foreground">-</TableCell>
                           <TableCell className="text-muted-foreground">-</TableCell>
                           <TableCell>
-                            <Badge variant="secondary" className="bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                            <Badge variant="secondary" className="bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200">
                               Supporting
                             </Badge>
                           </TableCell>
