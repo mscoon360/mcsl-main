@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProducts } from '@/hooks/useProducts';
 import { useDivisions } from '@/hooks/useDivisions';
@@ -52,6 +52,38 @@ export default function Products() {
   const [supportingDialogProduct, setSupportingDialogProduct] = useState<any>(null);
   const [isSupportingItem, setIsSupportingItem] = useState(false);
   const [assignToProductIds, setAssignToProductIds] = useState<string[]>([]);
+  const [supportingRelations, setSupportingRelations] = useState<{ product_id: string; supporting_product_id: string }[]>([]);
+
+  // Fetch supporting product relationships
+  useEffect(() => {
+    const fetchSupportingRelations = async () => {
+      const { data, error } = await supabase
+        .from('product_supporting_items')
+        .select('product_id, supporting_product_id');
+      if (!error && data) {
+        setSupportingRelations(data);
+      }
+    };
+    fetchSupportingRelations();
+  }, [products]);
+
+  // Get supporting products for a main product
+  const getSupportingProductsForProduct = (productId: string) => {
+    const supportingIds = supportingRelations
+      .filter(r => r.product_id === productId)
+      .map(r => r.supporting_product_id);
+    return products.filter(p => supportingIds.includes(p.id));
+  };
+
+  // Check if a product is a supporting item (not a main product)
+  const isSupportingProduct = (productId: string) => {
+    return supportingRelations.some(r => r.supporting_product_id === productId);
+  };
+
+  // Get main products only (exclude supporting items)
+  const getMainProducts = (productList: any[]) => {
+    return productList.filter(p => !isSupportingProduct(p.id));
+  };
 
   const PACKAGE_SIZES = [
     { value: '3785.41', label: '1 Gallon' },
@@ -1030,10 +1062,159 @@ export default function Products() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {subdivisionProducts.map((product) => (
-                          <TableRow key={product.id}>
+                        {getMainProducts(subdivisionProducts).map((product) => (
+                          <Fragment key={product.id}>
+                            {/* Main Product Row - Blue */}
+                            <TableRow className="bg-blue-50 dark:bg-blue-950/30">
+                              <TableCell 
+                                className="font-medium cursor-pointer hover:underline text-blue-700 dark:text-blue-300"
+                                onClick={() => handleViewDetails(product)}
+                              >
+                                {product.name}
+                              </TableCell>
+                              <TableCell>{product.sku}</TableCell>
+                              <TableCell>{product.supplier_name || '-'}</TableCell>
+                              <TableCell>${product.cost_price?.toFixed(2) || '0.00'}</TableCell>
+                              <TableCell>
+                                {product.stock === 0 ? (
+                                  <span className="text-destructive font-semibold">No Stock</span>
+                                ) : (
+                                  <div className="flex flex-col gap-1">
+                                    <span>{product.stock}</span>
+                                    {product.min_stock > 0 && product.stock <= product.min_stock && (
+                                      <Badge variant="destructive" className="text-xs w-fit">
+                                        Below Min
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {product.container_size ? (
+                                  <span>{product.stock} × {product.container_size}</span>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={product.stock === 0 || product.status === 'low_stock' ? 'destructive' : product.status === 'active' ? 'default' : 'secondary'}>
+                                  {product.stock === 0 ? 'No Stock' : product.status.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <span>{product.is_rental_only ? 'Rental Only' : product.is_rental ? 'Both' : 'Sale Only'}</span>
+                                  {product.needs_servicing && (
+                                    <Badge variant="outline" className="text-xs">
+                                      Requires servicing
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleOpenSupportingProducts(product)}
+                                    title="Supporting Products"
+                                  >
+                                    <Link2 className="h-4 w-4 mr-1" />
+                                    Supporting
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate(`/products/${product.id}/barcodes`)}
+                                    title="View Barcodes"
+                                  >
+                                    <Barcode className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEdit(product)}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleDelete(product.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                            {/* Supporting Products - Yellow */}
+                            {getSupportingProductsForProduct(product.id).map((supportingProduct) => (
+                              <TableRow key={supportingProduct.id} className="bg-yellow-50 dark:bg-yellow-950/30">
+                                <TableCell 
+                                  className="font-medium cursor-pointer hover:underline text-yellow-700 dark:text-yellow-300 pl-8"
+                                  onClick={() => handleViewDetails(supportingProduct)}
+                                >
+                                  ↳ {supportingProduct.name}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">{supportingProduct.sku}</TableCell>
+                                <TableCell className="text-muted-foreground">-</TableCell>
+                                <TableCell className="text-muted-foreground">-</TableCell>
+                                <TableCell className="text-muted-foreground">-</TableCell>
+                                <TableCell className="text-muted-foreground">-</TableCell>
+                                <TableCell>
+                                  <Badge variant="secondary" className="bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                    Supporting
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">-</TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleDelete(supportingProduct.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </Fragment>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            
+            {/* Products in division without subdivision */}
+            {divisionProductsWithoutSubdiv.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Product Listing - Uncategorized Subdivision</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>SKU</TableHead>
+                        <TableHead>Supplier</TableHead>
+                        <TableHead>Cost Price (per unit)</TableHead>
+                        <TableHead>Stock</TableHead>
+                        <TableHead>Units After Repackaging</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {getMainProducts(divisionProductsWithoutSubdiv).map((product) => (
+                        <Fragment key={product.id}>
+                          {/* Main Product Row - Blue */}
+                          <TableRow className="bg-blue-50 dark:bg-blue-950/30">
                             <TableCell 
-                              className="font-medium text-primary cursor-pointer hover:underline"
+                              className="font-medium cursor-pointer hover:underline text-blue-700 dark:text-blue-300"
                               onClick={() => handleViewDetails(product)}
                             >
                               {product.name}
@@ -1113,119 +1294,38 @@ export default function Products() {
                               </div>
                             </TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              );
-            })}
-            
-            {/* Products in division without subdivision */}
-            {divisionProductsWithoutSubdiv.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Product Listing - Uncategorized Subdivision</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>SKU</TableHead>
-                        <TableHead>Supplier</TableHead>
-                        <TableHead>Cost Price (per unit)</TableHead>
-                        <TableHead>Stock</TableHead>
-                        <TableHead>Units After Repackaging</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {divisionProductsWithoutSubdiv.map((product) => (
-                        <TableRow key={product.id}>
-                          <TableCell 
-                            className="font-medium text-primary cursor-pointer hover:underline"
-                            onClick={() => handleViewDetails(product)}
-                          >
-                            {product.name}
-                          </TableCell>
-                          <TableCell>{product.sku}</TableCell>
-                          <TableCell>{product.supplier_name || '-'}</TableCell>
-                          <TableCell>${product.cost_price?.toFixed(2) || '0.00'}</TableCell>
-                          <TableCell>
-                            {product.stock === 0 ? (
-                              <span className="text-destructive font-semibold">No Stock</span>
-                            ) : (
-                              <div className="flex flex-col gap-1">
-                                <span>{product.stock}</span>
-                                {product.min_stock > 0 && product.stock <= product.min_stock && (
-                                  <Badge variant="destructive" className="text-xs w-fit">
-                                    Below Min
-                                  </Badge>
-                                )}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {product.container_size ? (
-                              <span>{product.stock} × {product.container_size}</span>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={product.stock === 0 || product.status === 'low_stock' ? 'destructive' : product.status === 'active' ? 'default' : 'secondary'}>
-                              {product.stock === 0 ? 'No Stock' : product.status.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <span>{product.is_rental_only ? 'Rental Only' : product.is_rental ? 'Both' : 'Sale Only'}</span>
-                              {product.needs_servicing && (
-                                <Badge variant="outline" className="text-xs">
-                                  Requires servicing
+                          {/* Supporting Products - Yellow */}
+                          {getSupportingProductsForProduct(product.id).map((supportingProduct) => (
+                            <TableRow key={supportingProduct.id} className="bg-yellow-50 dark:bg-yellow-950/30">
+                              <TableCell 
+                                className="font-medium cursor-pointer hover:underline text-yellow-700 dark:text-yellow-300 pl-8"
+                                onClick={() => handleViewDetails(supportingProduct)}
+                              >
+                                ↳ {supportingProduct.name}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">{supportingProduct.sku}</TableCell>
+                              <TableCell className="text-muted-foreground">-</TableCell>
+                              <TableCell className="text-muted-foreground">-</TableCell>
+                              <TableCell className="text-muted-foreground">-</TableCell>
+                              <TableCell className="text-muted-foreground">-</TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className="bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                  Supporting
                                 </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleOpenSupportingProducts(product)}
-                                title="Supporting Products"
-                              >
-                                <Link2 className="h-4 w-4 mr-1" />
-                                Supporting
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => navigate(`/products/${product.id}/barcodes`)}
-                                title="View Barcodes"
-                              >
-                                <Barcode className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEdit(product)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleDelete(product.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">-</TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleDelete(supportingProduct.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </Fragment>
                       ))}
                     </TableBody>
                   </Table>
@@ -1260,89 +1360,123 @@ export default function Products() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {uncategorizedProducts.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell 
-                        className="font-medium text-primary cursor-pointer hover:underline"
-                        onClick={() => handleViewDetails(product)}
-                      >
-                        {product.name}
-                      </TableCell>
-                      <TableCell>{product.sku}</TableCell>
-                      <TableCell>{product.supplier_name || '-'}</TableCell>
-                      <TableCell>${product.cost_price?.toFixed(2) || '0.00'}</TableCell>
-                      <TableCell>
-                        {product.stock === 0 ? (
-                          <span className="text-destructive font-semibold">No Stock</span>
-                        ) : (
-                          <div className="flex flex-col gap-1">
-                            <span>{product.stock}</span>
-                            {product.min_stock > 0 && product.stock <= product.min_stock && (
-                              <Badge variant="destructive" className="text-xs w-fit">
-                                Below Min
+                  {getMainProducts(uncategorizedProducts).map((product) => (
+                    <Fragment key={product.id}>
+                      {/* Main Product Row - Blue */}
+                      <TableRow className="bg-blue-50 dark:bg-blue-950/30">
+                        <TableCell 
+                          className="font-medium cursor-pointer hover:underline text-blue-700 dark:text-blue-300"
+                          onClick={() => handleViewDetails(product)}
+                        >
+                          {product.name}
+                        </TableCell>
+                        <TableCell>{product.sku}</TableCell>
+                        <TableCell>{product.supplier_name || '-'}</TableCell>
+                        <TableCell>${product.cost_price?.toFixed(2) || '0.00'}</TableCell>
+                        <TableCell>
+                          {product.stock === 0 ? (
+                            <span className="text-destructive font-semibold">No Stock</span>
+                          ) : (
+                            <div className="flex flex-col gap-1">
+                              <span>{product.stock}</span>
+                              {product.min_stock > 0 && product.stock <= product.min_stock && (
+                                <Badge variant="destructive" className="text-xs w-fit">
+                                  Below Min
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {product.container_size ? (
+                            <span>{product.stock} × {product.container_size}</span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={product.stock === 0 || product.status === 'low_stock' ? 'destructive' : product.status === 'active' ? 'default' : 'secondary'}>
+                            {product.stock === 0 ? 'No Stock' : product.status.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span>{product.is_rental_only ? 'Rental Only' : product.is_rental ? 'Both' : 'Sale Only'}</span>
+                            {product.needs_servicing && (
+                              <Badge variant="outline" className="text-xs">
+                                Requires servicing
                               </Badge>
                             )}
                           </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {product.container_size ? (
-                          <span>{product.stock} × {product.container_size}</span>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={product.stock === 0 || product.status === 'low_stock' ? 'destructive' : product.status === 'active' ? 'default' : 'secondary'}>
-                          {product.stock === 0 ? 'No Stock' : product.status.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span>{product.is_rental_only ? 'Rental Only' : product.is_rental ? 'Both' : 'Sale Only'}</span>
-                          {product.needs_servicing && (
-                            <Badge variant="outline" className="text-xs">
-                              Requires servicing
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenSupportingProducts(product)}
+                              title="Supporting Products"
+                            >
+                              <Link2 className="h-4 w-4 mr-1" />
+                              Supporting
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/products/${product.id}/barcodes`)}
+                              title="View Barcodes"
+                            >
+                              <Barcode className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(product)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(product.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      {/* Supporting Products - Yellow */}
+                      {getSupportingProductsForProduct(product.id).map((supportingProduct) => (
+                        <TableRow key={supportingProduct.id} className="bg-yellow-50 dark:bg-yellow-950/30">
+                          <TableCell 
+                            className="font-medium cursor-pointer hover:underline text-yellow-700 dark:text-yellow-300 pl-8"
+                            onClick={() => handleViewDetails(supportingProduct)}
+                          >
+                            ↳ {supportingProduct.name}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{supportingProduct.sku}</TableCell>
+                          <TableCell className="text-muted-foreground">-</TableCell>
+                          <TableCell className="text-muted-foreground">-</TableCell>
+                          <TableCell className="text-muted-foreground">-</TableCell>
+                          <TableCell className="text-muted-foreground">-</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                              Supporting
                             </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenSupportingProducts(product)}
-                            title="Supporting Products"
-                          >
-                            <Link2 className="h-4 w-4 mr-1" />
-                            Supporting
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/products/${product.id}/barcodes`)}
-                            title="View Barcodes"
-                          >
-                            <Barcode className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(product)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDelete(product.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">-</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(supportingProduct.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </Fragment>
                   ))}
                 </TableBody>
               </Table>
