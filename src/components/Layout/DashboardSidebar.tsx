@@ -115,6 +115,7 @@ const navigation: NavigationSection[] = [
       { name: "Chart of Accounts", href: "/chart-of-accounts", icon: BookOpen },
       { name: "Trial Balance", href: "/trial-balance", icon: Scale },
       { name: "Reports", href: "/finance-reports", icon: FileText },
+      { name: "Asset Registrar", href: "/asset-registrar", icon: Building2 },
       { name: "Receivables", href: "/rental-payments", icon: CreditCard },
       { name: "Purchase Orders", href: "/finance-purchase-orders", icon: ClipboardList },
     ]
