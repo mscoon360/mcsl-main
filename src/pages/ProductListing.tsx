@@ -162,13 +162,13 @@ const ProductListing = () => {
                   return (
                     <Collapsible
                       key={division.id}
-                      open={expandedDivisions[division.id] ?? true}
+                      open={expandedDivisions[division.id] ?? false}
                       onOpenChange={() => toggleDivision(division.id)}
                     >
                       <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors">
                         <span className="font-semibold text-lg">{division.name}</span>
                         <ChevronDown className={`h-5 w-5 transition-transform ${
-                          expandedDivisions[division.id] ?? true ? 'rotate-180' : ''
+                          expandedDivisions[division.id] ?? false ? 'rotate-180' : ''
                         }`} />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-4 space-y-4">
@@ -199,13 +199,6 @@ const ProductListing = () => {
                   );
                 })}
 
-                {/* Uncategorized Products */}
-                {getUncategorizedProducts().length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-lg mb-3 p-3 bg-muted rounded-lg">Uncategorized</h3>
-                    {renderProductTable(getUncategorizedProducts())}
-                  </div>
-                )}
 
                 {filteredProducts.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
