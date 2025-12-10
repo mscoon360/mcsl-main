@@ -50,6 +50,8 @@ export default function Products() {
   const [rawCostPrice, setRawCostPrice] = useState<number>(0);
   const [isSupportingDialogOpen, setIsSupportingDialogOpen] = useState(false);
   const [supportingDialogProduct, setSupportingDialogProduct] = useState<any>(null);
+  const [isSupportingItem, setIsSupportingItem] = useState(false);
+  const [assignToProductIds, setAssignToProductIds] = useState<string[]>([]);
 
   const PACKAGE_SIZES = [
     { value: '3785.41', label: '1 Gallon' },
@@ -149,6 +151,32 @@ export default function Products() {
 
     try {
       const addedProduct = await addProduct(newProduct);
+      
+      // If this is a supporting item, create relationships with selected products
+      if (isSupportingItem && assignToProductIds.length > 0 && addedProduct) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const relationships = assignToProductIds.map(productId => ({
+            product_id: productId,
+            supporting_product_id: addedProduct.id,
+            user_id: user.id,
+          }));
+          
+          const { error: relError } = await supabase
+            .from('product_supporting_items')
+            .insert(relationships);
+          
+          if (relError) {
+            console.error('Error creating supporting relationships:', relError);
+            toast({
+              title: 'Warning',
+              description: 'Product created but failed to assign as supporting item',
+              variant: 'destructive',
+            });
+          }
+        }
+      }
+      
       setIsAddDialogOpen(false);
       form.reset();
       setProductType('sale_only');
@@ -160,10 +188,14 @@ export default function Products() {
       setPackageSize('');
       setRawStock(0);
       setRawCostPrice(0);
+      setIsSupportingItem(false);
+      setAssignToProductIds([]);
       
       toast({
         title: 'Product created',
-        description: 'View barcodes for this product',
+        description: isSupportingItem && assignToProductIds.length > 0 
+          ? `Product created and assigned to ${assignToProductIds.length} product(s)`
+          : 'View barcodes for this product',
         action: (
           <Button
             variant="outline"
@@ -558,6 +590,63 @@ export default function Products() {
                   <Label htmlFor="supplier_name">Supplier Name *</Label>
                   <Input id="supplier_name" name="supplier_name" required />
                 </div>
+              </div>
+
+              {/* Supporting Item Checkbox */}
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="is_supporting_item" 
+                    checked={isSupportingItem}
+                    onCheckedChange={(checked) => {
+                      setIsSupportingItem(checked as boolean);
+                      if (!checked) setAssignToProductIds([]);
+                    }}
+                  />
+                  <div className="flex flex-col">
+                    <Label htmlFor="is_supporting_item" className="font-medium cursor-pointer">
+                      This is a supporting item
+                    </Label>
+                    <span className="text-sm text-muted-foreground">
+                      Enable this to assign this product as a supporting item for other products
+                    </span>
+                  </div>
+                </div>
+
+                {isSupportingItem && (
+                  <div className="space-y-2 mt-4">
+                    <Label>Assign to Products</Label>
+                    <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+                      {products.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No products available</p>
+                      ) : (
+                        products.map((p) => (
+                          <div key={p.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`assign-${p.id}`}
+                              checked={assignToProductIds.includes(p.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setAssignToProductIds(prev => [...prev, p.id]);
+                                } else {
+                                  setAssignToProductIds(prev => prev.filter(id => id !== p.id));
+                                }
+                              }}
+                            />
+                            <Label htmlFor={`assign-${p.id}`} className="text-sm cursor-pointer">
+                              {p.name} <span className="text-muted-foreground">({p.sku})</span>
+                            </Label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {assignToProductIds.length > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        Selected: {assignToProductIds.length} product(s)
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
