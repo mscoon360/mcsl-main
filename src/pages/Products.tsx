@@ -704,10 +704,10 @@ export default function Products() {
         </div>
       </div>
 
-      {/* Product Catalog */}
+      {/* Product Listing */}
       <Card>
         <CardHeader>
-          <CardTitle>Product Catalog</CardTitle>
+          <CardTitle>Product Listing</CardTitle>
         </CardHeader>
         <CardContent>
           {products.length === 0 ? (
