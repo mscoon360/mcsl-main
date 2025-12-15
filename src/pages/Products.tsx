@@ -49,6 +49,7 @@ export default function Products() {
   const [rawStock, setRawStock] = useState<number>(0);
   const [rawCostPrice, setRawCostPrice] = useState<number>(0);
   const [unitsPerCase, setUnitsPerCase] = useState<number>(0);
+  const [gallonsPerDrum, setGallonsPerDrum] = useState<number>(0);
   const [isSupportingDialogOpen, setIsSupportingDialogOpen] = useState(false);
   const [supportingDialogProduct, setSupportingDialogProduct] = useState<any>(null);
   const [isSupportingItem, setIsSupportingItem] = useState(false);
@@ -97,12 +98,17 @@ export default function Products() {
   const ML_PER_GALLON = 3785.41;
 
   const isRepackagingUnit = (unit: string): boolean => {
-    return unit === 'gallons' || unit === 'cases';
+    return unit === 'gallons' || unit === 'cases' || unit === 'drums';
   };
 
   const calculateRepackagedStock = (quantity: number, packageSizeMl: number, unit: string): number => {
     if (unit === 'cases') {
       return quantity * unitsPerCase;
+    }
+    if (unit === 'drums') {
+      const totalGallons = quantity * gallonsPerDrum;
+      const totalMl = totalGallons * ML_PER_GALLON;
+      return Math.floor(totalMl / packageSizeMl);
     }
     const totalMl = quantity * ML_PER_GALLON;
     return Math.floor(totalMl / packageSizeMl);
@@ -117,8 +123,17 @@ export default function Products() {
     return rawStock * unitsPerCase;
   };
 
+  const calculateDrumRepackagedStock = (): number => {
+    if (!packageSize || gallonsPerDrum <= 0) return 0;
+    const totalGallons = rawStock * gallonsPerDrum;
+    const totalMl = totalGallons * ML_PER_GALLON;
+    return Math.floor(totalMl / parseFloat(packageSize));
+  };
+
   const repackagedStock = selectedUnit === 'cases' && isForRepackaging && unitsPerCase > 0
     ? calculateCaseRepackagedStock()
+    : selectedUnit === 'drums' && isForRepackaging && gallonsPerDrum > 0 && packageSize
+    ? calculateDrumRepackagedStock()
     : isRepackagingUnit(selectedUnit) && isForRepackaging && packageSize
     ? calculateRepackagedStock(rawStock, parseFloat(packageSize), selectedUnit)
     : rawStock;
@@ -227,6 +242,13 @@ export default function Products() {
       stock = repackagedStock;
       cost_price = calculateCostPerRepackagedUnit(rawCostPrice, repackagedStock);
       containerSize = `${unitsPerCase} per case`;
+    } else if (selectedUnit === 'drums' && isForRepackaging && gallonsPerDrum > 0 && packageSize) {
+      // Drum repackaging: store as repackaged units
+      const selectedPackage = PACKAGE_SIZES.find(p => p.value === packageSize);
+      units = selectedPackage?.label || 'individual';
+      stock = repackagedStock;
+      cost_price = calculateCostPerRepackagedUnit(rawCostPrice, repackagedStock);
+      containerSize = `${gallonsPerDrum} gal drum to ${selectedPackage?.label}`;
     } else if (isRepackagingUnit(selectedUnit) && isForRepackaging && packageSize) {
       const selectedPackage = PACKAGE_SIZES.find(p => p.value === packageSize);
       units = selectedPackage?.label || selectedUnit;
@@ -279,6 +301,7 @@ export default function Products() {
       setRawStock(0);
       setRawCostPrice(0);
       setUnitsPerCase(0);
+      setGallonsPerDrum(0);
       setIsSupportingItem(false);
       setAssignToProductIds([]);
       
@@ -830,19 +853,21 @@ export default function Products() {
                       if (!isRepackagingUnit(e.target.value)) {
                         setIsForRepackaging(false);
                         setPackageSize('');
+                        setGallonsPerDrum(0);
                       }
                     }}
                     required
                   >
                     <option value="">Select U.O.M</option>
-                    <option value="gallons">Gallons</option>
-                    <option value="cases">Cases</option>
-                    <option value="individual">Individual Units</option>
+                    <option value="gallons">GAL.</option>
+                    <option value="cases">c/s</option>
+                    <option value="drums">Drums</option>
+                    <option value="individual">Ind.-Units.</option>
                   </select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="stock">
-                    {selectedUnit === 'gallons' ? 'Stock (Gallons) *' : 'Initial Stock *'}
+                    {selectedUnit === 'gallons' ? 'Quantity (GAL.) *' : selectedUnit === 'drums' ? 'Quantity (Drums) *' : selectedUnit === 'cases' ? 'Quantity (c/s) *' : 'Quantity *'}
                   </Label>
                   <Input 
                     id="stock" 
@@ -857,6 +882,21 @@ export default function Products() {
 
               {isRepackagingUnit(selectedUnit) && (
                 <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+                  {selectedUnit === 'drums' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="gallons_per_drum">How many gallons per drum? *</Label>
+                      <Input
+                        id="gallons_per_drum"
+                        type="number"
+                        min="1"
+                        value={gallonsPerDrum || ''}
+                        onChange={(e) => setGallonsPerDrum(parseInt(e.target.value) || 0)}
+                        placeholder="Enter gallons per drum"
+                        required
+                      />
+                    </div>
+                  )}
+
                   <div className="flex items-center space-x-2">
                     <Checkbox 
                       id="is_repackaging" 
@@ -913,7 +953,51 @@ export default function Products() {
                     </div>
                   )}
 
-                  {isForRepackaging && selectedUnit !== 'cases' && (
+                  {isForRepackaging && selectedUnit === 'drums' && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="package_size">Repackage into bottle size</Label>
+                        <select
+                          id="package_size"
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          value={packageSize}
+                          onChange={(e) => setPackageSize(e.target.value)}
+                          required
+                        >
+                          <option value="">Select Package Size</option>
+                          {PACKAGE_SIZES.map((size) => (
+                            <option key={size.value} value={size.value}>
+                              {size.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {packageSize && rawStock > 0 && gallonsPerDrum > 0 && (
+                        <div className="p-3 bg-primary/10 rounded-md border border-primary/20 space-y-2">
+                          <p className="text-sm font-medium">
+                            Stock Available After Repackaging: <span className="text-primary text-lg">{repackagedStock}</span> {PACKAGE_SIZES.find(p => p.value === packageSize)?.label} units
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            ({rawStock} drums × {gallonsPerDrum} gal = {rawStock * gallonsPerDrum} gal total × 3785.41ml ÷ {packageSize}ml = {repackagedStock} units)
+                          </p>
+                          {calculatedCostPerUnit !== null && (
+                            <>
+                              <Separator className="my-2" />
+                              <p className="text-sm font-medium">
+                                Cost Price per {PACKAGE_SIZES.find(p => p.value === packageSize)?.label}: <span className="text-primary text-lg">${calculatedCostPerUnit.toFixed(2)}</span>
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                (${rawCostPrice.toFixed(2)} total cost ÷ {repackagedStock} units = ${calculatedCostPerUnit.toFixed(2)})
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {isForRepackaging && selectedUnit === 'gallons' && (
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="package_size">Package Size</Label>
