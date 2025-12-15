@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit, Trash2, Building2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Building2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useVendors, Vendor } from '@/hooks/useVendors';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
-export default function Vendors() {
+export default function Suppliers() {
   const { vendors, loading, addVendor, updateVendor, deleteVendor } = useVendors();
   const [showForm, setShowForm] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
@@ -76,26 +76,49 @@ export default function Vendors() {
     resetForm();
   };
 
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredSuppliers = vendors.filter(vendor =>
+    vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    vendor.contact_person?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    vendor.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    vendor.city?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Vendors</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Supplier Database</h1>
+          <p className="text-muted-foreground">Manage your suppliers and vendor relationships</p>
+        </div>
         <Button onClick={() => setShowForm(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Vendor
+          Add Supplier
         </Button>
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search suppliers..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
       </div>
 
       <Dialog open={showForm} onOpenChange={handleCancel}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingVendor ? 'Edit Vendor' : 'Add New Vendor'}</DialogTitle>
+            <DialogTitle>{editingVendor ? 'Edit Supplier' : 'Add New Supplier'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Vendor Name *</Label>
+                  <Label htmlFor="name">Supplier Name *</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -123,7 +146,7 @@ export default function Vendors() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="vendor@example.com"
+                    placeholder="supplier@example.com"
                   />
                 </div>
                 <div className="space-y-2">
@@ -183,7 +206,7 @@ export default function Vendors() {
                 Cancel
               </Button>
               <Button type="submit">
-                {editingVendor ? 'Update' : 'Add'} Vendor
+                {editingVendor ? 'Update' : 'Add'} Supplier
               </Button>
             </DialogFooter>
           </form>
@@ -191,13 +214,13 @@ export default function Vendors() {
       </Dialog>
 
       {loading ? (
-        <div className="text-center py-8">Loading vendors...</div>
+        <div className="text-center py-8">Loading suppliers...</div>
       ) : (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              All Vendors ({vendors.length})
+              All Suppliers ({filteredSuppliers.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -214,14 +237,14 @@ export default function Vendors() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {vendors.length === 0 ? (
+                {filteredSuppliers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground">
-                      No vendors found. Add your first vendor to get started.
+                      No suppliers found. Add your first supplier to get started.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  vendors.map((vendor) => (
+                  filteredSuppliers.map((vendor) => (
                     <TableRow key={vendor.id}>
                       <TableCell className="font-medium">{vendor.name}</TableCell>
                       <TableCell>{vendor.contact_person || '-'}</TableCell>
