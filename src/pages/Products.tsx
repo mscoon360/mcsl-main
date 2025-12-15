@@ -54,6 +54,7 @@ export default function Products() {
   const [supportingDialogProduct, setSupportingDialogProduct] = useState<any>(null);
   const [isSupportingItem, setIsSupportingItem] = useState(false);
   const [assignToProductIds, setAssignToProductIds] = useState<string[]>([]);
+  const [isIgieneProduct, setIsIgieneProduct] = useState(false);
   const [supportingRelations, setSupportingRelations] = useState<{ product_id: string; supporting_product_id: string }[]>([]);
 
   // Fetch supporting product relationships
@@ -693,6 +694,18 @@ export default function Products() {
               <DialogTitle>Add New Product</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleAddProduct} className="space-y-4">
+              {/* i-giene Product Checkbox */}
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="is_igiene_product" 
+                  checked={isIgieneProduct}
+                  onCheckedChange={(checked) => setIsIgieneProduct(checked as boolean)}
+                />
+                <Label htmlFor="is_igiene_product" className="font-medium cursor-pointer">
+                  Is this an i-giene product?
+                </Label>
+              </div>
+
               {/* Product Name - Always visible */}
               <div className="space-y-2">
                 <Label htmlFor="name">Product Name *</Label>
