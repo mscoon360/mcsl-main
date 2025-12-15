@@ -973,15 +973,29 @@ export default function Products() {
                           <p className="text-xs text-muted-foreground">
                             ({rawStock} cases × {unitsPerCase} units per case = {repackagedStock} units)
                           </p>
-                          {calculatedCostPerUnit !== null && (
+                          {rawCostPrice > 0 && (
                             <>
                               <Separator className="my-2" />
-                              <p className="text-sm font-medium">
-                                Cost Price per Unit: <span className="text-primary text-lg">${calculatedCostPerUnit.toFixed(2)}</span>
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                (${rawCostPrice.toFixed(2)} total cost ÷ {repackagedStock} units = ${calculatedCostPerUnit.toFixed(2)})
-                              </p>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <p className="text-sm font-medium">
+                                    Cost per Case: <span className="text-primary text-lg">${(rawCostPrice / rawStock).toFixed(2)}</span>
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    (${rawCostPrice.toFixed(2)} ÷ {rawStock} cases)
+                                  </p>
+                                </div>
+                                {calculatedCostPerUnit !== null && (
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      Cost per Unit: <span className="text-primary text-lg">${calculatedCostPerUnit.toFixed(2)}</span>
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      (${rawCostPrice.toFixed(2)} ÷ {repackagedStock} units)
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
                             </>
                           )}
                         </div>
@@ -1017,15 +1031,29 @@ export default function Products() {
                           <p className="text-xs text-muted-foreground">
                             ({rawStock} drums × {gallonsPerDrum} gal = {rawStock * gallonsPerDrum} gal total × 3785.41ml ÷ {packageSize}ml = {repackagedStock} units)
                           </p>
-                          {calculatedCostPerUnit !== null && (
+                          {rawCostPrice > 0 && (
                             <>
                               <Separator className="my-2" />
-                              <p className="text-sm font-medium">
-                                Cost Price per {PACKAGE_SIZES.find(p => p.value === packageSize)?.label}: <span className="text-primary text-lg">${calculatedCostPerUnit.toFixed(2)}</span>
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                (${rawCostPrice.toFixed(2)} total cost ÷ {repackagedStock} units = ${calculatedCostPerUnit.toFixed(2)})
-                              </p>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <p className="text-sm font-medium">
+                                    Cost per Drum: <span className="text-primary text-lg">${(rawCostPrice / rawStock).toFixed(2)}</span>
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    (${rawCostPrice.toFixed(2)} ÷ {rawStock} drums)
+                                  </p>
+                                </div>
+                                {calculatedCostPerUnit !== null && (
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      Cost per {PACKAGE_SIZES.find(p => p.value === packageSize)?.label}: <span className="text-primary text-lg">${calculatedCostPerUnit.toFixed(2)}</span>
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      (${rawCostPrice.toFixed(2)} ÷ {repackagedStock} units)
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
                             </>
                           )}
                         </div>
@@ -1061,15 +1089,29 @@ export default function Products() {
                           <p className="text-xs text-muted-foreground">
                             ({rawStock} gallons × 3785.41ml ÷ {packageSize}ml = {repackagedStock} units)
                           </p>
-                          {calculatedCostPerUnit !== null && (
+                          {rawCostPrice > 0 && (
                             <>
                               <Separator className="my-2" />
-                              <p className="text-sm font-medium">
-                                Cost Price per {PACKAGE_SIZES.find(p => p.value === packageSize)?.label}: <span className="text-primary text-lg">${calculatedCostPerUnit.toFixed(2)}</span>
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                (${rawCostPrice.toFixed(2)} total cost ÷ {repackagedStock} units = ${calculatedCostPerUnit.toFixed(2)})
-                              </p>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <p className="text-sm font-medium">
+                                    Cost per Gallon: <span className="text-primary text-lg">${(rawCostPrice / rawStock).toFixed(2)}</span>
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    (${rawCostPrice.toFixed(2)} ÷ {rawStock} gallons)
+                                  </p>
+                                </div>
+                                {calculatedCostPerUnit !== null && (
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      Cost per {PACKAGE_SIZES.find(p => p.value === packageSize)?.label}: <span className="text-primary text-lg">${calculatedCostPerUnit.toFixed(2)}</span>
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      (${rawCostPrice.toFixed(2)} ÷ {repackagedStock} units)
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
                             </>
                           )}
                         </div>
