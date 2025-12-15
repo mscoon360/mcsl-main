@@ -2,6 +2,7 @@ import { useState, useEffect, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProducts } from '@/hooks/useProducts';
 import { useDivisions } from '@/hooks/useDivisions';
+import { useVendors } from '@/hooks/useVendors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,10 +18,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SupportingProductsDialog } from '@/components/products/SupportingProductsDialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Products() {
   const { products, loading, addProduct, updateProduct, deleteProduct } = useProducts();
   const { divisions, loading: divisionsLoading, addDivision, updateDivision, deleteDivision } = useDivisions();
+  const { vendors: suppliers } = useVendors();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -56,6 +59,8 @@ export default function Products() {
   const [assignToProductIds, setAssignToProductIds] = useState<string[]>([]);
   const [isIgieneProduct, setIsIgieneProduct] = useState(false);
   const [supportingRelations, setSupportingRelations] = useState<{ product_id: string; supporting_product_id: string }[]>([]);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
+  const [editSelectedSupplierId, setEditSelectedSupplierId] = useState<string>('');
 
   // Fetch supporting product relationships
   useEffect(() => {
@@ -227,7 +232,7 @@ export default function Products() {
     // Regular product creation flow
     const sku = (formData.get('sku') as string) || `PROD-${Date.now()}`;
     const description = formData.get('description') as string;
-    const supplier_name = formData.get('supplier_name') as string;
+    const supplier_name = suppliers.find(s => s.id === selectedSupplierId)?.name || '';
     const min_stock = parseInt(formData.get('min_stock') as string) || 0;
     const rawCostPrice = parseFloat(formData.get('cost_price') as string) || 0;
     
@@ -305,6 +310,8 @@ export default function Products() {
       setGallonsPerDrum(0);
       setIsSupportingItem(false);
       setAssignToProductIds([]);
+      setSelectedSupplierId('');
+      setIsIgieneProduct(false);
       
       toast({
         title: 'Product created',
@@ -344,6 +351,7 @@ export default function Products() {
       stock: newStock,
       status: newStock > 10 ? 'active' : newStock > 0 ? 'low_stock' : 'out_of_stock',
       price: parseFloat(formData.get('price') as string) || 0,
+      supplier_name: suppliers.find(s => s.id === editSelectedSupplierId)?.name || editingProduct.supplier_name,
     };
 
     try {
@@ -405,6 +413,9 @@ export default function Products() {
     setEditingProduct(product);
     setEditDivisionId(product.division_id || '');
     setEditSubdivisionId(product.subdivision_id || '');
+    // Find supplier ID by name
+    const supplier = suppliers.find(s => s.name === product.supplier_name);
+    setEditSelectedSupplierId(supplier?.id || '');
     setIsEditDialogOpen(true);
   };
 
@@ -773,8 +784,19 @@ export default function Products() {
               {!isSupportingItem && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="supplier_name">Supplier Name *</Label>
-                    <Input id="supplier_name" name="supplier_name" required={!isSupportingItem} />
+                    <Label htmlFor="supplier_name">Supplier *</Label>
+                    <Select value={selectedSupplierId} onValueChange={setSelectedSupplierId} required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a supplier" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {suppliers.filter(s => s.status === 'active').map((supplier) => (
+                          <SelectItem key={supplier.id} value={supplier.id}>
+                            {supplier.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
@@ -1641,8 +1663,19 @@ export default function Products() {
                   <Input id="edit-name" name="name" defaultValue={editingProduct.name} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-supplier_name">Supplier Name *</Label>
-                  <Input id="edit-supplier_name" name="supplier_name" defaultValue={editingProduct.supplier_name} required />
+                  <Label htmlFor="edit-supplier_name">Supplier *</Label>
+                  <Select value={editSelectedSupplierId} onValueChange={setEditSelectedSupplierId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a supplier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {suppliers.filter(s => s.status === 'active').map((supplier) => (
+                        <SelectItem key={supplier.id} value={supplier.id}>
+                          {supplier.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
