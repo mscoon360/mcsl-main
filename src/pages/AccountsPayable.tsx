@@ -383,6 +383,7 @@ export default function AccountsPayable() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Vendor</TableHead>
+                  <TableHead>GL Account</TableHead>
                   <TableHead>Bill #</TableHead>
                   <TableHead>Bill Date</TableHead>
                   <TableHead>Due Date</TableHead>
@@ -397,34 +398,38 @@ export default function AccountsPayable() {
               <TableBody>
                 {filteredBills.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-muted-foreground">
+                    <TableCell colSpan={11} className="text-center text-muted-foreground">
                       {bills.length === 0 ? 'No bills found. Add your first bill to get started.' : 'No bills found in selected date range.'}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredBills.map((bill) => (
-                    <TableRow key={bill.id}>
-                      <TableCell className="font-medium">{bill.vendor_name}</TableCell>
-                      <TableCell>{bill.bill_number}</TableCell>
-                      <TableCell>{format(new Date(bill.bill_date), 'MMM dd, yyyy')}</TableCell>
-                      <TableCell>{format(new Date(bill.due_date), 'MMM dd, yyyy')}</TableCell>
-                      <TableCell className="font-mono text-right">${(bill.subtotal || 0).toFixed(2)}</TableCell>
-                      <TableCell className="font-mono text-right">${(bill.vat_amount || 0).toFixed(2)}</TableCell>
-                      <TableCell className="font-mono text-right font-bold">${bill.amount.toFixed(2)}</TableCell>
-                      <TableCell className="font-mono text-right">${(bill.amount - bill.amount_paid).toFixed(2)}</TableCell>
-                      <TableCell>{getStatusBadge(bill.status)}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(bill)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => deleteBill(bill.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filteredBills.map((bill) => {
+                    const vendor = vendors.find(v => v.id === bill.vendor_id);
+                    return (
+                      <TableRow key={bill.id}>
+                        <TableCell className="font-medium">{bill.vendor_name}</TableCell>
+                        <TableCell className="text-muted-foreground">{vendor?.gl_account_number || '-'}</TableCell>
+                        <TableCell>{bill.bill_number}</TableCell>
+                        <TableCell>{format(new Date(bill.bill_date), 'MMM dd, yyyy')}</TableCell>
+                        <TableCell>{format(new Date(bill.due_date), 'MMM dd, yyyy')}</TableCell>
+                        <TableCell className="font-mono text-right">${(bill.subtotal || 0).toFixed(2)}</TableCell>
+                        <TableCell className="font-mono text-right">${(bill.vat_amount || 0).toFixed(2)}</TableCell>
+                        <TableCell className="font-mono text-right font-bold">${bill.amount.toFixed(2)}</TableCell>
+                        <TableCell className="font-mono text-right">${(bill.amount - bill.amount_paid).toFixed(2)}</TableCell>
+                        <TableCell>{getStatusBadge(bill.status)}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(bill)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => deleteBill(bill.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

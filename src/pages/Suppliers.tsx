@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit, Trash2, Building2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Building2, Search, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,12 +8,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useVendors, Vendor } from '@/hooks/useVendors';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Suppliers() {
   const { vendors, loading, addVendor, updateVendor, deleteVendor } = useVendors();
+  const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
+  const [showCreditNoteDialog, setShowCreditNoteDialog] = useState(false);
+  const [creditNoteVendor, setCreditNoteVendor] = useState<Vendor | null>(null);
+  const [creditAmount, setCreditAmount] = useState('');
+  const [creditReason, setCreditReason] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -24,6 +30,7 @@ export default function Suppliers() {
     payment_terms: '',
     notes: '',
     status: 'active',
+    gl_account_number: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,6 +58,7 @@ export default function Suppliers() {
       payment_terms: '',
       notes: '',
       status: 'active',
+      gl_account_number: '',
     });
   };
 
@@ -66,6 +74,7 @@ export default function Suppliers() {
       payment_terms: vendor.payment_terms || '',
       notes: vendor.notes || '',
       status: vendor.status,
+      gl_account_number: vendor.gl_account_number || '',
     });
     setShowForm(true);
   };
@@ -76,13 +85,59 @@ export default function Suppliers() {
     resetForm();
   };
 
+  const handleOpenCreditNote = (vendor: Vendor) => {
+    setCreditNoteVendor(vendor);
+    setCreditAmount('');
+    setCreditReason('');
+    setShowCreditNoteDialog(true);
+  };
+
+  const handleApplyCreditNote = async () => {
+    if (!creditNoteVendor || !creditAmount) return;
+
+    const amount = parseFloat(creditAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: 'Invalid amount',
+        description: 'Please enter a valid credit amount.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const currentBalance = creditNoteVendor.credit_balance || 0;
+    const newBalance = currentBalance + amount;
+
+    try {
+      await updateVendor(creditNoteVendor.id, {
+        credit_balance: newBalance,
+        notes: creditNoteVendor.notes 
+          ? `${creditNoteVendor.notes}\n\nCredit Note (${new Date().toLocaleDateString()}): $${amount.toFixed(2)} - ${creditReason}`
+          : `Credit Note (${new Date().toLocaleDateString()}): $${amount.toFixed(2)} - ${creditReason}`,
+      });
+
+      toast({
+        title: 'Credit note applied',
+        description: `$${amount.toFixed(2)} credit added to ${creditNoteVendor.name}. New balance: $${newBalance.toFixed(2)}`,
+      });
+
+      setShowCreditNoteDialog(false);
+      setCreditNoteVendor(null);
+      setCreditAmount('');
+      setCreditReason('');
+    } catch (error) {
+      console.error('Error applying credit note:', error);
+    }
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredSuppliers = vendors.filter(vendor =>
     vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vendor.contact_person?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vendor.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendor.city?.toLowerCase().includes(searchTerm.toLowerCase())
+    vendor.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    vendor.gl_account_number?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -109,6 +164,7 @@ export default function Suppliers() {
         />
       </div>
 
+      {/* Add/Edit Supplier Dialog */}
       <Dialog open={showForm} onOpenChange={handleCancel}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -181,14 +237,25 @@ export default function Suppliers() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="payment_terms">Payment Terms</Label>
-                <Input
-                  id="payment_terms"
-                  value={formData.payment_terms}
-                  onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
-                  placeholder="Net 30"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="payment_terms">Payment Terms</Label>
+                  <Input
+                    id="payment_terms"
+                    value={formData.payment_terms}
+                    onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
+                    placeholder="Net 30"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gl_account_number">GL Account Number</Label>
+                  <Input
+                    id="gl_account_number"
+                    value={formData.gl_account_number}
+                    onChange={(e) => setFormData({ ...formData, gl_account_number: e.target.value })}
+                    placeholder="2000-001"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -213,6 +280,56 @@ export default function Suppliers() {
         </DialogContent>
       </Dialog>
 
+      {/* Credit Note Dialog */}
+      <Dialog open={showCreditNoteDialog} onOpenChange={setShowCreditNoteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Apply Credit Note</DialogTitle>
+            <DialogDescription>
+              Add a credit to {creditNoteVendor?.name} that will reduce future bills.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Current Credit Balance</Label>
+              <p className="text-2xl font-bold text-green-600">
+                ${(creditNoteVendor?.credit_balance || 0).toFixed(2)}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="credit_amount">Credit Amount *</Label>
+              <Input
+                id="credit_amount"
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={creditAmount}
+                onChange={(e) => setCreditAmount(e.target.value)}
+                placeholder="0.00"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="credit_reason">Reason</Label>
+              <Textarea
+                id="credit_reason"
+                value={creditReason}
+                onChange={(e) => setCreditReason(e.target.value)}
+                placeholder="e.g., Returned goods, price adjustment, overpayment..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreditNoteDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleApplyCreditNote} disabled={!creditAmount}>
+              Apply Credit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {loading ? (
         <div className="text-center py-8">Loading suppliers...</div>
       ) : (
@@ -228,10 +345,10 @@ export default function Suppliers() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>GL Account</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Payment Terms</TableHead>
+                  <TableHead>Credit Balance</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -247,10 +364,18 @@ export default function Suppliers() {
                   filteredSuppliers.map((vendor) => (
                     <TableRow key={vendor.id}>
                       <TableCell className="font-medium">{vendor.name}</TableCell>
+                      <TableCell>{vendor.gl_account_number || '-'}</TableCell>
                       <TableCell>{vendor.contact_person || '-'}</TableCell>
                       <TableCell>{vendor.email || '-'}</TableCell>
-                      <TableCell>{vendor.phone || '-'}</TableCell>
-                      <TableCell>{vendor.payment_terms || '-'}</TableCell>
+                      <TableCell>
+                        {(vendor.credit_balance || 0) > 0 ? (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            ${(vendor.credit_balance || 0).toFixed(2)}
+                          </Badge>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={vendor.status === 'active' ? 'default' : 'secondary'}>
                           {vendor.status}
@@ -258,6 +383,14 @@ export default function Suppliers() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenCreditNote(vendor)}
+                            title="Apply Credit Note"
+                          >
+                            <CreditCard className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
