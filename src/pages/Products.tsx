@@ -224,7 +224,7 @@ export default function Products() {
     }
 
     // Regular product creation flow
-    const sku = formData.get('sku') as string;
+    const sku = (formData.get('sku') as string) || `PROD-${Date.now()}`;
     const description = formData.get('description') as string;
     const supplier_name = formData.get('supplier_name') as string;
     const min_stock = parseInt(formData.get('min_stock') as string) || 0;
@@ -1045,12 +1045,12 @@ export default function Products() {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="sku">SKU *</Label>
-                  <Input id="sku" name="sku" required />
+                  <Label htmlFor="sku">SKU</Label>
+                  <Input id="sku" name="sku" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="min_stock">Minimum Stock *</Label>
-                  <Input id="min_stock" name="min_stock" type="number" required />
+                  <Label htmlFor="min_stock">Minimum Stock</Label>
+                  <Input id="min_stock" name="min_stock" type="number" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="cost_price">Total Cost *</Label>
@@ -1633,8 +1633,8 @@ export default function Products() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-sku">SKU *</Label>
-                <Input id="edit-sku" name="sku" defaultValue={editingProduct.sku} required />
+                <Label htmlFor="edit-sku">SKU</Label>
+                <Input id="edit-sku" name="sku" defaultValue={editingProduct.sku} />
               </div>
 
               <div className="space-y-2">
