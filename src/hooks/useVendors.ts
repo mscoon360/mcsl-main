@@ -14,6 +14,8 @@ export interface Vendor {
   payment_terms?: string;
   notes?: string;
   status: string;
+  gl_account_number?: string;
+  credit_balance?: number;
   created_at?: string;
   updated_at?: string;
 }

@@ -1612,7 +1612,9 @@ export type Database = {
           city: string | null
           contact_person: string | null
           created_at: string | null
+          credit_balance: number | null
           email: string | null
+          gl_account_number: string | null
           id: string
           name: string
           notes: string | null
@@ -1627,7 +1629,9 @@ export type Database = {
           city?: string | null
           contact_person?: string | null
           created_at?: string | null
+          credit_balance?: number | null
           email?: string | null
+          gl_account_number?: string | null
           id?: string
           name: string
           notes?: string | null
@@ -1642,7 +1646,9 @@ export type Database = {
           city?: string | null
           contact_person?: string | null
           created_at?: string | null
+          credit_balance?: number | null
           email?: string | null
+          gl_account_number?: string | null
           id?: string
           name?: string
           notes?: string | null
