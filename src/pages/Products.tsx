@@ -694,7 +694,7 @@ export default function Products() {
               <DialogTitle>Add New Product</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleAddProduct} className="space-y-4">
-              {/* i-giene Product Checkbox */}
+              {/* I-giene Product Checkbox */}
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="is_igiene_product" 
@@ -702,7 +702,7 @@ export default function Products() {
                   onCheckedChange={(checked) => setIsIgieneProduct(checked as boolean)}
                 />
                 <Label htmlFor="is_igiene_product" className="font-medium cursor-pointer">
-                  Is this an i-giene product?
+                  Is this an I-giene product?
                 </Label>
               </div>
 
