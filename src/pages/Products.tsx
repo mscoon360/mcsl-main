@@ -863,6 +863,7 @@ export default function Products() {
                     <option value="cases">c/s</option>
                     <option value="drums">Drums</option>
                     <option value="individual">Ind.-Units.</option>
+                    <option value="dispensing">Disp. Units</option>
                   </select>
                 </div>
                 <div className="space-y-2">
