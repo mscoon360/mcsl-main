@@ -278,7 +278,7 @@ export function DashboardSidebar() {
       >
         <SidebarContent className="bg-sidebar-background">
         {/* Company Logo/Header */}
-        <div className="p-3 md:p-4 border-b border-sidebar-border">
+        <NavLink to="/home" className="block p-3 md:p-4 border-b border-sidebar-border hover:bg-sidebar-accent transition-colors">
           <div className="flex items-center gap-2 md:gap-3">
             <div className="flex h-6 w-6 md:h-8 md:w-8 items-center justify-center rounded-lg overflow-hidden">
               <img src={magicCareLogo} alt="Magic Care Solutions Logo" className="h-full w-full object-contain" />
@@ -290,7 +290,7 @@ export function DashboardSidebar() {
               </div>
             )}
           </div>
-        </div>
+        </NavLink>
 
         {filteredNavigation.map((section) => (
           <Collapsible
