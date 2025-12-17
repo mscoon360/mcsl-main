@@ -161,8 +161,8 @@ export default function SalesProducts() {
 
   const calculateMarkup = (salePrice: number, costPrice: number) => {
     if (!costPrice || costPrice === 0) return 'N/A';
-    const markup = ((salePrice - costPrice) / costPrice) * 100;
-    return `${markup.toFixed(1)}%`;
+    const markup = (salePrice / costPrice) * 100;
+    return `${markup.toFixed(0)}%`;
   };
 
   // Filter products by search
