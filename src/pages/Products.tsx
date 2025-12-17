@@ -1295,7 +1295,7 @@ export default function Products() {
                           <Fragment key={group.category}>
                             {/* Category Header Row */}
                             <TableRow className="bg-muted/50 border-t-2 border-primary/20">
-                              <TableCell colSpan={9} className="font-semibold text-primary py-2">
+                              <TableCell colSpan={9} className="font-semibold text-primary py-3 text-xl">
                                 {group.category}
                               </TableCell>
                             </TableRow>
@@ -1452,7 +1452,7 @@ export default function Products() {
                         <Fragment key={group.category}>
                           {/* Category Header Row */}
                           <TableRow className="bg-muted/50 border-t-2 border-primary/20">
-                            <TableCell colSpan={9} className="font-semibold text-primary py-2">
+                            <TableCell colSpan={9} className="font-semibold text-primary py-3 text-xl">
                               {group.category}
                             </TableCell>
                           </TableRow>
@@ -1613,7 +1613,7 @@ export default function Products() {
                     <Fragment key={group.category}>
                       {/* Category Header Row */}
                       <TableRow className="bg-muted/50 border-t-2 border-primary/20">
-                        <TableCell colSpan={9} className="font-semibold text-primary py-2">
+                        <TableCell colSpan={9} className="font-semibold text-primary py-3 text-xl">
                           {group.category}
                         </TableCell>
                       </TableRow>
