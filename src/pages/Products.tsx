@@ -93,6 +93,17 @@ export default function Products() {
     return productList.filter(p => !isSupportingProduct(p.id));
   };
 
+  // Sort products by category alphabetically (nulls at end)
+  const sortByCategory = (productList: any[]) => {
+    return [...productList].sort((a, b) => {
+      const catA = a.category?.toLowerCase() || '';
+      const catB = b.category?.toLowerCase() || '';
+      if (!catA && catB) return 1;
+      if (catA && !catB) return -1;
+      return catA.localeCompare(catB);
+    });
+  };
+
   const PACKAGE_SIZES = [
     { value: '3785.41', label: '1 Gallon' },
     { value: '750', label: '750ml' },
@@ -1269,7 +1280,7 @@ export default function Products() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {getMainProducts(subdivisionProducts).map((product) => (
+                        {sortByCategory(getMainProducts(subdivisionProducts)).map((product) => (
                           <Fragment key={product.id}>
                             {/* Main Product Row - Blue */}
                             <TableRow className="bg-blue-50 dark:bg-blue-950/30">
@@ -1416,7 +1427,7 @@ export default function Products() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {getMainProducts(divisionProductsWithoutSubdiv).map((product) => (
+                      {sortByCategory(getMainProducts(divisionProductsWithoutSubdiv)).map((product) => (
                         <Fragment key={product.id}>
                           {/* Main Product Row - Blue */}
                           <TableRow className="bg-blue-50 dark:bg-blue-950/30">
@@ -1567,7 +1578,7 @@ export default function Products() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {getMainProducts(uncategorizedProducts).map((product) => (
+                  {sortByCategory(getMainProducts(uncategorizedProducts)).map((product) => (
                     <Fragment key={product.id}>
                       {/* Main Product Row - Blue */}
                       <TableRow className="bg-blue-50 dark:bg-blue-950/30">
