@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Plus, Package, Barcode, Info, X, ShoppingCart, Link2 } from 'lucide-react';
+import { Pencil, Trash2, Plus, Package, Barcode, Info, X, ShoppingCart, Link2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
@@ -61,6 +61,32 @@ export default function Products() {
   const [supportingRelations, setSupportingRelations] = useState<{ product_id: string; supporting_product_id: string }[]>([]);
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
   const [editSelectedSupplierId, setEditSelectedSupplierId] = useState<string>('');
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+  const [initialCategoriesSet, setInitialCategoriesSet] = useState(false);
+
+  // Initialize all categories as collapsed by default
+  useEffect(() => {
+    if (!initialCategoriesSet && products.length > 0) {
+      const allCategories = new Set<string>();
+      products.forEach(p => {
+        allCategories.add(p.category || 'Uncategorized');
+      });
+      setCollapsedCategories(allCategories);
+      setInitialCategoriesSet(true);
+    }
+  }, [products, initialCategoriesSet]);
+
+  const toggleCategory = (category: string) => {
+    setCollapsedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
 
   // Fetch supporting product relationships
   useEffect(() => {
@@ -1294,12 +1320,25 @@ export default function Products() {
                         {groupByCategory(getMainProducts(subdivisionProducts)).map((group) => (
                           <Fragment key={group.category}>
                             {/* Category Header Row */}
-                            <TableRow className="bg-muted/50 border-t-2 border-primary/20">
+                            <TableRow 
+                              className="bg-muted/50 border-t-2 border-primary/20 cursor-pointer hover:bg-muted/70"
+                              onClick={() => toggleCategory(group.category)}
+                            >
                               <TableCell colSpan={9} className="font-semibold text-primary py-3 text-xl">
-                                {group.category}
+                                <div className="flex items-center gap-2">
+                                  {collapsedCategories.has(group.category) ? (
+                                    <ChevronRight className="h-5 w-5" />
+                                  ) : (
+                                    <ChevronDown className="h-5 w-5" />
+                                  )}
+                                  {group.category}
+                                  <Badge variant="secondary" className="ml-2 text-sm">
+                                    {group.products.length} items
+                                  </Badge>
+                                </div>
                               </TableCell>
                             </TableRow>
-                            {group.products.map((product) => (
+                            {!collapsedCategories.has(group.category) && group.products.map((product) => (
                               <Fragment key={product.id}>
                                 {/* Main Product Row - Blue */}
                                 <TableRow className="bg-blue-50 dark:bg-blue-950/30">
@@ -1451,12 +1490,25 @@ export default function Products() {
                       {groupByCategory(getMainProducts(divisionProductsWithoutSubdiv)).map((group) => (
                         <Fragment key={group.category}>
                           {/* Category Header Row */}
-                          <TableRow className="bg-muted/50 border-t-2 border-primary/20">
+                          <TableRow 
+                            className="bg-muted/50 border-t-2 border-primary/20 cursor-pointer hover:bg-muted/70"
+                            onClick={() => toggleCategory(group.category)}
+                          >
                             <TableCell colSpan={9} className="font-semibold text-primary py-3 text-xl">
-                              {group.category}
+                              <div className="flex items-center gap-2">
+                                {collapsedCategories.has(group.category) ? (
+                                  <ChevronRight className="h-5 w-5" />
+                                ) : (
+                                  <ChevronDown className="h-5 w-5" />
+                                )}
+                                {group.category}
+                                <Badge variant="secondary" className="ml-2 text-sm">
+                                  {group.products.length} items
+                                </Badge>
+                              </div>
                             </TableCell>
                           </TableRow>
-                          {group.products.map((product) => (
+                          {!collapsedCategories.has(group.category) && group.products.map((product) => (
                             <Fragment key={product.id}>
                               {/* Main Product Row - Blue */}
                               <TableRow className="bg-blue-50 dark:bg-blue-950/30">
@@ -1612,12 +1664,25 @@ export default function Products() {
                   {groupByCategory(getMainProducts(uncategorizedProducts)).map((group) => (
                     <Fragment key={group.category}>
                       {/* Category Header Row */}
-                      <TableRow className="bg-muted/50 border-t-2 border-primary/20">
+                      <TableRow 
+                        className="bg-muted/50 border-t-2 border-primary/20 cursor-pointer hover:bg-muted/70"
+                        onClick={() => toggleCategory(group.category)}
+                      >
                         <TableCell colSpan={9} className="font-semibold text-primary py-3 text-xl">
-                          {group.category}
+                          <div className="flex items-center gap-2">
+                            {collapsedCategories.has(group.category) ? (
+                              <ChevronRight className="h-5 w-5" />
+                            ) : (
+                              <ChevronDown className="h-5 w-5" />
+                            )}
+                            {group.category}
+                            <Badge variant="secondary" className="ml-2 text-sm">
+                              {group.products.length} items
+                            </Badge>
+                          </div>
                         </TableCell>
                       </TableRow>
-                      {group.products.map((product) => (
+                      {!collapsedCategories.has(group.category) && group.products.map((product) => (
                         <Fragment key={product.id}>
                           {/* Main Product Row - Blue */}
                           <TableRow className="bg-blue-50 dark:bg-blue-950/30">
