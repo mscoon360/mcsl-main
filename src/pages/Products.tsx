@@ -1851,6 +1851,10 @@ export default function Products() {
                     <p className="font-semibold">${selectedProduct.cost_price?.toFixed(2) || 'N/A'}</p>
                   </div>
                   <div>
+                    <Label className="text-muted-foreground">U.O.M.</Label>
+                    <p className="font-semibold">{selectedProduct.units || 'N/A'}</p>
+                  </div>
+                  <div>
                     <Label className="text-muted-foreground">Current Stock</Label>
                     <p className="font-semibold">{selectedProduct.stock} {selectedProduct.units || 'units'}</p>
                   </div>

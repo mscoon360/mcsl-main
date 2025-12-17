@@ -386,16 +386,16 @@ export function DashboardSidebar() {
                             <NavLink
                               to={item.href}
                               className={({ isActive: navIsActive }) =>
-                                `flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-lg transition-colors text-sm ${
-                                  isActive(item.href)
-                                    ? "bg-primary text-primary-foreground"
+                                `flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-lg transition-colors text-sm font-medium ${
+                                  isActive(item.href!)
+                                    ? "bg-primary text-primary-foreground shadow-sm"
                                     : "text-sidebar-foreground hover:bg-sidebar-accent"
                                 }`
                               }
                             >
                               <item.icon className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
                               {!isCollapsed && (
-                                <span className="font-medium truncate">{item.name}</span>
+                                <span className="truncate">{item.name}</span>
                               )}
                             </NavLink>
                           </SidebarMenuButton>
