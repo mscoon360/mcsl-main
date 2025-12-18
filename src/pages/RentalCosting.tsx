@@ -26,7 +26,7 @@ const CATEGORIES = [
 
 const PAYMENT_TERM_LABELS: Record<PaymentTerm, string> = {
   'weekly': 'Weekly',
-  'bi-weekly': 'Bi-Weekly',
+  'bi-monthly': 'Bi-Monthly',
   'monthly': 'Monthly'
 };
 
@@ -187,9 +187,9 @@ export default function RentalCosting() {
     // Price: Use payment term price if available, otherwise fall back to product rental_price
     let currentPrice: number;
     if (currentPaymentTermData) {
-      // Payment term prices are stored in their native period (weekly, bi-weekly, monthly)
+      // Payment term prices are stored in their native period (weekly, bi-monthly, monthly)
       // Convert to selected display period
-      const termMultiplier = selectedPaymentTerm === 'weekly' ? 52 : selectedPaymentTerm === 'bi-weekly' ? 26 : 12;
+      const termMultiplier = selectedPaymentTerm === 'weekly' ? 52 : selectedPaymentTerm === 'bi-monthly' ? 24 : 12;
       const yearlyFromTerm = currentPaymentTermData.rental_price * termMultiplier;
       currentPrice = yearlyFromTerm * scaleFactor;
     } else {

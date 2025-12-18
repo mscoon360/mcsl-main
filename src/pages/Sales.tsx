@@ -26,7 +26,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 
 const PAYMENT_TERM_LABELS: Record<PaymentTerm, string> = {
   'weekly': 'Weekly',
-  'bi-weekly': 'Bi-Weekly',
+  'bi-monthly': 'Bi-Monthly',
   'monthly': 'Monthly'
 };
 

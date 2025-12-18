@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
-export type PaymentTerm = 'weekly' | 'bi-weekly' | 'monthly';
+export type PaymentTerm = 'weekly' | 'bi-monthly' | 'monthly';
 
 export interface RentalPaymentTerm {
   id: string;
