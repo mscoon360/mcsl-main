@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const CATEGORIES = [
   { value: 'labour', label: 'Labour/Wages' },
+  { value: 'nis', label: 'NIS Company Portion' },
   { value: 'vehicles', label: 'Vehicles' },
   { value: 'supplies', label: 'Cleaning Supplies' },
   { value: 'contingency', label: 'Contingency' },
