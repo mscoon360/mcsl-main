@@ -1096,7 +1096,10 @@ export type Database = {
           name: string
           needs_servicing: boolean | null
           price: number
+          price_per_unit: number | null
           rental_price: number | null
+          selling_unit_qty: number | null
+          selling_unit_type: string | null
           sku: string
           status: string | null
           stock: number | null
@@ -1121,7 +1124,10 @@ export type Database = {
           name: string
           needs_servicing?: boolean | null
           price: number
+          price_per_unit?: number | null
           rental_price?: number | null
+          selling_unit_qty?: number | null
+          selling_unit_type?: string | null
           sku: string
           status?: string | null
           stock?: number | null
@@ -1146,7 +1152,10 @@ export type Database = {
           name?: string
           needs_servicing?: boolean | null
           price?: number
+          price_per_unit?: number | null
           rental_price?: number | null
+          selling_unit_qty?: number | null
+          selling_unit_type?: string | null
           sku?: string
           status?: string | null
           stock?: number | null
