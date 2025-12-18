@@ -45,6 +45,23 @@ export default function RentalCosting() {
     notes: "",
     prepared_by: ""
   });
+
+  const [selectedPeriod, setSelectedPeriod] = useState<'monthly' | 'bi-monthly' | 'bi-annually' | 'yearly'>('yearly');
+
+  // Period multipliers for cost calculations
+  const periodMultipliers = {
+    'monthly': 1,
+    'bi-monthly': 2,
+    'bi-annually': 6,
+    'yearly': 12
+  };
+
+  const periodLabels = {
+    'monthly': 'Monthly',
+    'bi-monthly': 'Bi-Monthly',
+    'bi-annually': 'Bi-Annually',
+    'yearly': 'Yearly'
+  };
   
   const [itemForm, setItemForm] = useState<{
     category: CostCategory;
@@ -102,33 +119,58 @@ export default function RentalCosting() {
     loadCost();
   }, [selectedProductId, rentalCosts]);
 
-  // Calculate totals
+  // Calculate totals with period support
   const calculations = useMemo(() => {
     if (!currentCost) return null;
     
+    const periodMultiplier = periodMultipliers[selectedPeriod];
+    
     const items = currentCost.items || [];
-    const directExpensesTotal = items.reduce((sum, item) => sum + (item.monthly_cost || 0), 0);
+    // Monthly base calculations
+    const directExpensesMonthly = items.reduce((sum, item) => sum + (item.monthly_cost || 0), 0);
     const batteryMonthly = (summaryForm.battery_cost || 0) / (summaryForm.battery_frequency_months || 12);
-    const subtotal = summaryForm.unit_cost + summaryForm.refill_cost + batteryMonthly;
-    const totalDirectCosts = subtotal + directExpensesTotal;
-    const indirectCosts = totalDirectCosts * (summaryForm.indirect_cost_percentage / 100);
-    const totalCost = totalDirectCosts + indirectCosts;
-    const currentPrice = selectedProduct?.rental_price || selectedProduct?.price || 0;
+    const refillMonthly = summaryForm.refill_cost;
+    
+    // Period-adjusted calculations
+    const unitCostForPeriod = summaryForm.unit_cost; // Unit cost is amortized over 12 months
+    const unitCostMonthly = summaryForm.unit_cost / 12;
+    const subtotalMonthly = unitCostMonthly + refillMonthly + batteryMonthly;
+    const totalDirectCostsMonthly = subtotalMonthly + directExpensesMonthly;
+    const indirectCostsMonthly = totalDirectCostsMonthly * (summaryForm.indirect_cost_percentage / 100);
+    const totalCostMonthly = totalDirectCostsMonthly + indirectCostsMonthly;
+    
+    // Apply period multiplier for display
+    const directExpensesTotal = directExpensesMonthly * periodMultiplier;
+    const batteryForPeriod = batteryMonthly * periodMultiplier;
+    const refillForPeriod = refillMonthly * periodMultiplier;
+    const unitCostAmortized = unitCostMonthly * periodMultiplier;
+    const subtotal = subtotalMonthly * periodMultiplier;
+    const totalDirectCosts = totalDirectCostsMonthly * periodMultiplier;
+    const indirectCosts = indirectCostsMonthly * periodMultiplier;
+    const totalCost = totalCostMonthly * periodMultiplier;
+    
+    // Current price should match the selected period
+    const monthlyRentalPrice = selectedProduct?.rental_price || selectedProduct?.price || 0;
+    const currentPrice = monthlyRentalPrice * periodMultiplier;
     const netDifference = currentPrice - totalCost;
     const marginPercentage = currentPrice > 0 ? ((netDifference / currentPrice) * 100) : 0;
 
     return {
       directExpensesTotal,
-      batteryMonthly,
+      batteryForPeriod,
+      refillForPeriod,
+      unitCostAmortized,
       subtotal,
       totalDirectCosts,
       indirectCosts,
       totalCost,
       currentPrice,
       netDifference,
-      marginPercentage
+      marginPercentage,
+      periodLabel: periodLabels[selectedPeriod],
+      periodMultiplier
     };
-  }, [currentCost, summaryForm, selectedProduct]);
+  }, [currentCost, summaryForm, selectedProduct, selectedPeriod]);
 
   // Group items by category
   const itemsByCategory = useMemo(() => {
@@ -277,27 +319,45 @@ export default function RentalCosting() {
             {/* Summary Card */}
             <Card className="lg:col-span-1">
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Cost Summary
-                </CardTitle>
-                <CardDescription>
-                  {selectedProduct?.name}
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Cost Summary
+                    </CardTitle>
+                    <CardDescription>
+                      {selectedProduct?.name}
+                    </CardDescription>
+                  </div>
+                </div>
+                {/* Period Selector */}
+                <div className="pt-2">
+                  <Select value={selectedPeriod} onValueChange={(v: any) => setSelectedPeriod(v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="bi-monthly">Bi-Monthly</SelectItem>
+                      <SelectItem value="bi-annually">Bi-Annually</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span>Unit Cost:</span>
-                    <span className="font-medium">${summaryForm.unit_cost.toFixed(2)}</span>
+                    <span>Unit Cost ({calculations.periodLabel}):</span>
+                    <span className="font-medium">${calculations.unitCostAmortized.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span>+ Refill Cost (Monthly):</span>
-                    <span className="font-medium">${summaryForm.refill_cost.toFixed(2)}</span>
+                    <span>+ Refill Cost ({calculations.periodLabel}):</span>
+                    <span className="font-medium">${calculations.refillForPeriod.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span>+ Battery Cost (Monthly):</span>
-                    <span className="font-medium">${calculations.batteryMonthly.toFixed(2)}</span>
+                    <span>+ Battery Cost ({calculations.periodLabel}):</span>
+                    <span className="font-medium">${calculations.batteryForPeriod.toFixed(2)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between text-sm">
@@ -328,7 +388,7 @@ export default function RentalCosting() {
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Current Price:</span>
+                    <span>{calculations.periodLabel} Price:</span>
                     <span className="font-medium">${calculations.currentPrice.toFixed(2)}</span>
                   </div>
                   <div className={`flex justify-between font-bold ${calculations.netDifference >= 0 ? 'text-green-600' : 'text-destructive'}`}>
