@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, Edit, Trash2, Calculator, DollarSign, TrendingUp, AlertCircle } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useRentalCosts, RentalCostItem, RentalProductCost, CostCategory } from "@/hooks/useRentalCosts";
+import { useRentalPaymentTerms, RentalPaymentTerm, PaymentTerm } from "@/hooks/useRentalPaymentTerms";
 import { useAuth } from "@/contexts/AuthContext";
 
 const CATEGORIES = [
@@ -23,13 +24,22 @@ const CATEGORIES = [
   { value: 'other', label: 'Other' },
 ] as const;
 
+const PAYMENT_TERM_LABELS: Record<PaymentTerm, string> = {
+  'weekly': 'Weekly',
+  'bi-weekly': 'Bi-Weekly',
+  'monthly': 'Monthly'
+};
+
 export default function RentalCosting() {
   const { products } = useProducts();
   const { rentalCosts, loading, createRentalCost, updateRentalCost, deleteRentalCost, addCostItem, updateCostItem, deleteCostItem, getRentalCostByProductId } = useRentalCosts();
+  const { getPaymentTermsForProduct } = useRentalPaymentTerms();
   const { user } = useAuth();
   
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [currentCost, setCurrentCost] = useState<RentalProductCost | null>(null);
+  const [productPaymentTerms, setProductPaymentTerms] = useState<RentalPaymentTerm[]>([]);
+  const [selectedPaymentTerm, setSelectedPaymentTerm] = useState<PaymentTerm | "">("");
   
   // Dialog states
   const [isSetupDialogOpen, setIsSetupDialogOpen] = useState(false);
@@ -96,7 +106,7 @@ export default function RentalCosting() {
     [products, selectedProductId]
   );
 
-  // Load cost when product is selected
+  // Load cost and payment terms when product is selected
   useEffect(() => {
     const loadCost = async () => {
       if (selectedProductId) {
@@ -113,12 +123,30 @@ export default function RentalCosting() {
             prepared_by: cost.prepared_by || ""
           });
         }
+        
+        // Load payment terms for this product
+        const terms = await getPaymentTermsForProduct(selectedProductId);
+        setProductPaymentTerms(terms);
+        // Default to first available payment term, or clear if none
+        if (terms.length > 0) {
+          setSelectedPaymentTerm(terms[0].payment_term);
+        } else {
+          setSelectedPaymentTerm("");
+        }
       } else {
         setCurrentCost(null);
+        setProductPaymentTerms([]);
+        setSelectedPaymentTerm("");
       }
     };
     loadCost();
   }, [selectedProductId, rentalCosts]);
+
+  // Get the current selected payment term data
+  const currentPaymentTermData = useMemo(() => {
+    if (!selectedPaymentTerm || productPaymentTerms.length === 0) return null;
+    return productPaymentTerms.find(t => t.payment_term === selectedPaymentTerm) || null;
+  }, [selectedPaymentTerm, productPaymentTerms]);
 
   // Calculate totals with period support
   // IMPORTANT (per costing PDF): the summary sheet totals are YEARLY, but many line items are entered as monthly-equivalent figures.
@@ -156,9 +184,19 @@ export default function RentalCosting() {
     const indirectCosts = indirectCostsYearly * scaleFactor;
     const totalCost = totalCostYearly * scaleFactor;
 
-    // Price: rental_price is monthly
-    const monthlyRentalPrice = selectedProduct?.rental_price || selectedProduct?.price || 0;
-    const currentPrice = monthlyRentalPrice * periodMultiplier;
+    // Price: Use payment term price if available, otherwise fall back to product rental_price
+    let currentPrice: number;
+    if (currentPaymentTermData) {
+      // Payment term prices are stored in their native period (weekly, bi-weekly, monthly)
+      // Convert to selected display period
+      const termMultiplier = selectedPaymentTerm === 'weekly' ? 52 : selectedPaymentTerm === 'bi-weekly' ? 26 : 12;
+      const yearlyFromTerm = currentPaymentTermData.rental_price * termMultiplier;
+      currentPrice = yearlyFromTerm * scaleFactor;
+    } else {
+      // Fallback: rental_price is monthly
+      const monthlyRentalPrice = selectedProduct?.rental_price || selectedProduct?.price || 0;
+      currentPrice = monthlyRentalPrice * periodMultiplier;
+    }
 
     const netDifference = currentPrice - totalCost;
     const marginPercentage = currentPrice > 0 ? ((netDifference / currentPrice) * 100) : 0;
@@ -178,7 +216,7 @@ export default function RentalCosting() {
       periodLabel: periodLabels[selectedPeriod],
       periodMultiplier,
     };
-  }, [currentCost, summaryForm, selectedProduct, selectedPeriod]);
+  }, [currentCost, summaryForm, selectedProduct, selectedPeriod, currentPaymentTermData, selectedPaymentTerm]);
 
   // Group items by category
   const itemsByCategory = useMemo(() => {
@@ -297,6 +335,7 @@ export default function RentalCosting() {
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
+              <Label className="text-sm text-muted-foreground mb-2 block">Product</Label>
               <Select value={selectedProductId} onValueChange={setSelectedProductId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a rental product..." />
@@ -310,11 +349,34 @@ export default function RentalCosting() {
                 </SelectContent>
               </Select>
             </div>
+            {/* Payment Term Dropdown - only show if product has multiple payment terms */}
+            {selectedProductId && productPaymentTerms.length > 0 && (
+              <div className="w-full md:w-48">
+                <Label className="text-sm text-muted-foreground mb-2 block">Payment Term</Label>
+                <Select 
+                  value={selectedPaymentTerm} 
+                  onValueChange={(v: PaymentTerm) => setSelectedPaymentTerm(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select term..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {productPaymentTerms.map(term => (
+                      <SelectItem key={term.id} value={term.payment_term}>
+                        {PAYMENT_TERM_LABELS[term.payment_term]} - ${term.rental_price.toFixed(2)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {selectedProductId && !currentCost && (
-              <Button onClick={() => setIsSetupDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Setup Costing
-              </Button>
+              <div className="self-end">
+                <Button onClick={() => setIsSetupDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Setup Costing
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>
