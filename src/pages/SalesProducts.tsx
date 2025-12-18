@@ -150,13 +150,17 @@ export default function SalesProducts() {
     return 'Sale Only';
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (product: Product) => {
+    // Derive status from stock level
+    const derivedStatus = product.stock === 0 ? 'out_of_stock' : 
+                          (product.min_stock && product.stock <= product.min_stock) ? 'low_stock' : 'active';
+    
     const variants: Record<string, any> = {
       active: 'default',
       low_stock: 'secondary',
       out_of_stock: 'destructive',
     };
-    return <Badge variant={variants[status] || 'default'}>{status.replace('_', ' ').toUpperCase()}</Badge>;
+    return <Badge variant={variants[derivedStatus] || 'default'}>{derivedStatus.replace('_', ' ').toUpperCase()}</Badge>;
   };
 
   const calculateMarkup = (salePrice: number, costPrice: number) => {
@@ -233,7 +237,7 @@ export default function SalesProducts() {
             : calculateMarkup(product.price || 0, product.cost_price || 0)
           }
         </TableCell>
-        <TableCell>{getStatusBadge(product.status)}</TableCell>
+        <TableCell>{getStatusBadge(product)}</TableCell>
         <TableCell>
           {!isSupporting && (
             <Button
