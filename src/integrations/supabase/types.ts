@@ -1349,6 +1349,121 @@ export type Database = {
           },
         ]
       }
+      rental_cost_items: {
+        Row: {
+          annual_cost: number | null
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          monthly_cost: number | null
+          name: string
+          quantity: number | null
+          rental_cost_id: string
+          unit_cost: number | null
+          updated_at: string
+          usage_rate: string | null
+          user_id: string
+        }
+        Insert: {
+          annual_cost?: number | null
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          monthly_cost?: number | null
+          name: string
+          quantity?: number | null
+          rental_cost_id: string
+          unit_cost?: number | null
+          updated_at?: string
+          usage_rate?: string | null
+          user_id: string
+        }
+        Update: {
+          annual_cost?: number | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          monthly_cost?: number | null
+          name?: string
+          quantity?: number | null
+          rental_cost_id?: string
+          unit_cost?: number | null
+          updated_at?: string
+          usage_rate?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_cost_items_rental_cost_id_fkey"
+            columns: ["rental_cost_id"]
+            isOneToOne: false
+            referencedRelation: "rental_product_costs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rental_product_costs: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          battery_cost: number | null
+          battery_frequency_months: number | null
+          created_at: string
+          id: string
+          indirect_cost_percentage: number | null
+          notes: string | null
+          prepared_by: string | null
+          product_id: string
+          refill_cost: number | null
+          unit_cost: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          battery_cost?: number | null
+          battery_frequency_months?: number | null
+          created_at?: string
+          id?: string
+          indirect_cost_percentage?: number | null
+          notes?: string | null
+          prepared_by?: string | null
+          product_id: string
+          refill_cost?: number | null
+          unit_cost?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          battery_cost?: number | null
+          battery_frequency_months?: number | null
+          created_at?: string
+          id?: string
+          indirect_cost_percentage?: number | null
+          notes?: string | null
+          prepared_by?: string | null
+          product_id?: string
+          refill_cost?: number | null
+          unit_cost?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_product_costs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sale_items: {
         Row: {
           contract_length: string | null

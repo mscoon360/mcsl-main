@@ -40,6 +40,7 @@ import Companion from "./pages/Companion";
 import Inspections from "./pages/Inspections";
 import Fuel from "./pages/Fuel";
 import Parts from "./pages/Parts";
+import RentalCosting from "./pages/RentalCosting";
 import FinanceReports from "./pages/FinanceReports";
 import PurchaseOrders from "./pages/PurchaseOrders";
 import AssetRegistrar from "./pages/AssetRegistrar";
@@ -96,6 +97,7 @@ const App = () => (
               <Route path="purchase-orders" element={<PurchaseOrders />} />
               <Route path="finance-purchase-orders" element={<FinancePurchaseOrders />} />
               <Route path="asset-registrar" element={<AssetRegistrar />} />
+              <Route path="rental-costing" element={<RentalCosting />} />
               <Route path="admin" element={<Admin />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
