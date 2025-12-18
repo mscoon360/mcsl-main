@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +20,15 @@ import { useProducts } from "@/hooks/useProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomers } from "@/hooks/useCustomers";
 import { usePromotions } from "@/hooks/usePromotions";
+import { useRentalPaymentTerms, RentalPaymentTerm, PaymentTerm } from "@/hooks/useRentalPaymentTerms";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+
+const PAYMENT_TERM_LABELS: Record<PaymentTerm, string> = {
+  'weekly': 'Weekly',
+  'bi-weekly': 'Bi-Weekly',
+  'monthly': 'Monthly'
+};
 
 export default function Sales() {
   const { toast } = useToast();
@@ -30,6 +37,7 @@ export default function Sales() {
   const { products: supabaseProducts, updateProduct } = useProducts();
   const { customers } = useCustomers();
   const { promotions } = usePromotions();
+  const { getPaymentTermsForProduct } = useRentalPaymentTerms();
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
@@ -45,6 +53,9 @@ export default function Sales() {
   const [showInProgress, setShowInProgress] = useState(true);
   const [catalogTimePeriod, setCatalogTimePeriod] = useState<'month' | 'quarter' | 'biannual' | 'annual'>('month');
   const [selectedPromotion, setSelectedPromotion] = useState<string>("");
+  
+  // Store payment terms for each product in the sale
+  const [itemPaymentTerms, setItemPaymentTerms] = useState<Record<number, RentalPaymentTerm[]>>({});
 
   // Use products from Supabase instead of localStorage
   const products = supabaseProducts;
@@ -59,13 +70,15 @@ export default function Sales() {
     total: number;
     discount_type?: 'percentage' | 'fixed' | 'none';
     discount_value?: number;
+    payment_term?: PaymentTerm;
   }>>([{
     product: "",
     quantity: 1,
     price: 0,
     total: 0,
     discount_type: 'none',
-    discount_value: 0
+    discount_value: 0,
+    payment_term: undefined
   }]);
 
   const addSalesItem = () => {
@@ -75,7 +88,8 @@ export default function Sales() {
       price: 0,
       total: 0,
       discount_type: 'none',
-      discount_value: 0
+      discount_value: 0,
+      payment_term: undefined
     }]);
   };
 
@@ -104,6 +118,47 @@ export default function Sales() {
 
   const removeSalesItem = (index: number) => {
     setSalesItems(salesItems.filter((_, i) => i !== index));
+    // Clean up payment terms for removed item
+    setItemPaymentTerms(prev => {
+      const newTerms = { ...prev };
+      delete newTerms[index];
+      return newTerms;
+    });
+  };
+
+  // Handler to load payment terms when a rental product is selected
+  const handleProductSelect = async (index: number, productId: string) => {
+    const product = products.find(p => p.id === productId);
+    updateSalesItem(index, 'product', productId);
+    
+    if (product) {
+      updateSalesItem(index, 'price', product.is_rental ? (product.rental_price || product.price) : product.price);
+      
+      // If it's a rental product, fetch payment terms
+      if (product.is_rental || product.is_rental_only) {
+        const terms = await getPaymentTermsForProduct(productId);
+        if (terms.length > 0) {
+          setItemPaymentTerms(prev => ({ ...prev, [index]: terms }));
+          // Default to the first payment term
+          updateSalesItem(index, 'payment_term', terms[0].payment_term);
+          updateSalesItem(index, 'price', terms[0].rental_price);
+        } else {
+          setItemPaymentTerms(prev => ({ ...prev, [index]: [] }));
+        }
+      } else {
+        setItemPaymentTerms(prev => ({ ...prev, [index]: [] }));
+      }
+    }
+  };
+
+  // Handler for payment term change
+  const handlePaymentTermChange = (index: number, paymentTerm: PaymentTerm) => {
+    const terms = itemPaymentTerms[index] || [];
+    const selectedTerm = terms.find(t => t.payment_term === paymentTerm);
+    if (selectedTerm) {
+      updateSalesItem(index, 'payment_term', paymentTerm);
+      updateSalesItem(index, 'price', selectedTerm.rental_price);
+    }
   };
 
   const calculateGrandTotal = () => {
@@ -769,44 +824,68 @@ export default function Sales() {
                 )}
 
                 <div className="space-y-3">
-                  {salesItems.map((item, index) => (
-                    <Card key={index} className="p-4">
-                      <div className="grid grid-cols-6 gap-4 items-end">
-                        <div className="space-y-2">
-                          <Label>Product</Label>
-                          <Select 
-                            key={`prod-${index}-${item.product}`} 
-                            value={item.product} 
-                            onValueChange={value => {
-                              const product = availableProducts.find(p => p.id === value);
-                              updateSalesItem(index, 'product', value);
-                              if (product) {
-                                updateSalesItem(index, 'price', product.price);
-                              }
-                            }}
-                            disabled={!!selectedPromotion}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select product" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableProducts.length === 0 ? (
-                                <div className="p-2 text-center">
-                                  <p className="text-sm text-muted-foreground">No products available for sale</p>
-                                  <Link to="/products" className="text-sm text-primary hover:underline">
-                                    Add products first
-                                  </Link>
-                                </div>
-                              ) : (
-                                availableProducts.map(product => (
-                                  <SelectItem key={product.id} value={product.id}>
-                                    {product.name}
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                  {salesItems.map((item, index) => {
+                    const selectedProduct = products.find(p => p.id === item.product);
+                    const hasPaymentTerms = (itemPaymentTerms[index] || []).length > 0;
+                    const isRentalProduct = selectedProduct?.is_rental || selectedProduct?.is_rental_only;
+                    
+                    return (
+                      <Card key={index} className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-end">
+                          <div className="space-y-2 md:col-span-2">
+                            <Label>Product</Label>
+                            <Select 
+                              key={`prod-${index}-${item.product}`} 
+                              value={item.product} 
+                              onValueChange={value => handleProductSelect(index, value)}
+                              disabled={!!selectedPromotion}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select product" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableProducts.length === 0 ? (
+                                  <div className="p-2 text-center">
+                                    <p className="text-sm text-muted-foreground">No products available for sale</p>
+                                    <Link to="/products" className="text-sm text-primary hover:underline">
+                                      Add products first
+                                    </Link>
+                                  </div>
+                                ) : (
+                                  availableProducts.map(product => (
+                                    <SelectItem key={product.id} value={product.id}>
+                                      {product.name}
+                                      {(product.is_rental || product.is_rental_only) && (
+                                        <Badge variant="secondary" className="ml-2 text-xs">Rental</Badge>
+                                      )}
+                                    </SelectItem>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {/* Payment Term dropdown - only show for rental products with terms */}
+                          {isRentalProduct && hasPaymentTerms && (
+                            <div className="space-y-2">
+                              <Label>Payment Term</Label>
+                              <Select 
+                                value={item.payment_term || ''} 
+                                onValueChange={(value: PaymentTerm) => handlePaymentTermChange(index, value)}
+                                disabled={!!selectedPromotion}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select term" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {(itemPaymentTerms[index] || []).map(term => (
+                                    <SelectItem key={term.id} value={term.payment_term}>
+                                      {PAYMENT_TERM_LABELS[term.payment_term]} - ${term.rental_price.toFixed(2)}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
                         <div className="space-y-2">
                           <Label>Quantity</Label>
                           <Input 
@@ -858,7 +937,8 @@ export default function Sales() {
                         </div>
                       </div>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="flex justify-end">
