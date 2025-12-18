@@ -160,10 +160,10 @@ export default function RentalCosting() {
       0
     );
     const directExpensesYearly = items.reduce((sum, item) => {
-      const annual = Number(item.annual_cost);
-      const monthly = Number(item.monthly_cost);
+      const annual = Number(item.annual_cost ?? 0);
+      const monthly = Number(item.monthly_cost ?? 0);
       // Prefer stored annual_cost; fallback to monthly * 12
-      return sum + (Number.isFinite(annual) ? annual : (Number.isFinite(monthly) ? monthly * 12 : 0));
+      return sum + (Number.isFinite(annual) && annual !== 0 ? annual : (Number.isFinite(monthly) ? monthly * 12 : 0));
     }, 0);
 
     // Summary fields are treated as YEARLY figures (as labeled in the UI)
@@ -302,11 +302,11 @@ export default function RentalCosting() {
       category: item.category,
       name: item.name,
       description: item.description || "",
-      quantity: item.quantity,
-      unit_cost: item.unit_cost,
+      quantity: item.quantity ?? 1,
+      unit_cost: item.unit_cost ?? 0,
       usage_rate: item.usage_rate || "",
-      monthly_cost: item.monthly_cost,
-      annual_cost: item.annual_cost
+      monthly_cost: item.monthly_cost ?? 0,
+      annual_cost: item.annual_cost ?? 0
     });
     setIsItemDialogOpen(true);
   };
