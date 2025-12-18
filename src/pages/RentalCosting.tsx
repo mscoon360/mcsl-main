@@ -149,36 +149,44 @@ export default function RentalCosting() {
   }, [selectedPaymentTerm, productPaymentTerms]);
 
   // Calculate totals with period support
-  // IMPORTANT (per costing PDF): the summary sheet totals are YEARLY, but many line items are entered as monthly-equivalent figures.
-  // The yearly total in the summary is computed directly from:
-  //   unit_cost (yearly) + refill_cost (entered as "monthly" but used directly) + batteryMonthly + directExpensesMonthly, then indirect %.
   const calculations = useMemo(() => {
     if (!currentCost) return null;
 
     const periodMultiplier = periodMultipliers[selectedPeriod];
 
     const items = currentCost.items || [];
-    const directExpensesMonthly = items.reduce((sum, item) => sum + (item.monthly_cost || 0), 0);
+    const directExpensesMonthly = items.reduce(
+      (sum, item) => sum + (Number(item.monthly_cost) || 0),
+      0
+    );
+    const directExpensesYearly = items.reduce((sum, item) => {
+      const annual = Number(item.annual_cost);
+      const monthly = Number(item.monthly_cost);
+      // Prefer stored annual_cost; fallback to monthly * 12
+      return sum + (Number.isFinite(annual) ? annual : (Number.isFinite(monthly) ? monthly * 12 : 0));
+    }, 0);
 
-    // From summary fields
-    const batteryMonthly = (summaryForm.battery_cost || 0) / (summaryForm.battery_frequency_months || 12);
+    // Summary fields are treated as YEARLY figures (as labeled in the UI)
+    const unitCostYearly = Number(summaryForm.unit_cost) || 0;
+    const refillCostYearly = Number(summaryForm.refill_cost) || 0;
 
-    // Base (YEARLY) totals to match the PDF summary sheet
-    const unitCostYearly = summaryForm.unit_cost;
-    const refillUsedInSummary = summaryForm.refill_cost;
+    // Battery cost is modeled as: cost per replacement cycle * number of cycles per year
+    const batteryFrequencyMonths = Number(summaryForm.battery_frequency_months) || 12;
+    const batteryCycleCost = Number(summaryForm.battery_cost) || 0;
+    const batteryCostYearly = batteryCycleCost * (12 / batteryFrequencyMonths);
 
-    const subtotalYearly = unitCostYearly + refillUsedInSummary + batteryMonthly;
-    const totalDirectCostsYearly = subtotalYearly + directExpensesMonthly;
-    const indirectCostsYearly = totalDirectCostsYearly * (summaryForm.indirect_cost_percentage / 100);
+    const subtotalYearly = unitCostYearly + refillCostYearly + batteryCostYearly;
+    const totalDirectCostsYearly = subtotalYearly + directExpensesYearly;
+    const indirectCostsYearly = totalDirectCostsYearly * ((Number(summaryForm.indirect_cost_percentage) || 0) / 100);
     const totalCostYearly = totalDirectCostsYearly + indirectCostsYearly;
 
-    // Convert yearly total to selected period
+    // Convert yearly totals to selected period
     const scaleFactor = periodMultiplier / 12;
 
     const unitCostForPeriod = unitCostYearly * scaleFactor;
-    const refillForPeriod = refillUsedInSummary * scaleFactor;
-    const batteryForPeriod = batteryMonthly * scaleFactor;
-    const directExpensesTotal = directExpensesMonthly * scaleFactor;
+    const refillForPeriod = refillCostYearly * scaleFactor;
+    const batteryForPeriod = batteryCostYearly * scaleFactor;
+    const directExpensesTotal = directExpensesYearly * scaleFactor;
     const subtotal = subtotalYearly * scaleFactor;
     const totalDirectCosts = totalDirectCostsYearly * scaleFactor;
     const indirectCosts = indirectCostsYearly * scaleFactor;
@@ -189,7 +197,8 @@ export default function RentalCosting() {
     if (currentPaymentTermData) {
       // Payment term prices are stored in their native period (weekly, bi-monthly, monthly)
       // Convert to selected display period
-      const termMultiplier = selectedPaymentTerm === 'weekly' ? 52 : selectedPaymentTerm === 'bi-monthly' ? 24 : 12;
+      const termMultiplier =
+        selectedPaymentTerm === "weekly" ? 52 : selectedPaymentTerm === "bi-monthly" ? 24 : 12;
       const yearlyFromTerm = currentPaymentTermData.rental_price * termMultiplier;
       currentPrice = yearlyFromTerm * scaleFactor;
     } else {
@@ -199,7 +208,7 @@ export default function RentalCosting() {
     }
 
     const netDifference = currentPrice - totalCost;
-    const marginPercentage = currentPrice > 0 ? ((netDifference / currentPrice) * 100) : 0;
+    const marginPercentage = currentPrice > 0 ? (netDifference / currentPrice) * 100 : 0;
 
     return {
       directExpensesTotal,
@@ -215,8 +224,20 @@ export default function RentalCosting() {
       marginPercentage,
       periodLabel: periodLabels[selectedPeriod],
       periodMultiplier,
+      debug: {
+        directExpensesMonthly,
+        directExpensesYearly,
+        batteryCostYearly,
+      },
     };
-  }, [currentCost, summaryForm, selectedProduct, selectedPeriod, currentPaymentTermData, selectedPaymentTerm]);
+  }, [
+    currentCost,
+    summaryForm,
+    selectedProduct,
+    selectedPeriod,
+    currentPaymentTermData,
+    selectedPaymentTerm,
+  ]);
 
   // Group items by category
   const itemsByCategory = useMemo(() => {
