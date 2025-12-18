@@ -120,36 +120,44 @@ export default function RentalCosting() {
   }, [selectedProductId, rentalCosts]);
 
   // Calculate totals with period support
+  // Base costs are stored as: unit_cost = yearly, refill_cost = monthly, battery_cost = total per frequency
   const calculations = useMemo(() => {
     if (!currentCost) return null;
     
     const periodMultiplier = periodMultipliers[selectedPeriod];
     
     const items = currentCost.items || [];
+    
     // Monthly base calculations
     const directExpensesMonthly = items.reduce((sum, item) => sum + (item.monthly_cost || 0), 0);
     const batteryMonthly = (summaryForm.battery_cost || 0) / (summaryForm.battery_frequency_months || 12);
     const refillMonthly = summaryForm.refill_cost;
     
-    // Period-adjusted calculations
-    const unitCostForPeriod = summaryForm.unit_cost; // Unit cost is amortized over 12 months
-    const unitCostMonthly = summaryForm.unit_cost / 12;
-    const subtotalMonthly = unitCostMonthly + refillMonthly + batteryMonthly;
-    const totalDirectCostsMonthly = subtotalMonthly + directExpensesMonthly;
-    const indirectCostsMonthly = totalDirectCostsMonthly * (summaryForm.indirect_cost_percentage / 100);
-    const totalCostMonthly = totalDirectCostsMonthly + indirectCostsMonthly;
+    // Yearly base calculations (unit cost is entered as yearly total)
+    const unitCostYearly = summaryForm.unit_cost;
+    const refillYearly = refillMonthly * 12;
+    const batteryYearly = batteryMonthly * 12;
+    const directExpensesYearly = directExpensesMonthly * 12;
     
-    // Apply period multiplier for display
-    const directExpensesTotal = directExpensesMonthly * periodMultiplier;
-    const batteryForPeriod = batteryMonthly * periodMultiplier;
-    const refillForPeriod = refillMonthly * periodMultiplier;
-    const unitCostAmortized = unitCostMonthly * periodMultiplier;
-    const subtotal = subtotalMonthly * periodMultiplier;
-    const totalDirectCosts = totalDirectCostsMonthly * periodMultiplier;
-    const indirectCosts = indirectCostsMonthly * periodMultiplier;
-    const totalCost = totalCostMonthly * periodMultiplier;
+    // Calculate yearly totals first (as per document structure)
+    const subtotalYearly = unitCostYearly + refillYearly + batteryYearly;
+    const totalDirectCostsYearly = subtotalYearly + directExpensesYearly;
+    const indirectCostsYearly = totalDirectCostsYearly * (summaryForm.indirect_cost_percentage / 100);
+    const totalCostYearly = totalDirectCostsYearly + indirectCostsYearly;
     
-    // Current price should match the selected period
+    // Scale to selected period
+    const scaleFactor = periodMultiplier / 12; // Convert from yearly to selected period
+    
+    const unitCostForPeriod = unitCostYearly * scaleFactor;
+    const refillForPeriod = refillYearly * scaleFactor;
+    const batteryForPeriod = batteryYearly * scaleFactor;
+    const directExpensesTotal = directExpensesYearly * scaleFactor;
+    const subtotal = subtotalYearly * scaleFactor;
+    const totalDirectCosts = totalDirectCostsYearly * scaleFactor;
+    const indirectCosts = indirectCostsYearly * scaleFactor;
+    const totalCost = totalCostYearly * scaleFactor;
+    
+    // Price should match the selected period (rental_price is monthly)
     const monthlyRentalPrice = selectedProduct?.rental_price || selectedProduct?.price || 0;
     const currentPrice = monthlyRentalPrice * periodMultiplier;
     const netDifference = currentPrice - totalCost;
@@ -159,7 +167,7 @@ export default function RentalCosting() {
       directExpensesTotal,
       batteryForPeriod,
       refillForPeriod,
-      unitCostAmortized,
+      unitCostForPeriod,
       subtotal,
       totalDirectCosts,
       indirectCosts,
@@ -349,7 +357,7 @@ export default function RentalCosting() {
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span>Unit Cost ({calculations.periodLabel}):</span>
-                    <span className="font-medium">${calculations.unitCostAmortized.toFixed(2)}</span>
+                    <span className="font-medium">${calculations.unitCostForPeriod.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>+ Refill Cost ({calculations.periodLabel}):</span>
