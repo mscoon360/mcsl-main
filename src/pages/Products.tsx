@@ -63,6 +63,17 @@ export default function Products() {
   const [editSelectedSupplierId, setEditSelectedSupplierId] = useState<string>('');
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   const [initialCategoriesSet, setInitialCategoriesSet] = useState(false);
+  const [sellingUnitType, setSellingUnitType] = useState<string>('');
+  const [sellingUnitQty, setSellingUnitQty] = useState<number>(0);
+
+  const SELLING_UNIT_TYPES = [
+    { value: 'each', label: 'Each (Individual)' },
+    { value: 'case', label: 'Case' },
+    { value: 'box', label: 'Box' },
+    { value: 'pack', label: 'Pack' },
+    { value: 'roll', label: 'Roll' },
+    { value: 'dozen', label: 'Dozen' },
+  ];
 
   // Initialize all categories as collapsed by default
   useEffect(() => {
@@ -338,6 +349,9 @@ export default function Products() {
       cost_price,
       needs_servicing: (productType !== 'sale_only') && needsServicing,
       container_size: containerSize,
+      selling_unit_type: sellingUnitType || null,
+      selling_unit_qty: sellingUnitType && sellingUnitType !== 'each' ? sellingUnitQty : null,
+      price_per_unit: sellingUnitType && sellingUnitQty > 0 && price > 0 ? price / sellingUnitQty : null,
     };
 
     try {
@@ -360,6 +374,8 @@ export default function Products() {
       setAssignToProductIds([]);
       setSelectedSupplierId('');
       setIsIgieneProduct(false);
+      setSellingUnitType('');
+      setSellingUnitQty(0);
       
       toast({
         title: 'Product created',
@@ -1190,6 +1206,54 @@ export default function Products() {
                     onChange={(e) => setRawCostPrice(parseFloat(e.target.value) || 0)}
                   />
                 </div>
+              </div>
+
+              {/* Selling Quantity Section */}
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+                <Label className="font-medium">Selling Quantity</Label>
+                <p className="text-sm text-muted-foreground">
+                  Configure how this product is sold (e.g., sold by case, sold by box)
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="selling_unit_type">Selling Unit Type</Label>
+                    <Select value={sellingUnitType} onValueChange={setSellingUnitType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select unit type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SELLING_UNIT_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {sellingUnitType && sellingUnitType !== 'each' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="selling_unit_qty">Units per {sellingUnitType}</Label>
+                      <Input
+                        id="selling_unit_qty"
+                        type="number"
+                        min="1"
+                        value={sellingUnitQty || ''}
+                        onChange={(e) => setSellingUnitQty(parseInt(e.target.value) || 0)}
+                        placeholder={`How many units per ${sellingUnitType}?`}
+                      />
+                    </div>
+                  )}
+                </div>
+                {sellingUnitType && sellingUnitType !== 'each' && sellingUnitQty > 0 && repackagedStock > 0 && (
+                  <div className="p-3 bg-primary/10 rounded-md border border-primary/20 space-y-1">
+                    <p className="text-sm font-medium">
+                      Price per unit: <span className="text-primary">${(calculatedCostPerUnit || 0).toFixed(2)}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Sales will set the final selling price per {sellingUnitType}
+                    </p>
+                  </div>
+                )}
               </div>
                 </>
               )}

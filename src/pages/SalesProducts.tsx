@@ -169,6 +169,17 @@ export default function SalesProducts() {
     return `${markup.toFixed(0)}%`;
   };
 
+  const formatSellingQty = (product: Product) => {
+    if (!product.selling_unit_type) return '-';
+    if (product.selling_unit_type === 'each') return 'Each';
+    if (product.selling_unit_qty) {
+      const unitLabel = product.selling_unit_type.charAt(0).toUpperCase() + product.selling_unit_type.slice(1);
+      const priceDisplay = product.price > 0 ? ` @ $${product.price.toFixed(2)}` : '';
+      return `1 ${unitLabel} (${product.selling_unit_qty} units)${priceDisplay}`;
+    }
+    return `Sold by ${product.selling_unit_type}`;
+  };
+
   // Filter products by search
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -218,6 +229,9 @@ export default function SalesProducts() {
             <Badge variant="outline">{getProductType(product)}</Badge>
           )}
         </TableCell>
+        <TableCell className="text-sm text-muted-foreground">
+          {formatSellingQty(product)}
+        </TableCell>
         <TableCell className="text-right">{product.stock}</TableCell>
         <TableCell className="text-right font-mono text-muted-foreground">
           ${(product.cost_price || 0).toFixed(2)}
@@ -263,6 +277,7 @@ export default function SalesProducts() {
             <TableHead>SKU</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Type</TableHead>
+            <TableHead>Selling Qty</TableHead>
             <TableHead className="text-right">Stock</TableHead>
             <TableHead className="text-right">Cost Price</TableHead>
             <TableHead className="text-right">Sale Price</TableHead>

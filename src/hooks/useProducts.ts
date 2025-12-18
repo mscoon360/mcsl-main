@@ -23,6 +23,9 @@ export interface Product {
   cost_price?: number;
   needs_servicing?: boolean;
   container_size?: string;
+  selling_unit_qty?: number;
+  selling_unit_type?: string;
+  price_per_unit?: number;
 }
 
 export const useProducts = () => {
