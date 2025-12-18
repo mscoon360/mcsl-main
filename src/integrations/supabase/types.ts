@@ -1405,6 +1405,71 @@ export type Database = {
           },
         ]
       }
+      rental_payment_terms: {
+        Row: {
+          battery_cost: number | null
+          battery_frequency_months: number | null
+          created_at: string
+          id: string
+          indirect_cost_percentage: number | null
+          margin_percentage: number | null
+          notes: string | null
+          payment_term: string
+          product_id: string
+          refill_cost: number | null
+          rental_price: number
+          total_cost: number | null
+          total_direct_costs: number | null
+          unit_cost: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          battery_cost?: number | null
+          battery_frequency_months?: number | null
+          created_at?: string
+          id?: string
+          indirect_cost_percentage?: number | null
+          margin_percentage?: number | null
+          notes?: string | null
+          payment_term: string
+          product_id: string
+          refill_cost?: number | null
+          rental_price: number
+          total_cost?: number | null
+          total_direct_costs?: number | null
+          unit_cost?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          battery_cost?: number | null
+          battery_frequency_months?: number | null
+          created_at?: string
+          id?: string
+          indirect_cost_percentage?: number | null
+          margin_percentage?: number | null
+          notes?: string | null
+          payment_term?: string
+          product_id?: string
+          refill_cost?: number | null
+          rental_price?: number
+          total_cost?: number | null
+          total_direct_costs?: number | null
+          unit_cost?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_payment_terms_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rental_product_costs: {
         Row: {
           approved_at: string | null
