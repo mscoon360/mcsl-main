@@ -120,46 +120,45 @@ export default function RentalCosting() {
   }, [selectedProductId, rentalCosts]);
 
   // Calculate totals with period support
-  // Base costs are stored as: unit_cost = yearly, refill_cost = monthly, battery_cost = total per frequency
+  // IMPORTANT (per costing PDF): the summary sheet totals are YEARLY, but many line items are entered as monthly-equivalent figures.
+  // The yearly total in the summary is computed directly from:
+  //   unit_cost (yearly) + refill_cost (entered as "monthly" but used directly) + batteryMonthly + directExpensesMonthly, then indirect %.
   const calculations = useMemo(() => {
     if (!currentCost) return null;
-    
+
     const periodMultiplier = periodMultipliers[selectedPeriod];
-    
+
     const items = currentCost.items || [];
-    
-    // Monthly base calculations
     const directExpensesMonthly = items.reduce((sum, item) => sum + (item.monthly_cost || 0), 0);
+
+    // From summary fields
     const batteryMonthly = (summaryForm.battery_cost || 0) / (summaryForm.battery_frequency_months || 12);
-    const refillMonthly = summaryForm.refill_cost;
-    
-    // Yearly base calculations (unit cost is entered as yearly total)
+
+    // Base (YEARLY) totals to match the PDF summary sheet
     const unitCostYearly = summaryForm.unit_cost;
-    const refillYearly = refillMonthly * 12;
-    const batteryYearly = batteryMonthly * 12;
-    const directExpensesYearly = directExpensesMonthly * 12;
-    
-    // Calculate yearly totals first (as per document structure)
-    const subtotalYearly = unitCostYearly + refillYearly + batteryYearly;
-    const totalDirectCostsYearly = subtotalYearly + directExpensesYearly;
+    const refillUsedInSummary = summaryForm.refill_cost;
+
+    const subtotalYearly = unitCostYearly + refillUsedInSummary + batteryMonthly;
+    const totalDirectCostsYearly = subtotalYearly + directExpensesMonthly;
     const indirectCostsYearly = totalDirectCostsYearly * (summaryForm.indirect_cost_percentage / 100);
     const totalCostYearly = totalDirectCostsYearly + indirectCostsYearly;
-    
-    // Scale to selected period
-    const scaleFactor = periodMultiplier / 12; // Convert from yearly to selected period
-    
+
+    // Convert yearly total to selected period
+    const scaleFactor = periodMultiplier / 12;
+
     const unitCostForPeriod = unitCostYearly * scaleFactor;
-    const refillForPeriod = refillYearly * scaleFactor;
-    const batteryForPeriod = batteryYearly * scaleFactor;
-    const directExpensesTotal = directExpensesYearly * scaleFactor;
+    const refillForPeriod = refillUsedInSummary * scaleFactor;
+    const batteryForPeriod = batteryMonthly * scaleFactor;
+    const directExpensesTotal = directExpensesMonthly * scaleFactor;
     const subtotal = subtotalYearly * scaleFactor;
     const totalDirectCosts = totalDirectCostsYearly * scaleFactor;
     const indirectCosts = indirectCostsYearly * scaleFactor;
     const totalCost = totalCostYearly * scaleFactor;
-    
-    // Price should match the selected period (rental_price is monthly)
+
+    // Price: rental_price is monthly
     const monthlyRentalPrice = selectedProduct?.rental_price || selectedProduct?.price || 0;
     const currentPrice = monthlyRentalPrice * periodMultiplier;
+
     const netDifference = currentPrice - totalCost;
     const marginPercentage = currentPrice > 0 ? ((netDifference / currentPrice) * 100) : 0;
 
@@ -176,7 +175,7 @@ export default function RentalCosting() {
       netDifference,
       marginPercentage,
       periodLabel: periodLabels[selectedPeriod],
-      periodMultiplier
+      periodMultiplier,
     };
   }, [currentCost, summaryForm, selectedProduct, selectedPeriod]);
 
