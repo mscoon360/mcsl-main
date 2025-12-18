@@ -33,6 +33,7 @@ import {
   Microscope,
   Megaphone,
   ClipboardList,
+  Calculator,
 } from "lucide-react";
 import magicCareLogo from "@/assets/magic-care-logo.png";
 import {
@@ -112,6 +113,7 @@ const navigation: NavigationSection[] = [
         ]
       },
       { name: "Product/Service Costing", href: "/sales-products", icon: Package },
+      { name: "Rental Costing", href: "/rental-costing", icon: Calculator },
       { name: "Chart of Accounts", href: "/chart-of-accounts", icon: BookOpen },
       { name: "Trial Balance", href: "/trial-balance", icon: Scale },
       { name: "Reports", href: "/finance-reports", icon: FileText },
