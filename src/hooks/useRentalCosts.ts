@@ -12,11 +12,11 @@ export interface RentalCostItem {
   
   name: string;
   description: string | null;
-  quantity: number;
-  unit_cost: number;
+  quantity: number | null;
+  unit_cost: number | null;
   usage_rate: string | null;
-  monthly_cost: number;
-  annual_cost: number;
+  monthly_cost: number | null;
+  annual_cost: number | null;
   user_id: string;
   created_at: string;
   updated_at: string;
