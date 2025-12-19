@@ -1405,6 +1405,59 @@ export type Database = {
           },
         ]
       }
+      rental_expense_line_items: {
+        Row: {
+          annual_cost: number | null
+          created_at: string
+          description: string | null
+          expense_id: string
+          id: string
+          monthly_cost: number | null
+          name: string
+          quantity: number | null
+          unit_cost: number | null
+          updated_at: string
+          usage_rate: string | null
+          user_id: string
+        }
+        Insert: {
+          annual_cost?: number | null
+          created_at?: string
+          description?: string | null
+          expense_id: string
+          id?: string
+          monthly_cost?: number | null
+          name: string
+          quantity?: number | null
+          unit_cost?: number | null
+          updated_at?: string
+          usage_rate?: string | null
+          user_id: string
+        }
+        Update: {
+          annual_cost?: number | null
+          created_at?: string
+          description?: string | null
+          expense_id?: string
+          id?: string
+          monthly_cost?: number | null
+          name?: string
+          quantity?: number | null
+          unit_cost?: number | null
+          updated_at?: string
+          usage_rate?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_expense_line_items_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "rental_payment_term_expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rental_payment_term_expenses: {
         Row: {
           amount: number
