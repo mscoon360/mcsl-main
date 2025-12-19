@@ -1405,6 +1405,53 @@ export type Database = {
           },
         ]
       }
+      rental_payment_term_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          payment_term: string
+          product_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          category: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          payment_term: string
+          product_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          payment_term?: string
+          product_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_payment_term_expenses_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rental_payment_terms: {
         Row: {
           battery_cost: number | null
