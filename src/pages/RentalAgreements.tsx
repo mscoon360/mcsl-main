@@ -23,6 +23,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useItemDependencies } from "@/hooks/useItemDependencies";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RenewalListSection } from "@/components/contracts/RenewalListSection";
 
 interface RentalAgreement {
   id: string;
@@ -862,6 +863,9 @@ export default function RentalAgreements() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Renewal List Section */}
+      <RenewalListSection />
 
       {/* Rental Agreements Table */}
       <Card className="dashboard-card">
