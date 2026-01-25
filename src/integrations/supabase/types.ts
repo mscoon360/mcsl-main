@@ -1349,6 +1349,63 @@ export type Database = {
           },
         ]
       }
+      renewal_contracts: {
+        Row: {
+          billed: boolean | null
+          client: string
+          contact_number: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          created_at: string
+          email: string | null
+          id: string
+          notes: string | null
+          renewal_status: string | null
+          type_of_billing: string | null
+          type_of_service: string | null
+          updated_at: string
+          user_id: string
+          value_of_contract_vat: number | null
+          zone: string | null
+        }
+        Insert: {
+          billed?: boolean | null
+          client: string
+          contact_number?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          renewal_status?: string | null
+          type_of_billing?: string | null
+          type_of_service?: string | null
+          updated_at?: string
+          user_id: string
+          value_of_contract_vat?: number | null
+          zone?: string | null
+        }
+        Update: {
+          billed?: boolean | null
+          client?: string
+          contact_number?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          renewal_status?: string | null
+          type_of_billing?: string | null
+          type_of_service?: string | null
+          updated_at?: string
+          user_id?: string
+          value_of_contract_vat?: number | null
+          zone?: string | null
+        }
+        Relationships: []
+      }
       rental_cost_items: {
         Row: {
           annual_cost: number | null
