@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useSales } from './useSales';
+import { useCustomers } from './useCustomers';
 import { differenceInDays, differenceInMonths } from 'date-fns';
 
 export interface RenewalContract {
@@ -17,16 +18,40 @@ export interface RenewalContract {
   daysSinceExpiry: number;
   saleId: string;
   renewalStatus: 'pending' | 'approved' | 'declined' | null;
+  zone: string | null;
+  phone: string | null;
+  email: string | null;
 }
 
 export function useRenewalList() {
   const { sales } = useSales();
+  const { customers } = useCustomers();
+
+  // Create a lookup map for customers by company name
+  const customerLookup = useMemo(() => {
+    const lookup = new Map<string, { zone: string | null; phone: string | null; email: string | null }>();
+    customers.forEach(customer => {
+      const key = customer.company?.toLowerCase() || customer.name?.toLowerCase() || '';
+      if (key) {
+        lookup.set(key, {
+          zone: customer.zone || null,
+          phone: customer.phone || null,
+          email: customer.email || null
+        });
+      }
+    });
+    return lookup;
+  }, [customers]);
 
   const renewalList = useMemo(() => {
     const now = new Date();
     const contracts: RenewalContract[] = [];
 
     sales.forEach(sale => {
+      // Look up customer info
+      const customerKey = sale.customer_name?.toLowerCase() || '';
+      const customerInfo = customerLookup.get(customerKey) || { zone: null, phone: null, email: null };
+
       sale.items
         .filter(item => item.is_rental && item.start_date && item.end_date)
         .forEach(item => {
@@ -57,7 +82,10 @@ export function useRenewalList() {
               daysUntilExpiry: isExpiringSoon ? daysUntilExpiry : 0,
               daysSinceExpiry: isRecentlyExpired ? daysSinceExpiry : 0,
               saleId: sale.id,
-              renewalStatus: null // Can be extended to track renewal status
+              renewalStatus: null,
+              zone: customerInfo.zone,
+              phone: customerInfo.phone,
+              email: customerInfo.email
             });
           }
         });
@@ -75,7 +103,7 @@ export function useRenewalList() {
       }
       return a.daysUntilExpiry - b.daysUntilExpiry; // Fewer days until expiry = more urgent
     });
-  }, [sales]);
+  }, [sales, customerLookup]);
 
   const stats = useMemo(() => ({
     total: renewalList.length,

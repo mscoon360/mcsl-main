@@ -101,38 +101,62 @@ export function RenewalListSection() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Client</TableHead>
+                <TableHead>Contract Start</TableHead>
+                <TableHead>Contract End</TableHead>
+                <TableHead>Value of Contract (VAT)</TableHead>
+                <TableHead>Type of Billing</TableHead>
+                <TableHead>Type of Service</TableHead>
+                <TableHead>Zone</TableHead>
+                <TableHead>Contact</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>Contract Length</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>End Date</TableHead>
-                <TableHead>Monthly Amount</TableHead>
-                <TableHead>Total Value</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {renewalList.map((contract) => (
                 <TableRow key={contract.id} className={getUrgencyColor(contract.status, contract.daysUntilExpiry)}>
+                  <TableCell className="font-medium">{contract.customer}</TableCell>
+                  <TableCell>{format(contract.startDate, 'dd/MM/yyyy')}</TableCell>
+                  <TableCell>{format(contract.endDate, 'dd/MM/yyyy')}</TableCell>
+                  <TableCell>${contract.totalValue.toFixed(2)}</TableCell>
+                  <TableCell className="capitalize">{contract.paymentPeriod}</TableCell>
+                  <TableCell>{contract.product}</TableCell>
+                  <TableCell>{contract.zone || '-'}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-0.5 text-xs">
+                      {contract.phone && (
+                        <span className="flex items-center gap-1">
+                          <Phone className="h-3 w-3" /> {contract.phone}
+                        </span>
+                      )}
+                      {contract.email && (
+                        <span className="flex items-center gap-1 text-muted-foreground truncate max-w-[150px]">
+                          <Mail className="h-3 w-3" /> {contract.email}
+                        </span>
+                      )}
+                      {!contract.phone && !contract.email && '-'}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {getStatusBadge(contract.status, contract.daysUntilExpiry, contract.daysSinceExpiry)}
                   </TableCell>
-                  <TableCell className="font-medium">{contract.customer}</TableCell>
-                  <TableCell>{contract.product}</TableCell>
-                  <TableCell>{contract.contractLength}</TableCell>
-                  <TableCell>{format(contract.startDate, 'MMM dd, yyyy')}</TableCell>
-                  <TableCell>{format(contract.endDate, 'MMM dd, yyyy')}</TableCell>
-                  <TableCell>${contract.monthlyAmount.toFixed(2)}</TableCell>
-                  <TableCell>${contract.totalValue.toFixed(2)}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" title="Call customer">
-                        <Phone className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" title="Email customer">
-                        <Mail className="h-4 w-4" />
-                      </Button>
+                      {contract.phone && (
+                        <Button variant="ghost" size="sm" title="Call customer" asChild>
+                          <a href={`tel:${contract.phone}`}>
+                            <Phone className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
+                      {contract.email && (
+                        <Button variant="ghost" size="sm" title="Email customer" asChild>
+                          <a href={`mailto:${contract.email}?subject=Contract Renewal - ${contract.product}`}>
+                            <Mail className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
