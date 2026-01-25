@@ -60,7 +60,28 @@ const getUrgencyColor = (status: string, daysUntilExpiry: number) => {
   return '';
 };
 
+const getPaymentDue = (yearlyValue: number, billingType: string | null): { amount: number; label: string } => {
+  const type = billingType?.toLowerCase() || '';
+  
+  if (type.includes('quarterly')) {
+    return { amount: yearlyValue / 4, label: '/quarter' };
+  }
+  if (type.includes('monthly')) {
+    return { amount: yearlyValue / 12, label: '/month' };
+  }
+  if (type.includes('bi-monthly')) {
+    return { amount: yearlyValue / 6, label: '/bi-month' };
+  }
+  if (type.includes('weekly')) {
+    return { amount: yearlyValue / 52, label: '/week' };
+  }
+  // Yearly or unknown - show yearly
+  return { amount: yearlyValue, label: '/yr' };
+};
+
 export function RenewalContractRow({ contract, onDelete }: RenewalContractRowProps) {
+  const paymentDue = getPaymentDue(contract.value_of_contract_vat || 0, contract.type_of_billing);
+  
   return (
     <TableRow className={getUrgencyColor(contract.status, contract.daysUntilExpiry)}>
       <TableCell className="font-medium">{contract.client}</TableCell>
@@ -74,8 +95,9 @@ export function RenewalContractRow({ contract, onDelete }: RenewalContractRowPro
           ? format(new Date(contract.contract_end_date), 'dd/MM/yyyy')
           : '-'}
       </TableCell>
-      <TableCell>${(contract.value_of_contract_vat || 0).toFixed(2)}/yr</TableCell>
+      <TableCell>${(contract.value_of_contract_vat || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/yr</TableCell>
       <TableCell className="capitalize">{contract.type_of_billing || '-'}</TableCell>
+      <TableCell className="font-medium text-primary">${paymentDue.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{paymentDue.label}</TableCell>
       <TableCell>{contract.type_of_service || '-'}</TableCell>
       <TableCell>
         <div className="flex flex-col gap-0.5 text-xs">
