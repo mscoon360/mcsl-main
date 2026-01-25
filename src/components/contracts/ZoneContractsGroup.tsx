@@ -60,14 +60,15 @@ export function ZoneContractsGroup({ zone, contracts, onDelete, defaultOpen = fa
         <div className="px-4 pb-4">
           <div className="overflow-x-auto border rounded-lg">
             <Table>
-              <TableHeader>
+<TableHeader>
                 <TableRow>
                   <TableHead>Client</TableHead>
                   <TableHead>Contract Start</TableHead>
                   <TableHead>Contract End</TableHead>
                   <TableHead>Yearly Value</TableHead>
-                  <TableHead>Type of Billing</TableHead>
-                  <TableHead>Type of Service</TableHead>
+                  <TableHead>Billing Type</TableHead>
+                  <TableHead>Payment Due</TableHead>
+                  <TableHead>Service Type</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
