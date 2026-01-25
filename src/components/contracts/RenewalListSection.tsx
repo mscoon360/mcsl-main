@@ -1,17 +1,20 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Upload } from "lucide-react";
+import { RefreshCw, Upload, Users, Loader2 } from "lucide-react";
 import { useRenewalContracts } from "@/hooks/useRenewalContracts";
 import { ImportRenewalListDialog } from "./ImportRenewalListDialog";
 import { ZoneContractsGroup } from "./ZoneContractsGroup";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function RenewalListSection() {
   const { contracts, stats, refetch, loading } = useRenewalContracts();
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [syncingCustomers, setSyncingCustomers] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Group contracts by zone
   const contractsByZone = useMemo(() => {
@@ -53,6 +56,88 @@ export function RenewalListSection() {
         description: "Contract removed from renewal list",
       });
       refetch();
+    }
+  };
+
+  const syncCustomersFromContracts = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to sync customers",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSyncingCustomers(true);
+    let added = 0;
+    let skipped = 0;
+
+    try {
+      // Get existing customers to check for duplicates by company name
+      const { data: existingCustomers, error: fetchError } = await supabase
+        .from('customers')
+        .select('company');
+
+      if (fetchError) throw fetchError;
+
+      const existingCompanies = new Set(
+        (existingCustomers || [])
+          .map(c => c.company?.toLowerCase().trim())
+          .filter(Boolean)
+      );
+
+      // Get unique clients from contracts
+      const uniqueClients = new Map<string, typeof contracts[0]>();
+      contracts.forEach(contract => {
+        const clientKey = contract.client.toLowerCase().trim();
+        if (!uniqueClients.has(clientKey)) {
+          uniqueClients.set(clientKey, contract);
+        }
+      });
+
+      // Insert new customers
+      for (const [clientKey, contract] of uniqueClients) {
+        if (existingCompanies.has(clientKey)) {
+          skipped++;
+          continue;
+        }
+
+        const { error: insertError } = await supabase
+          .from('customers')
+          .insert({
+            user_id: user.id,
+            company: contract.client,
+            name: null, // Representative name - to be added later
+            phone: contract.contact_number || null,
+            email: contract.email || null,
+            zone: contract.zone || null,
+            status: 'active',
+            vatable: true, // Default to vatable
+            total_contract_value: contract.value_of_contract_vat || 0,
+          });
+
+        if (insertError) {
+          console.error('Error inserting customer:', contract.client, insertError);
+        } else {
+          added++;
+          existingCompanies.add(clientKey); // Prevent duplicates within same batch
+        }
+      }
+
+      toast({
+        title: "Customers Synced",
+        description: `Added ${added} new customers. ${skipped} already existed.`,
+      });
+    } catch (error) {
+      console.error('Error syncing customers:', error);
+      toast({
+        title: "Error",
+        description: "Failed to sync customers from contracts",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncingCustomers(false);
     }
   };
 
@@ -127,6 +212,18 @@ export function RenewalListSection() {
                   <div className="text-xl font-bold text-card-foreground">${stats.totalValue.toFixed(2)}</div>
                 </div>
               </div>
+              <Button 
+                onClick={syncCustomersFromContracts} 
+                variant="outline"
+                disabled={syncingCustomers}
+              >
+                {syncingCustomers ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Users className="h-4 w-4 mr-2" />
+                )}
+                Sync Customers
+              </Button>
               <Button onClick={() => setImportDialogOpen(true)} variant="outline">
                 <Upload className="h-4 w-4 mr-2" />
                 Import
