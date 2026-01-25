@@ -131,10 +131,11 @@ export default function RentalAgreements() {
       .map(item => {
         const startDate = new Date(item.start_date!);
         const endDate = new Date(item.end_date!);
-        const monthsInContract = differenceInMonths(endDate, startDate) || 1;
-        const monthlyAmount = item.price * item.quantity;
-        // Total Value = Monthly Amount × months in contract (start to end)
-        const totalValue = monthlyAmount * monthsInContract;
+        
+        // IMPORTANT: item.price is the YEARLY contract value, not monthly!
+        const yearlyValue = item.price * item.quantity;
+        const monthlyAmount = yearlyValue / 12; // Monthly display amount
+        const totalValue = yearlyValue; // Total Value = Yearly Value
         
         return {
           id: `${sale.id}-${item.product_name}`,
@@ -761,38 +762,19 @@ export default function RentalAgreements() {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground">Total Monthly Amount:</span>
-                      <div className="font-bold">${rentalItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}/month</div>
+                      <div className="font-bold">${(rentalItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) / 12).toFixed(2)}/month</div>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Total Contract Value:</span>
-                      <div className="font-bold text-success">
-                        ${(() => {
-                          if (startDate && contractLength) {
-                            const endDate = calculateEndDate(startDate, contractLength);
-                            if (endDate) {
-                              const months = differenceInMonths(endDate, startDate);
-                              return rentalItems.reduce((sum, item) => sum + (item.price * item.quantity * months), 0).toFixed(2);
-                            }
-                          }
-                          return '0.00';
-                        })()}
-                      </div>
+                      <span className="text-muted-foreground">Total Yearly Value:</span>
+                      <div className="font-bold text-success">${rentalItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}/yr</div>
                     </div>
                     <div className="col-span-2">
                       <span className="text-muted-foreground">Payment Due ({paymentPeriod}):</span>
                       <div className="font-bold">
                         ${(() => {
-                          if (startDate && contractLength) {
-                            const endDate = calculateEndDate(startDate, contractLength);
-                            if (endDate) {
-                              // Total yearly value ÷ periods per year
-                              const yearlyValue = rentalItems.reduce((sum, item) => 
-                                sum + (item.price * item.quantity * 12), 0
-                              );
-                              return (yearlyValue / periodsPerYear(paymentPeriod)).toFixed(2);
-                            }
-                          }
-                          return '0.00';
+                          // item.price is already the yearly rental price
+                          const yearlyValue = rentalItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                          return (yearlyValue / periodsPerYear(paymentPeriod)).toFixed(2);
                         })()}/{periodShortLabel(paymentPeriod)}
                       </div>
                     </div>
@@ -860,7 +842,7 @@ export default function RentalAgreements() {
         <Card className="dashboard-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-card-foreground">
-              Total Active Contract Value
+              Total Active Yearly Value
             </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -869,7 +851,7 @@ export default function RentalAgreements() {
               ${totalContractValue.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Active contracts combined
+              Combined yearly value of active contracts
             </p>
           </CardContent>
         </Card>
@@ -923,7 +905,7 @@ export default function RentalAgreements() {
                       <TableHead>Start Date</TableHead>
                       <TableHead>End Date</TableHead>
                       <TableHead>Monthly Amount</TableHead>
-                      <TableHead>Total Value</TableHead>
+                      <TableHead>Total Value (Yearly)</TableHead>
                       <TableHead>Payment Due</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
