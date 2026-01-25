@@ -131,9 +131,10 @@ export default function RentalAgreements() {
       .map(item => {
         const startDate = new Date(item.start_date!);
         const endDate = new Date(item.end_date!);
+        const monthsInContract = differenceInMonths(endDate, startDate) || 1;
         const monthlyAmount = item.price * item.quantity;
-        // Total Value = Monthly Amount × 12 (yearly)
-        const totalValue = monthlyAmount * 12;
+        // Total Value = Monthly Amount × months in contract (start to end)
+        const totalValue = monthlyAmount * monthsInContract;
         
         return {
           id: `${sale.id}-${item.product_name}`,
