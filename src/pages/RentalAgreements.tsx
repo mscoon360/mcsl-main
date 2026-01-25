@@ -131,7 +131,9 @@ export default function RentalAgreements() {
       .map(item => {
         const startDate = new Date(item.start_date!);
         const endDate = new Date(item.end_date!);
-        const monthsInContract = differenceInMonths(endDate, startDate);
+        const monthlyAmount = item.price * item.quantity;
+        // Total Value = Monthly Amount × 12 (yearly)
+        const totalValue = monthlyAmount * 12;
         
         return {
           id: `${sale.id}-${item.product_name}`,
@@ -141,8 +143,8 @@ export default function RentalAgreements() {
           paymentPeriod: item.payment_period || 'monthly',
           startDate,
           endDate,
-           monthlyAmount: item.price * item.quantity,
-           totalValue: item.price * monthsInContract * item.quantity,
+          monthlyAmount,
+          totalValue,
           status: endDate > new Date() ? 'active' : 'expired' as 'active' | 'expired',
           saleId: sale.id,
           saleDate: sale.date
@@ -169,21 +171,27 @@ export default function RentalAgreements() {
     }
   };
   
-  // Months in a payment period (per user definition)
-  const monthsInPaymentPeriod = (period: string) => {
+  // Get number of payment periods per year for a given payment period
+  const periodsPerYear = (period: string) => {
     switch (period?.toLowerCase()) {
-      case 'monthly': return 1;
-      case 'quarterly': return 3;
+      case 'weekly': return 52;
+      case 'bi-weekly': return 26;
+      case 'bi-monthly': return 6;
+      case 'monthly': return 12;
+      case 'quarterly': return 4;
       case 'biannually':
-      case 'bi-annually': return 6;
+      case 'bi-annually': return 2;
       case 'annually':
-      case 'yearly': return 12;
-      default: return 1;
+      case 'yearly': return 1;
+      default: return 12;
     }
   };
 
   const periodShortLabel = (period: string) => {
     const p = period?.toLowerCase();
+    if (p === 'weekly') return 'week';
+    if (p === 'bi-weekly') return 'bi-week';
+    if (p === 'bi-monthly') return 'bi-month';
     if (p === 'monthly') return 'month';
     if (p === 'quarterly') return 'quarter';
     if (p === 'biannually' || p === 'bi-annually') return 'biannual';
@@ -776,9 +784,11 @@ export default function RentalAgreements() {
                           if (startDate && contractLength) {
                             const endDate = calculateEndDate(startDate, contractLength);
                             if (endDate) {
-                              return rentalItems.reduce((sum, item) => 
-                                sum + (item.price * item.quantity * monthsInPaymentPeriod(paymentPeriod)), 0
-                              ).toFixed(2);
+                              // Total yearly value ÷ periods per year
+                              const yearlyValue = rentalItems.reduce((sum, item) => 
+                                sum + (item.price * item.quantity * 12), 0
+                              );
+                              return (yearlyValue / periodsPerYear(paymentPeriod)).toFixed(2);
                             }
                           }
                           return '0.00';
@@ -932,7 +942,7 @@ export default function RentalAgreements() {
                         <TableCell>${agreement.totalValue.toFixed(2)}</TableCell>
                         <TableCell>
                           ${(
-                            agreement.monthlyAmount * monthsInPaymentPeriod(agreement.paymentPeriod)
+                            agreement.totalValue / periodsPerYear(agreement.paymentPeriod)
                           ).toFixed(2)}
                           /{periodShortLabel(agreement.paymentPeriod)}
                         </TableCell>
