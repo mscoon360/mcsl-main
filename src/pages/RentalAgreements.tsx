@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,9 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, FileText, Calendar, DollarSign, User, Plus, CalendarIcon, Trash2, Check, ChevronsUpDown } from "lucide-react";
+import { Search, FileText, Calendar, DollarSign, User, Plus, CalendarIcon, Trash2, Check, ChevronsUpDown, AlertTriangle, Clock } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { format, differenceInMonths } from "date-fns";
+import { format, differenceInMonths, differenceInDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { useProducts } from "@/hooks/useProducts";
@@ -23,8 +23,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useItemDependencies } from "@/hooks/useItemDependencies";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RenewalListSection } from "@/components/contracts/RenewalListSection";
 import { EditableValueCell } from "@/components/contracts/EditableValueCell";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface RentalAgreement {
   id: string;
@@ -38,10 +38,15 @@ interface RentalAgreement {
   monthlyAmount: number;
   totalValue: number;
   quantity: number;
-  status: 'active' | 'expired' | 'cancelled';
+  status: 'active' | 'expiring-soon' | 'recently-expired' | 'expired';
+  daysUntilExpiry: number;
+  daysSinceExpiry: number;
   saleId: string;
   saleDate: string;
+  zone: string | null;
 }
+
+type StatusFilter = 'all' | 'expiring-soon' | 'recently-expired' | 'active' | 'expired';
 
 export default function RentalAgreements() {
   const { toast } = useToast();
@@ -59,6 +64,7 @@ export default function RentalAgreements() {
   const [clearPassword, setClearPassword] = useState("");
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [customerSearchValue, setCustomerSearchValue] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   const { dependencies } = useItemDependencies();
 
@@ -127,72 +133,179 @@ export default function RentalAgreements() {
   // Get sales from Supabase instead of localStorage
   const sales = supabaseSales;
 
-  // Extract rental agreements from sales data
-  const rentalAgreements: RentalAgreement[] = sales.flatMap(sale => 
-    sale.items
-      .filter(item => item.is_rental && item.start_date && item.end_date)
-      .map(item => {
-        const startDate = new Date(item.start_date!);
-        const endDate = new Date(item.end_date!);
-        
-        // item.price is the payment amount for the period (e.g., monthly price, yearly price)
-        // We need to calculate yearly value based on payment period
-        const paymentPeriod = item.payment_period?.toLowerCase() || 'monthly';
-        const paymentAmount = item.price * item.quantity;
-        
-        // Convert payment amount to yearly value based on billing frequency
-        let yearlyValue: number;
-        switch (paymentPeriod) {
-          case 'weekly': yearlyValue = paymentAmount * 52; break;
-          case 'bi-weekly': yearlyValue = paymentAmount * 26; break;
-          case 'bi-monthly': yearlyValue = paymentAmount * 6; break;
-          case 'monthly': yearlyValue = paymentAmount * 12; break;
-          case 'quarterly': yearlyValue = paymentAmount * 4; break;
-          case 'biannually':
-          case 'bi-annually': yearlyValue = paymentAmount * 2; break;
-          case 'annually':
-          case 'yearly': yearlyValue = paymentAmount; break; // Already yearly
-          default: yearlyValue = paymentAmount * 12; break;
-        }
-        
-        const monthlyAmount = yearlyValue / 12;
-        const totalValue = yearlyValue; // Total Value = Yearly Value
-        
-        return {
-          id: `${sale.id}-${item.product_name}`,
-          itemId: item.id,
-          customer: sale.customer_name,
-          product: item.product_name,
-          contractLength: item.contract_length || '',
-          paymentPeriod: item.payment_period || 'monthly',
-          startDate,
-          endDate,
-          monthlyAmount,
-          totalValue,
-          quantity: item.quantity,
-          status: endDate > new Date() ? 'active' : 'expired' as 'active' | 'expired',
-          saleId: sale.id,
-          saleDate: sale.date
-        };
-      })
-  );
+  // Create customer lookup for zone info
+  const customerLookup = useMemo(() => {
+    const lookup = new Map<string, { zone: string | null }>();
+    customers.forEach(customer => {
+      const key = customer.company?.toLowerCase() || customer.name?.toLowerCase() || '';
+      if (key) {
+        lookup.set(key, { zone: customer.zone || null });
+      }
+    });
+    return lookup;
+  }, [customers]);
+
+  // Extract rental agreements from sales data with renewal status logic
+  const rentalAgreements: RentalAgreement[] = useMemo(() => {
+    const now = new Date();
+    return sales.flatMap(sale => 
+      sale.items
+        .filter(item => item.is_rental && item.start_date && item.end_date)
+        .map(item => {
+          const startDate = new Date(item.start_date!);
+          const endDate = new Date(item.end_date!);
+          const daysUntilExpiry = differenceInDays(endDate, now);
+          const daysSinceExpiry = differenceInDays(now, endDate);
+          
+          // Determine status based on expiry
+          let status: RentalAgreement['status'] = 'active';
+          if (daysSinceExpiry > 0 && daysSinceExpiry <= 30) {
+            status = 'recently-expired';
+          } else if (daysSinceExpiry > 30) {
+            status = 'expired';
+          } else if (daysUntilExpiry <= 60 && daysUntilExpiry > 0) {
+            status = 'expiring-soon';
+          }
+
+          // Get zone from customer lookup
+          const customerKey = sale.customer_name?.toLowerCase() || '';
+          const customerInfo = customerLookup.get(customerKey) || { zone: null };
+          
+          // item.price is the payment amount for the period (e.g., monthly price, yearly price)
+          // We need to calculate yearly value based on payment period
+          const paymentPeriod = item.payment_period?.toLowerCase() || 'monthly';
+          const paymentAmount = item.price * item.quantity;
+          
+          // Convert payment amount to yearly value based on billing frequency
+          let yearlyValue: number;
+          switch (paymentPeriod) {
+            case 'weekly': yearlyValue = paymentAmount * 52; break;
+            case 'bi-weekly': yearlyValue = paymentAmount * 26; break;
+            case 'bi-monthly': yearlyValue = paymentAmount * 6; break;
+            case 'monthly': yearlyValue = paymentAmount * 12; break;
+            case 'quarterly': yearlyValue = paymentAmount * 4; break;
+            case 'biannually':
+            case 'bi-annually': yearlyValue = paymentAmount * 2; break;
+            case 'annually':
+            case 'yearly': yearlyValue = paymentAmount; break;
+            default: yearlyValue = paymentAmount * 12; break;
+          }
+          
+          const monthlyAmount = yearlyValue / 12;
+          const totalValue = yearlyValue;
+          
+          return {
+            id: `${sale.id}-${item.product_name}`,
+            itemId: item.id,
+            customer: sale.customer_name,
+            product: item.product_name,
+            contractLength: item.contract_length || '',
+            paymentPeriod: item.payment_period || 'monthly',
+            startDate,
+            endDate,
+            monthlyAmount,
+            totalValue,
+            quantity: item.quantity,
+            status,
+            daysUntilExpiry: Math.max(0, daysUntilExpiry),
+            daysSinceExpiry: Math.max(0, daysSinceExpiry),
+            saleId: sale.id,
+            saleDate: sale.date,
+            zone: customerInfo.zone
+          };
+        })
+    );
+  }, [sales, customerLookup]);
 
   // Filter products for rental (rental products or rental-only products)
   const rentalProducts = products.filter(p => p.is_rental || p.is_rental_only);
 
-  // Filter agreements based on search term
-  const filteredAgreements = rentalAgreements.filter(agreement =>
-    agreement.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    agreement.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    agreement.status.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter agreements based on search term and status filter
+  const filteredAgreements = useMemo(() => {
+    return rentalAgreements
+      .filter(agreement => {
+        // Status filter
+        if (statusFilter !== 'all' && agreement.status !== statusFilter) {
+          return false;
+        }
+        // Search filter
+        return agreement.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          agreement.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          agreement.status.toLowerCase().includes(searchTerm.toLowerCase());
+      })
+      // Sort by urgency: recently expired first, then expiring soon, then by days
+      .sort((a, b) => {
+        const statusOrder = { 'recently-expired': 0, 'expiring-soon': 1, 'active': 2, 'expired': 3 };
+        if (statusOrder[a.status] !== statusOrder[b.status]) {
+          return statusOrder[a.status] - statusOrder[b.status];
+        }
+        if (a.status === 'recently-expired' && b.status === 'recently-expired') {
+          return b.daysSinceExpiry - a.daysSinceExpiry;
+        }
+        if (a.status === 'expiring-soon' && b.status === 'expiring-soon') {
+          return a.daysUntilExpiry - b.daysUntilExpiry;
+        }
+        return 0;
+      });
+  }, [rentalAgreements, searchTerm, statusFilter]);
+
+  const getStatusBadge = (agreement: RentalAgreement) => {
+    if (agreement.status === 'recently-expired') {
+      return (
+        <Badge variant="destructive" className="flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          Expired {agreement.daysSinceExpiry}d ago
+        </Badge>
+      );
+    }
+    
+    if (agreement.status === 'expiring-soon' && agreement.daysUntilExpiry <= 14) {
+      return (
+        <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          {agreement.daysUntilExpiry}d left
+        </Badge>
+      );
+    }
+    
+    if (agreement.status === 'expiring-soon') {
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          {agreement.daysUntilExpiry}d left
+        </Badge>
+      );
+    }
+    
+    if (agreement.status === 'expired') {
+      return (
+        <Badge variant="secondary" className="flex items-center gap-1">
+          Expired
+        </Badge>
+      );
+    }
+    
+    return (
+      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+        Active
+      </Badge>
+    );
+  };
+
+  const getUrgencyRowClass = (agreement: RentalAgreement) => {
+    if (agreement.status === 'recently-expired') return 'border-l-4 border-l-destructive';
+    if (agreement.status === 'expiring-soon' && agreement.daysUntilExpiry <= 14) return 'border-l-4 border-l-orange-500';
+    if (agreement.status === 'expiring-soon') return 'border-l-4 border-l-yellow-500';
+    return '';
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'expired': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'cancelled': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'expiring-soon': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'recently-expired': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'expired': return 'bg-muted text-muted-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
   
@@ -251,12 +364,14 @@ export default function RentalAgreements() {
     }
   };
 
-  const activeAgreements = rentalAgreements.filter(a => a.status === 'active').length;
+  const activeAgreements = rentalAgreements.filter(a => a.status === 'active' || a.status === 'expiring-soon').length;
+  const expiringSoonCount = rentalAgreements.filter(a => a.status === 'expiring-soon').length;
+  const recentlyExpiredCount = rentalAgreements.filter(a => a.status === 'recently-expired').length;
   const totalMonthlyRevenue = rentalAgreements
-    .filter(a => a.status === 'active')
+    .filter(a => a.status === 'active' || a.status === 'expiring-soon')
     .reduce((sum, a) => sum + a.monthlyAmount, 0);
   const totalContractValue = rentalAgreements
-    .filter(a => a.status === 'active')
+    .filter(a => a.status === 'active' || a.status === 'expiring-soon')
     .reduce((sum, a) => sum + a.totalValue, 0);
 
   const calculateEndDate = (start: Date, contractLength: string) => {
@@ -907,28 +1022,48 @@ export default function RentalAgreements() {
         </Card>
       </div>
 
-      {/* Renewal List Section */}
-      <RenewalListSection />
-
       {/* Rental Agreements Table */}
       <Card className="dashboard-card">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-card-foreground">Rental Agreements Log</CardTitle>
+              <CardTitle className="text-card-foreground">Rental Agreements</CardTitle>
               <CardDescription>
-                All rental agreements and their current status
+                All rental agreements with renewal tracking
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search agreements..." 
-                className="w-64" 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="flex items-center gap-4">
+              <div className="flex gap-3 text-sm">
+                <div className="text-right">
+                  <div className="text-muted-foreground">Expiring Soon</div>
+                  <div className="text-lg font-bold text-yellow-600 dark:text-yellow-400">{expiringSoonCount}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-muted-foreground">Recently Expired</div>
+                  <div className="text-lg font-bold text-destructive">{recentlyExpiredCount}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search agreements..." 
+                  className="w-64" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
+          </div>
+          <div className="mt-4">
+            <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+              <TabsList>
+                <TabsTrigger value="all">All ({rentalAgreements.length})</TabsTrigger>
+                <TabsTrigger value="expiring-soon">Expiring Soon ({expiringSoonCount})</TabsTrigger>
+                <TabsTrigger value="recently-expired">Recently Expired ({recentlyExpiredCount})</TabsTrigger>
+                <TabsTrigger value="active">Active</TabsTrigger>
+                <TabsTrigger value="expired">Expired</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </CardHeader>
         <CardContent>
@@ -962,7 +1097,7 @@ export default function RentalAgreements() {
                 </TableHeader>
                 <TableBody>
                     {filteredAgreements.map((agreement) => (
-                      <TableRow key={agreement.id}>
+                      <TableRow key={agreement.id} className={getUrgencyRowClass(agreement)}>
                         <TableCell className="font-medium">
                           {agreement.customer}
                         </TableCell>
@@ -986,9 +1121,7 @@ export default function RentalAgreements() {
                           /{periodShortLabel(agreement.paymentPeriod)}
                         </TableCell>
                         <TableCell>
-                          <Badge className={getStatusColor(agreement.status)}>
-                            {agreement.status}
-                          </Badge>
+                          {getStatusBadge(agreement)}
                         </TableCell>
                       </TableRow>
                     ))}
