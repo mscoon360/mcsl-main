@@ -11,10 +11,11 @@ interface ZoneContractsGroupProps {
   zone: string;
   contracts: RenewalContract[];
   onDelete: (id: string) => void;
+  onUpdateValue?: (id: string, newValue: number) => Promise<void>;
   defaultOpen?: boolean;
 }
 
-export function ZoneContractsGroup({ zone, contracts, onDelete, defaultOpen = false }: ZoneContractsGroupProps) {
+export function ZoneContractsGroup({ zone, contracts, onDelete, onUpdateValue, defaultOpen = false }: ZoneContractsGroupProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   const zoneStats = useMemo(() => ({
@@ -80,6 +81,7 @@ export function ZoneContractsGroup({ zone, contracts, onDelete, defaultOpen = fa
                     key={contract.id} 
                     contract={contract} 
                     onDelete={onDelete}
+                    onUpdateValue={onUpdateValue}
                   />
                 ))}
               </TableBody>

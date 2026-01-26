@@ -1,13 +1,16 @@
+import { useState, useRef, useEffect } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Clock, Phone, Mail, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { AlertTriangle, Clock, Phone, Mail, Trash2, Pencil, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { RenewalContract } from "@/hooks/useRenewalContracts";
 
 interface RenewalContractRowProps {
   contract: RenewalContract;
   onDelete: (id: string) => void;
+  onUpdateValue?: (id: string, newValue: number) => Promise<void>;
 }
 
 const getStatusBadge = (status: string, daysUntilExpiry: number, daysSinceExpiry: number) => {
@@ -79,8 +82,58 @@ const getPaymentDue = (yearlyValue: number, billingType: string | null): { amoun
   return { amount: yearlyValue, label: '/yr' };
 };
 
-export function RenewalContractRow({ contract, onDelete }: RenewalContractRowProps) {
+export function RenewalContractRow({ contract, onDelete, onUpdateValue }: RenewalContractRowProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(String(contract.value_of_contract_vat || 0));
+  const [isSaving, setIsSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  
   const paymentDue = getPaymentDue(contract.value_of_contract_vat || 0, contract.type_of_billing);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleStartEdit = () => {
+    setEditValue(String(contract.value_of_contract_vat || 0));
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditValue(String(contract.value_of_contract_vat || 0));
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = async () => {
+    const newValue = parseFloat(editValue);
+    if (isNaN(newValue) || newValue < 0) {
+      handleCancelEdit();
+      return;
+    }
+
+    if (onUpdateValue) {
+      setIsSaving(true);
+      try {
+        await onUpdateValue(contract.id, newValue);
+        setIsEditing(false);
+      } finally {
+        setIsSaving(false);
+      }
+    } else {
+      setIsEditing(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
   
   return (
     <TableRow className={getUrgencyColor(contract.status, contract.daysUntilExpiry)}>
@@ -95,7 +148,47 @@ export function RenewalContractRow({ contract, onDelete }: RenewalContractRowPro
           ? format(new Date(contract.contract_end_date), 'dd/MM/yyyy')
           : '-'}
       </TableCell>
-      <TableCell>${(contract.value_of_contract_vat || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/yr</TableCell>
+      <TableCell>
+        {isEditing ? (
+          <div className="flex items-center gap-1">
+            <span className="text-muted-foreground">$</span>
+            <Input
+              ref={inputRef}
+              type="number"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="h-7 w-24 text-sm"
+              min="0"
+              step="0.01"
+              disabled={isSaving}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={handleSaveEdit}
+              disabled={isSaving}
+            >
+              <Check className="h-3.5 w-3.5 text-green-600" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={handleCancelEdit}
+              disabled={isSaving}
+            >
+              <X className="h-3.5 w-3.5 text-destructive" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 group cursor-pointer" onClick={handleStartEdit}>
+            <span>${(contract.value_of_contract_vat || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/yr</span>
+            <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        )}
+      </TableCell>
       <TableCell className="capitalize">{contract.type_of_billing || '-'}</TableCell>
       <TableCell className="font-medium text-primary">${paymentDue.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{paymentDue.label}</TableCell>
       <TableCell>{contract.type_of_service || '-'}</TableCell>
