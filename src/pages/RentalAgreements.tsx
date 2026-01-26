@@ -24,9 +24,11 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { useItemDependencies } from "@/hooks/useItemDependencies";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RenewalListSection } from "@/components/contracts/RenewalListSection";
+import { EditableValueCell } from "@/components/contracts/EditableValueCell";
 
 interface RentalAgreement {
   id: string;
+  itemId: string;
   customer: string;
   product: string;
   contractLength: string;
@@ -35,6 +37,7 @@ interface RentalAgreement {
   endDate: Date;
   monthlyAmount: number;
   totalValue: number;
+  quantity: number;
   status: 'active' | 'expired' | 'cancelled';
   saleId: string;
   saleDate: string;
@@ -157,6 +160,7 @@ export default function RentalAgreements() {
         
         return {
           id: `${sale.id}-${item.product_name}`,
+          itemId: item.id,
           customer: sale.customer_name,
           product: item.product_name,
           contractLength: item.contract_length || '',
@@ -165,6 +169,7 @@ export default function RentalAgreements() {
           endDate,
           monthlyAmount,
           totalValue,
+          quantity: item.quantity,
           status: endDate > new Date() ? 'active' : 'expired' as 'active' | 'expired',
           saleId: sale.id,
           saleDate: sale.date
@@ -217,6 +222,33 @@ export default function RentalAgreements() {
     if (p === 'biannually' || p === 'bi-annually') return 'biannual';
     if (p === 'annually' || p === 'yearly') return 'year';
     return p || 'period';
+  };
+
+  // Handler for updating yearly value
+  const handleUpdateYearlyValue = async (agreement: RentalAgreement, newYearlyValue: number) => {
+    // Calculate the new per-period price based on yearly value
+    const periods = periodsPerYear(agreement.paymentPeriod);
+    const newPricePerPeriod = newYearlyValue / periods / agreement.quantity;
+    
+    const { error } = await supabase
+      .from('sale_items')
+      .update({ price: newPricePerPeriod })
+      .eq('id', agreement.itemId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update contract value",
+        variant: "destructive",
+      });
+      throw error;
+    } else {
+      toast({
+        title: "Updated",
+        description: "Contract value updated successfully",
+      });
+      refetch();
+    }
   };
 
   const activeAgreements = rentalAgreements.filter(a => a.status === 'active').length;
@@ -940,7 +972,13 @@ export default function RentalAgreements() {
                         <TableCell>{format(agreement.startDate, 'MMM dd, yyyy')}</TableCell>
                         <TableCell>{format(agreement.endDate, 'MMM dd, yyyy')}</TableCell>
                         <TableCell>${agreement.monthlyAmount.toFixed(2)}</TableCell>
-                        <TableCell>${agreement.totalValue.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <EditableValueCell
+                            value={agreement.totalValue}
+                            formatValue={(v) => `$${v.toFixed(2)}`}
+                            onSave={(newValue) => handleUpdateYearlyValue(agreement, newValue)}
+                          />
+                        </TableCell>
                         <TableCell>
                           ${(
                             agreement.totalValue / periodsPerYear(agreement.paymentPeriod)
