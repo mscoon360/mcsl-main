@@ -132,9 +132,27 @@ export default function RentalAgreements() {
         const startDate = new Date(item.start_date!);
         const endDate = new Date(item.end_date!);
         
-        // IMPORTANT: item.price is the YEARLY contract value, not monthly!
-        const yearlyValue = item.price * item.quantity;
-        const monthlyAmount = yearlyValue / 12; // Monthly display amount
+        // item.price is the payment amount for the period (e.g., monthly price, yearly price)
+        // We need to calculate yearly value based on payment period
+        const paymentPeriod = item.payment_period?.toLowerCase() || 'monthly';
+        const paymentAmount = item.price * item.quantity;
+        
+        // Convert payment amount to yearly value based on billing frequency
+        let yearlyValue: number;
+        switch (paymentPeriod) {
+          case 'weekly': yearlyValue = paymentAmount * 52; break;
+          case 'bi-weekly': yearlyValue = paymentAmount * 26; break;
+          case 'bi-monthly': yearlyValue = paymentAmount * 6; break;
+          case 'monthly': yearlyValue = paymentAmount * 12; break;
+          case 'quarterly': yearlyValue = paymentAmount * 4; break;
+          case 'biannually':
+          case 'bi-annually': yearlyValue = paymentAmount * 2; break;
+          case 'annually':
+          case 'yearly': yearlyValue = paymentAmount; break; // Already yearly
+          default: yearlyValue = paymentAmount * 12; break;
+        }
+        
+        const monthlyAmount = yearlyValue / 12;
         const totalValue = yearlyValue; // Total Value = Yearly Value
         
         return {
