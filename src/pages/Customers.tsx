@@ -254,7 +254,7 @@ export default function Customers() {
       lastPurchase: lastPurchase || customer.last_purchase || new Date().toISOString()
     };
   });
-  const filteredCustomers = customersWithContracts.filter(customer => customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || customer.company?.toLowerCase().includes(searchTerm.toLowerCase()) || customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) || customer.city?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredCustomers = customersWithContracts.filter(customer => customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) || customer.company?.toLowerCase().includes(searchTerm.toLowerCase()) || customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) || customer.city?.toLowerCase().includes(searchTerm.toLowerCase()));
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
