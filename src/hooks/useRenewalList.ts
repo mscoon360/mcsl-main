@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSales } from './useSales';
 import { useCustomers } from './useCustomers';
-import { differenceInDays, differenceInMonths } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 
 export interface RenewalContract {
   id: string;
@@ -59,7 +59,6 @@ export function useRenewalList() {
           const endDate = new Date(item.end_date!);
           const daysUntilExpiry = differenceInDays(endDate, now);
           const daysSinceExpiry = differenceInDays(now, endDate);
-          const monthsInContract = differenceInMonths(endDate, startDate);
 
           // Include contracts that:
           // 1. Are expiring within the next 60 days (active, expiring soon)
@@ -68,6 +67,27 @@ export function useRenewalList() {
           const isRecentlyExpired = daysSinceExpiry > 0 && daysSinceExpiry <= 30;
 
           if (isExpiringSoon || isRecentlyExpired) {
+            // item.price is the payment amount for the period
+            const paymentPeriod = item.payment_period?.toLowerCase() || 'monthly';
+            const paymentAmount = item.price * item.quantity;
+            
+            // Convert payment amount to yearly value based on billing frequency
+            let yearlyValue: number;
+            switch (paymentPeriod) {
+              case 'weekly': yearlyValue = paymentAmount * 52; break;
+              case 'bi-weekly': yearlyValue = paymentAmount * 26; break;
+              case 'bi-monthly': yearlyValue = paymentAmount * 6; break;
+              case 'monthly': yearlyValue = paymentAmount * 12; break;
+              case 'quarterly': yearlyValue = paymentAmount * 4; break;
+              case 'biannually':
+              case 'bi-annually': yearlyValue = paymentAmount * 2; break;
+              case 'annually':
+              case 'yearly': yearlyValue = paymentAmount; break;
+              default: yearlyValue = paymentAmount * 12; break;
+            }
+
+            const monthlyAmount = yearlyValue / 12;
+            
             contracts.push({
               id: `${sale.id}-${item.product_name}`,
               customer: sale.customer_name,
@@ -76,8 +96,8 @@ export function useRenewalList() {
               paymentPeriod: item.payment_period || 'monthly',
               startDate,
               endDate,
-              monthlyAmount: item.price * item.quantity,
-              totalValue: item.price * monthsInContract * item.quantity,
+              monthlyAmount,
+              totalValue: yearlyValue,
               status: isExpiringSoon ? 'expiring-soon' : 'recently-expired',
               daysUntilExpiry: isExpiringSoon ? daysUntilExpiry : 0,
               daysSinceExpiry: isRecentlyExpired ? daysSinceExpiry : 0,
