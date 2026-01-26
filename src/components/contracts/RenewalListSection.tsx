@@ -59,6 +59,28 @@ export function RenewalListSection() {
     }
   };
 
+  const handleUpdateValue = async (id: string, newValue: number) => {
+    const { error } = await supabase
+      .from('renewal_contracts')
+      .update({ value_of_contract_vat: newValue })
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update contract value",
+        variant: "destructive",
+      });
+      throw error;
+    } else {
+      toast({
+        title: "Updated",
+        description: "Contract value updated successfully",
+      });
+      refetch();
+    }
+  };
+
   const syncCustomersFromContracts = async () => {
     if (!user) {
       toast({
@@ -238,6 +260,7 @@ export function RenewalListSection() {
               zone={zone}
               contracts={zoneContracts}
               onDelete={handleDelete}
+              onUpdateValue={handleUpdateValue}
               defaultOpen={contractsByZone.length === 1}
             />
           ))}
