@@ -24,6 +24,9 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { useItemDependencies } from "@/hooks/useItemDependencies";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EditableValueCell } from "@/components/contracts/EditableValueCell";
+import { EditableTextCell } from "@/components/contracts/EditableTextCell";
+import { EditableSelectCell } from "@/components/contracts/EditableSelectCell";
+import { EditableDateCell } from "@/components/contracts/EditableDateCell";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface RentalAgreement {
@@ -339,7 +342,6 @@ export default function RentalAgreements() {
 
   // Handler for updating yearly value
   const handleUpdateYearlyValue = async (agreement: RentalAgreement, newYearlyValue: number) => {
-    // Calculate the new per-period price based on yearly value
     const periods = periodsPerYear(agreement.paymentPeriod);
     const newPricePerPeriod = newYearlyValue / periods / agreement.quantity;
     
@@ -349,20 +351,44 @@ export default function RentalAgreements() {
       .eq('id', agreement.itemId);
 
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update contract value",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to update contract value", variant: "destructive" });
       throw error;
-    } else {
-      toast({
-        title: "Updated",
-        description: "Contract value updated successfully",
-      });
-      refetch();
     }
+    toast({ title: "Updated", description: "Contract value updated successfully" });
+    refetch();
   };
+
+  // Handler for updating sale_items text fields
+  const handleUpdateSaleItem = async (itemId: string, field: string, value: any) => {
+    const { error } = await supabase.from('sale_items').update({ [field]: value }).eq('id', itemId);
+    if (error) {
+      toast({ title: "Error", description: `Failed to update ${field}`, variant: "destructive" });
+      throw error;
+    }
+    toast({ title: "Updated", description: "Field updated successfully" });
+    refetch();
+  };
+
+  // Handler for updating customer name on the sale
+  const handleUpdateCustomer = async (saleId: string, newName: string) => {
+    const { error } = await supabase.from('sales').update({ customer_name: newName }).eq('id', saleId);
+    if (error) {
+      toast({ title: "Error", description: "Failed to update customer", variant: "destructive" });
+      throw error;
+    }
+    toast({ title: "Updated", description: "Customer updated successfully" });
+    refetch();
+  };
+
+  const paymentPeriodOptions = [
+    { value: 'weekly', label: 'Weekly' },
+    { value: 'bi-weekly', label: 'Bi-Weekly' },
+    { value: 'bi-monthly', label: 'Bi-Monthly' },
+    { value: 'monthly', label: 'Monthly' },
+    { value: 'quarterly', label: 'Quarterly' },
+    { value: 'biannually', label: 'Bi-Annually' },
+    { value: 'annually', label: 'Annually' },
+  ];
 
   const activeAgreements = rentalAgreements.filter(a => a.status === 'active' || a.status === 'expiring-soon').length;
   const expiringSoonCount = rentalAgreements.filter(a => a.status === 'expiring-soon').length;
@@ -1099,13 +1125,42 @@ export default function RentalAgreements() {
                     {filteredAgreements.map((agreement) => (
                       <TableRow key={agreement.id} className={getUrgencyRowClass(agreement)}>
                         <TableCell className="font-medium">
-                          {agreement.customer}
+                          <EditableTextCell
+                            value={agreement.customer}
+                            onSave={(v) => handleUpdateCustomer(agreement.saleId, v)}
+                          />
                         </TableCell>
-                        <TableCell>{agreement.product}</TableCell>
-                        <TableCell>{agreement.contractLength}</TableCell>
-                        <TableCell className="capitalize">{agreement.paymentPeriod}</TableCell>
-                        <TableCell>{format(agreement.startDate, 'MMM dd, yyyy')}</TableCell>
-                        <TableCell>{format(agreement.endDate, 'MMM dd, yyyy')}</TableCell>
+                        <TableCell>
+                          <EditableTextCell
+                            value={agreement.product}
+                            onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'product_name', v)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <EditableTextCell
+                            value={agreement.contractLength}
+                            onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'contract_length', v)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <EditableSelectCell
+                            value={agreement.paymentPeriod}
+                            options={paymentPeriodOptions}
+                            onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'payment_period', v)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <EditableDateCell
+                            value={agreement.startDate}
+                            onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'start_date', v.toISOString())}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <EditableDateCell
+                            value={agreement.endDate}
+                            onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'end_date', v.toISOString())}
+                          />
+                        </TableCell>
                         <TableCell>${agreement.monthlyAmount.toFixed(2)}</TableCell>
                         <TableCell>
                           <EditableValueCell
