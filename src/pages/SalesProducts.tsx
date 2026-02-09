@@ -130,14 +130,14 @@ export default function SalesProducts() {
     
     const { error } = await supabase
       .from('rental_payment_terms')
-      .update({ rental_price: parseFloat(perPeriodPrice.toFixed(2)) })
+      .update({ rental_price: parseFloat(perPeriodPrice.toFixed(6)) })
       .eq('id', termId);
     
     if (error) throw error;
     
     // Refresh rental payment terms
     setRentalPaymentTerms(prev => 
-      prev.map(t => t.id === termId ? { ...t, rental_price: parseFloat(perPeriodPrice.toFixed(2)) } : t)
+      prev.map(t => t.id === termId ? { ...t, rental_price: parseFloat(perPeriodPrice.toFixed(6)) } : t)
     );
     
     toast({ title: 'Price Updated', description: 'Rental yearly cost updated successfully.' });
