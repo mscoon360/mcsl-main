@@ -19,6 +19,33 @@ interface SupportingRelation {
   supporting_product_id: string;
 }
 
+interface RentalPaymentTerm {
+  id: string;
+  product_id: string;
+  payment_term: string;
+  rental_price: number;
+  total_cost: number | null;
+  unit_cost: number | null;
+}
+
+const FREQUENCY_MULTIPLIER: Record<string, number> = {
+  weekly: 52,
+  'bi-monthly': 24,
+  monthly: 12,
+  quarterly: 4,
+  'bi-annually': 2,
+  annually: 1,
+};
+
+const getYearlyCost = (rentalPrice: number, paymentTerm: string): number => {
+  const multiplier = FREQUENCY_MULTIPLIER[paymentTerm] || 12;
+  return rentalPrice * multiplier;
+};
+
+const formatPaymentTerm = (term: string): string => {
+  return term.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
+};
+
 export default function SalesProducts() {
   const { products, loading, updateProduct } = useProducts();
   const { divisions } = useDivisions();
@@ -31,8 +58,9 @@ export default function SalesProducts() {
   const [expandedDivisions, setExpandedDivisions] = useState<Set<string>>(new Set());
   const [expandedSubdivisions, setExpandedSubdivisions] = useState<Set<string>>(new Set());
   const [allSupportingRelations, setAllSupportingRelations] = useState<SupportingRelation[]>([]);
+  const [rentalPaymentTerms, setRentalPaymentTerms] = useState<RentalPaymentTerm[]>([]);
 
-  // Fetch all supporting product relations
+  // Fetch all supporting product relations and rental payment terms
   useEffect(() => {
     const fetchSupportingRelations = async () => {
       const { data, error } = await supabase
@@ -43,7 +71,17 @@ export default function SalesProducts() {
         setAllSupportingRelations(data);
       }
     };
+    const fetchRentalPaymentTerms = async () => {
+      const { data, error } = await supabase
+        .from('rental_payment_terms')
+        .select('id, product_id, payment_term, rental_price, total_cost, unit_cost');
+      
+      if (!error && data) {
+        setRentalPaymentTerms(data as RentalPaymentTerm[]);
+      }
+    };
     fetchSupportingRelations();
+    fetchRentalPaymentTerms();
   }, []);
 
   // Check if a product is a supporting item
@@ -208,7 +246,17 @@ export default function SalesProducts() {
   const lowStockProducts = mainProducts.filter(p => p.status === 'low_stock').length;
   const totalValue = mainProducts.reduce((sum, p) => sum + (p.price * p.stock), 0);
 
-  const renderProductRow = (product: Product, isSupporting: boolean = false) => {
+  // Get rental payment terms for a product
+  const getTermsForProduct = (productId: string) => {
+    return rentalPaymentTerms.filter(t => t.product_id === productId);
+  };
+
+  const isRentalProduct = (product: Product) => {
+    return product.is_rental || product.is_rental_only;
+  };
+
+  // Render a single sale (spot price) product row
+  const renderSaleProductRow = (product: Product, isSupporting: boolean = false) => {
     const rowClass = isSupporting 
       ? "bg-green-50 dark:bg-green-950/30" 
       : "bg-blue-50 dark:bg-blue-950/30";
@@ -226,7 +274,7 @@ export default function SalesProducts() {
               Supporting
             </Badge>
           ) : (
-            <Badge variant="outline">{getProductType(product)}</Badge>
+            <Badge variant="outline">Sale</Badge>
           )}
         </TableCell>
         <TableCell className="text-sm text-muted-foreground">
@@ -237,37 +285,22 @@ export default function SalesProducts() {
           ${(product.cost_price || 0).toFixed(2)}
         </TableCell>
         <TableCell className="text-right font-mono font-bold">
-          {product.is_rental_only ? 'N/A' : `$${(product.price || 0).toFixed(2)}`}
-        </TableCell>
-        <TableCell className="text-right font-mono font-bold">
-          {product.is_rental || product.is_rental_only 
-            ? `$${(product.rental_price || 0).toFixed(2)}`
-            : 'N/A'
-          }
+          ${(product.price || 0).toFixed(2)}
         </TableCell>
         <TableCell className="text-right font-mono text-muted-foreground">
           {(() => {
-            const basePrice = product.is_rental_only 
-              ? (product.rental_price || 0) 
-              : (product.price || 0);
-            const vat = basePrice * 0.125;
+            const vat = (product.price || 0) * 0.125;
             return `$${vat.toFixed(2)}`;
           })()}
         </TableCell>
         <TableCell className="text-right font-mono font-bold">
           {(() => {
-            const basePrice = product.is_rental_only 
-              ? (product.rental_price || 0) 
-              : (product.price || 0);
-            const total = basePrice * 1.125;
+            const total = (product.price || 0) * 1.125;
             return `$${total.toFixed(2)}`;
           })()}
         </TableCell>
         <TableCell className="text-right">
-          {product.is_rental_only 
-            ? 'N/A' 
-            : calculateMarkup(product.price || 0, product.cost_price || 0)
-          }
+          {calculateMarkup(product.price || 0, product.cost_price || 0)}
         </TableCell>
         <TableCell>{getStatusBadge(product)}</TableCell>
         <TableCell>
@@ -285,39 +318,175 @@ export default function SalesProducts() {
     );
   };
 
+  // Render rental product rows (one per payment term with yearly cost)
+  const renderRentalProductRows = (product: Product, isSupporting: boolean = false) => {
+    const terms = getTermsForProduct(product.id);
+    const rowClass = isSupporting 
+      ? "bg-green-50 dark:bg-green-950/30" 
+      : "bg-amber-50 dark:bg-amber-950/30";
+
+    // If no payment terms configured, show single row with product's stored rental price
+    if (terms.length === 0) {
+      const yearlyCost = product.rental_price || product.price || 0;
+      const vat = yearlyCost * 0.125;
+      const total = yearlyCost + vat;
+      return (
+        <TableRow key={product.id} className={rowClass}>
+          <TableCell className="font-mono text-sm">{product.sku}</TableCell>
+          <TableCell className="font-medium">{product.name}</TableCell>
+          <TableCell>
+            <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-300">
+              Rental
+            </Badge>
+          </TableCell>
+          <TableCell className="text-sm text-muted-foreground">-</TableCell>
+          <TableCell className="text-right">{product.stock}</TableCell>
+          <TableCell className="text-right font-mono text-muted-foreground">-</TableCell>
+          <TableCell className="text-right font-mono font-bold">${yearlyCost.toFixed(2)}</TableCell>
+          <TableCell className="text-right font-mono text-muted-foreground">${vat.toFixed(2)}</TableCell>
+          <TableCell className="text-right font-mono font-bold">${total.toFixed(2)}</TableCell>
+          <TableCell className="text-right">-</TableCell>
+          <TableCell>{getStatusBadge(product)}</TableCell>
+          <TableCell>
+            <Button variant="ghost" size="icon" onClick={() => handleEditClick(product)}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    // Show one row per payment term
+    return terms.map((term, idx) => {
+      const yearlyCost = getYearlyCost(term.rental_price, term.payment_term);
+      const vat = yearlyCost * 0.125;
+      const total = yearlyCost + vat;
+      return (
+        <TableRow key={`${product.id}-${term.payment_term}`} className={rowClass}>
+          <TableCell className="font-mono text-sm">
+            {idx === 0 ? product.sku : ''}
+          </TableCell>
+          <TableCell className="font-medium">
+            {idx === 0 ? product.name : ''}
+          </TableCell>
+          <TableCell>
+            <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-300">
+              {formatPaymentTerm(term.payment_term)}
+            </Badge>
+          </TableCell>
+          <TableCell className="text-sm text-muted-foreground">
+            {formatPaymentTerm(term.payment_term)}
+          </TableCell>
+          <TableCell className="text-right">{idx === 0 ? product.stock : ''}</TableCell>
+          <TableCell className="text-right font-mono text-muted-foreground">-</TableCell>
+          <TableCell className="text-right font-mono font-bold">${yearlyCost.toFixed(2)}</TableCell>
+          <TableCell className="text-right font-mono text-muted-foreground">${vat.toFixed(2)}</TableCell>
+          <TableCell className="text-right font-mono font-bold">${total.toFixed(2)}</TableCell>
+          <TableCell className="text-right">-</TableCell>
+          <TableCell>{idx === 0 ? getStatusBadge(product) : null}</TableCell>
+          <TableCell>
+            {idx === 0 && (
+              <Button variant="ghost" size="icon" onClick={() => handleEditClick(product)}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
+          </TableCell>
+        </TableRow>
+      );
+    });
+  };
+
+  // Check if a product list contains any rental products
+  const hasRentalProducts = (productList: Product[]) => {
+    return productList.some(p => isRentalProduct(p));
+  };
+
   const renderProductTable = (productList: Product[]) => {
     if (productList.length === 0) return null;
 
+    const rentalProducts = productList.filter(p => isRentalProduct(p));
+    const saleProducts = productList.filter(p => !isRentalProduct(p));
+
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>SKU</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Selling Qty</TableHead>
-            <TableHead className="text-right">Stock</TableHead>
-            <TableHead className="text-right">Cost Price</TableHead>
-            <TableHead className="text-right">Sale Price</TableHead>
-            <TableHead className="text-right">Rental Price</TableHead>
-            <TableHead className="text-right">VAT 12.5%</TableHead>
-            <TableHead className="text-right">Total</TableHead>
-            <TableHead className="text-right">Markup</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {productList.map((product) => (
-            <>
-              {renderProductRow(product, false)}
-              {getSupportingProductsForProduct(product.id).map((supportingProduct) => 
-                renderProductRow(supportingProduct, true)
-              )}
-            </>
-          ))}
-        </TableBody>
-      </Table>
+      <div className="space-y-6">
+        {/* Rental Products Table */}
+        {rentalProducts.length > 0 && (
+          <div>
+            <h5 className="text-sm font-semibold text-amber-700 dark:text-amber-300 mb-2 flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-amber-100 dark:bg-amber-950/50 border border-amber-400"></div>
+              Rental Products (Yearly Cost)
+            </h5>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>SKU</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Service Frequency</TableHead>
+                  <TableHead>UOM</TableHead>
+                  <TableHead className="text-right">Stock</TableHead>
+                  <TableHead className="text-right">Cost Price</TableHead>
+                  <TableHead className="text-right">Yearly Cost</TableHead>
+                  <TableHead className="text-right">VAT 12.5%</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Markup</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rentalProducts.map((product) => (
+                  <>
+                    {renderRentalProductRows(product, false)}
+                    {getSupportingProductsForProduct(product.id).map((sp) =>
+                      renderSaleProductRow(sp, true)
+                    )}
+                  </>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {/* Sale (Spot Price) Products Table */}
+        {saleProducts.length > 0 && (
+          <div>
+            {rentalProducts.length > 0 && (
+              <h5 className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-2 flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-blue-100 dark:bg-blue-950/50 border border-blue-400"></div>
+                Spot Price Products (Unit Cost)
+              </h5>
+            )}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>SKU</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Selling Qty</TableHead>
+                  <TableHead className="text-right">Stock</TableHead>
+                  <TableHead className="text-right">Cost Price</TableHead>
+                  <TableHead className="text-right">Unit Cost</TableHead>
+                  <TableHead className="text-right">VAT 12.5%</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Markup</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {saleProducts.map((product) => (
+                  <>
+                    {renderSaleProductRow(product, false)}
+                    {getSupportingProductsForProduct(product.id).map((sp) =>
+                      renderSaleProductRow(sp, true)
+                    )}
+                  </>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -335,14 +504,18 @@ export default function SalesProducts() {
       </div>
 
       {/* Color Legend */}
-      <div className="flex gap-4 items-center">
+      <div className="flex gap-4 items-center flex-wrap">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-blue-100 dark:bg-blue-950/50 border border-blue-300"></div>
-          <span className="text-sm text-muted-foreground">Main Product</span>
+          <span className="text-sm text-muted-foreground">Spot Price Product</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-amber-100 dark:bg-amber-950/50 border border-amber-400"></div>
+          <span className="text-sm text-muted-foreground">Rental Product (Yearly Cost)</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-green-100 dark:bg-green-950/50 border border-green-300"></div>
-          <span className="text-sm text-muted-foreground">Supporting Product (Cost calculation only)</span>
+          <span className="text-sm text-muted-foreground">Supporting Product</span>
         </div>
       </div>
 
