@@ -287,6 +287,11 @@ export default function SalesProducts() {
       const yearlyCost = product.rental_price || product.price || 0;
       const vat = yearlyCost * 0.125;
       const total = yearlyCost + vat;
+
+      const handleNoTermYearlyCostSave = async (newYearlyCost: number) => {
+        await updateProduct(product.id, { rental_price: newYearlyCost });
+      };
+
       return (
         <TableRow key={product.id} className={rowClass}>
           <TableCell className="font-mono text-sm">{product.sku}</TableCell>
@@ -299,7 +304,13 @@ export default function SalesProducts() {
           <TableCell className="text-sm text-muted-foreground">-</TableCell>
           <TableCell className="text-right">{product.stock}</TableCell>
           <TableCell className="text-right font-mono text-muted-foreground">-</TableCell>
-          <TableCell className="text-right font-mono font-bold">${yearlyCost.toFixed(2)}</TableCell>
+          <TableCell className="text-right font-mono font-bold">
+            <EditableValueCell
+              value={yearlyCost}
+              onSave={handleNoTermYearlyCostSave}
+              disabled={isSupporting}
+            />
+          </TableCell>
           <TableCell className="text-right font-mono text-muted-foreground">${vat.toFixed(2)}</TableCell>
           <TableCell className="text-right font-mono font-bold">${total.toFixed(2)}</TableCell>
           <TableCell className="text-right">-</TableCell>
