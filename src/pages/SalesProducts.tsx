@@ -128,12 +128,16 @@ export default function SalesProducts() {
     const multiplier = FREQUENCY_MULTIPLIER[paymentTerm] || 12;
     const perPeriodPrice = newYearlyCost / multiplier;
     
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('rental_payment_terms')
       .update({ rental_price: parseFloat(perPeriodPrice.toFixed(6)) })
-      .eq('id', termId);
+      .eq('id', termId)
+      .select();
     
     if (error) throw error;
+    if (!data || data.length === 0) {
+      throw new Error('Update failed: You may not have permission to edit this record.');
+    }
     
     // Refresh rental payment terms
     setRentalPaymentTerms(prev => 
