@@ -245,6 +245,24 @@ export default function SalesProducts() {
             : 'N/A'
           }
         </TableCell>
+        <TableCell className="text-right font-mono text-muted-foreground">
+          {(() => {
+            const basePrice = product.is_rental_only 
+              ? (product.rental_price || 0) 
+              : (product.price || 0);
+            const vat = basePrice * 0.125;
+            return `$${vat.toFixed(2)}`;
+          })()}
+        </TableCell>
+        <TableCell className="text-right font-mono font-bold">
+          {(() => {
+            const basePrice = product.is_rental_only 
+              ? (product.rental_price || 0) 
+              : (product.price || 0);
+            const total = basePrice * 1.125;
+            return `$${total.toFixed(2)}`;
+          })()}
+        </TableCell>
         <TableCell className="text-right">
           {product.is_rental_only 
             ? 'N/A' 
@@ -282,6 +300,8 @@ export default function SalesProducts() {
             <TableHead className="text-right">Cost Price</TableHead>
             <TableHead className="text-right">Sale Price</TableHead>
             <TableHead className="text-right">Rental Price</TableHead>
+            <TableHead className="text-right">VAT 12.5%</TableHead>
+            <TableHead className="text-right">Total</TableHead>
             <TableHead className="text-right">Markup</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Actions</TableHead>
