@@ -756,9 +756,9 @@ export default function Sales() {
                           <CommandGroup>
                             {customers
                               .filter(customer => 
-                                customer.name.toLowerCase().includes(customerSearchValue.toLowerCase()) ||
-                                customer.company?.toLowerCase().includes(customerSearchValue.toLowerCase()) ||
-                                customer.email?.toLowerCase().includes(customerSearchValue.toLowerCase())
+                                (customer.name || '').toLowerCase().includes(customerSearchValue.toLowerCase()) ||
+                                (customer.company || '').toLowerCase().includes(customerSearchValue.toLowerCase()) ||
+                                (customer.email || '').toLowerCase().includes(customerSearchValue.toLowerCase())
                               )
                               .map((customer) => (
                                 <CommandItem
