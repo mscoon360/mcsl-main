@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, Package2, TrendingUp, ChevronDown, ChevronRight } from 'lucide-react';
+import { DollarSign, Package2, TrendingUp, ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { EditableValueCell } from '@/components/contracts/EditableValueCell';
 
@@ -147,6 +148,47 @@ export default function SalesProducts() {
     toast({ title: 'Price Updated', description: 'Rental yearly cost updated successfully.' });
   };
 
+  const handleDeleteProduct = async (productId: string, productName: string) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+      
+      if (error) throw error;
+      
+      toast({ title: 'Product Deleted', description: `${productName} has been deleted.` });
+      // Refresh products list
+      window.location.reload();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to delete product.', variant: 'destructive' });
+    }
+  };
+
+  const renderDeleteButton = (product: Product) => (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Product</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete <strong>{product.name}</strong>? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={() => handleDeleteProduct(product.id, product.name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   const getProductType = (product: any) => {
     if (product.is_rental_only) return 'Rental Only';
     if (product.is_rental) return 'Sale & Rental';
@@ -275,6 +317,7 @@ export default function SalesProducts() {
           {calculateMarkup(product.price || 0, product.cost_price || 0)}
         </TableCell>
         <TableCell>{getStatusBadge(product)}</TableCell>
+        <TableCell>{!isSupporting && renderDeleteButton(product)}</TableCell>
       </TableRow>
     );
   };
@@ -319,6 +362,7 @@ export default function SalesProducts() {
           <TableCell className="text-right font-mono font-bold">${total.toFixed(2)}</TableCell>
           <TableCell className="text-right">-</TableCell>
           <TableCell>{getStatusBadge(product)}</TableCell>
+          <TableCell>{renderDeleteButton(product)}</TableCell>
         </TableRow>
       );
     }
@@ -354,6 +398,7 @@ export default function SalesProducts() {
           <TableCell className="text-right font-mono font-bold">${total.toFixed(2)}</TableCell>
           <TableCell className="text-right">-</TableCell>
           <TableCell>{idx === 0 ? getStatusBadge(product) : null}</TableCell>
+          <TableCell>{idx === 0 ? renderDeleteButton(product) : null}</TableCell>
         </TableRow>
       );
     });
@@ -392,11 +437,12 @@ export default function SalesProducts() {
                   <TableHead className="text-right">VAT 12.5%</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Markup</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rentalProducts.map((product) => (
+                   <TableHead>Status</TableHead>
+                   <TableHead className="w-12"></TableHead>
+                 </TableRow>
+               </TableHeader>
+               <TableBody>
+                 {rentalProducts.map((product) => (
                   <>
                     {renderRentalProductRows(product, false)}
                     {getSupportingProductsForProduct(product.id).map((sp) =>
@@ -431,11 +477,12 @@ export default function SalesProducts() {
                   <TableHead className="text-right">VAT 12.5%</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Markup</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {saleProducts.map((product) => (
+                   <TableHead>Status</TableHead>
+                   <TableHead className="w-12"></TableHead>
+                 </TableRow>
+               </TableHeader>
+               <TableBody>
+                 {saleProducts.map((product) => (
                   <>
                     {renderSaleProductRow(product, false)}
                     {getSupportingProductsForProduct(product.id).map((sp) =>
