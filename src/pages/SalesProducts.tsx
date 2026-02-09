@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, DollarSign, Package2, TrendingUp, ChevronDown, ChevronRight } from 'lucide-react';
+import { DollarSign, Package2, TrendingUp, ChevronDown, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { EditableValueCell } from '@/components/contracts/EditableValueCell';
 
 interface SupportingRelation {
   id: string;
@@ -50,10 +50,6 @@ export default function SalesProducts() {
   const { products, loading, updateProduct } = useProducts();
   const { divisions } = useDivisions();
   const { toast } = useToast();
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any>(null);
-  const [salePrice, setSalePrice] = useState('');
-  const [rentalPrice, setRentalPrice] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedDivisions, setExpandedDivisions] = useState<Set<string>>(new Set());
   const [expandedSubdivisions, setExpandedSubdivisions] = useState<Set<string>>(new Set());
@@ -122,64 +118,29 @@ export default function SalesProducts() {
     setExpandedSubdivisions(newExpanded);
   };
 
-  const handleEditClick = (product: any) => {
-    // Don't allow editing supporting products
-    if (isSupportingProduct(product.id)) {
-      toast({
-        title: 'Cannot Edit',
-        description: 'Supporting products cannot have their prices edited. They are used for cost calculation only.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    setEditingProduct(product);
-    setSalePrice(product.price?.toString() || '');
-    setRentalPrice(product.rental_price?.toString() || '');
-    setIsEditDialogOpen(true);
+  // Inline save handler for sale product price
+  const handleSaleProductPriceSave = async (productId: string, newPrice: number) => {
+    await updateProduct(productId, { price: newPrice });
   };
 
-  const handleUpdatePrice = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingProduct) return;
-
-    try {
-      const updates: any = {};
-      
-      if (editingProduct.is_rental_only) {
-        updates.rental_price = parseFloat(rentalPrice) || 0;
-        updates.price = parseFloat(rentalPrice) || 0;
-      } else if (editingProduct.is_rental && !editingProduct.is_rental_only) {
-        updates.price = parseFloat(salePrice) || 0;
-        updates.rental_price = parseFloat(rentalPrice) || 0;
-      } else {
-        updates.price = parseFloat(salePrice) || 0;
-      }
-
-      await updateProduct(editingProduct.id, updates);
-      
-      toast({
-        title: 'Price Updated',
-        description: 'Product pricing has been updated successfully.',
-      });
-      
-      setIsEditDialogOpen(false);
-      setEditingProduct(null);
-      setSalePrice('');
-      setRentalPrice('');
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleDialogClose = () => {
-    setIsEditDialogOpen(false);
-    setEditingProduct(null);
-    setSalePrice('');
-    setRentalPrice('');
+  // Inline save handler for rental yearly cost → reverse-calculate per-period price
+  const handleRentalYearlyCostSave = async (termId: string, paymentTerm: string, newYearlyCost: number) => {
+    const multiplier = FREQUENCY_MULTIPLIER[paymentTerm] || 12;
+    const perPeriodPrice = newYearlyCost / multiplier;
+    
+    const { error } = await supabase
+      .from('rental_payment_terms')
+      .update({ rental_price: parseFloat(perPeriodPrice.toFixed(2)) })
+      .eq('id', termId);
+    
+    if (error) throw error;
+    
+    // Refresh rental payment terms
+    setRentalPaymentTerms(prev => 
+      prev.map(t => t.id === termId ? { ...t, rental_price: parseFloat(perPeriodPrice.toFixed(2)) } : t)
+    );
+    
+    toast({ title: 'Price Updated', description: 'Rental yearly cost updated successfully.' });
   };
 
   const getProductType = (product: any) => {
@@ -285,7 +246,14 @@ export default function SalesProducts() {
           ${(product.cost_price || 0).toFixed(2)}
         </TableCell>
         <TableCell className="text-right font-mono font-bold">
-          ${(product.price || 0).toFixed(2)}
+          {isSupporting ? (
+            <span>${(product.price || 0).toFixed(2)}</span>
+          ) : (
+            <EditableValueCell
+              value={product.price || 0}
+              onSave={async (newPrice) => handleSaleProductPriceSave(product.id, newPrice)}
+            />
+          )}
         </TableCell>
         <TableCell className="text-right font-mono text-muted-foreground">
           {(() => {
@@ -303,17 +271,6 @@ export default function SalesProducts() {
           {calculateMarkup(product.price || 0, product.cost_price || 0)}
         </TableCell>
         <TableCell>{getStatusBadge(product)}</TableCell>
-        <TableCell>
-          {!isSupporting && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleEditClick(product)}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
-        </TableCell>
       </TableRow>
     );
   };
@@ -347,11 +304,6 @@ export default function SalesProducts() {
           <TableCell className="text-right font-mono font-bold">${total.toFixed(2)}</TableCell>
           <TableCell className="text-right">-</TableCell>
           <TableCell>{getStatusBadge(product)}</TableCell>
-          <TableCell>
-            <Button variant="ghost" size="icon" onClick={() => handleEditClick(product)}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-          </TableCell>
         </TableRow>
       );
     }
@@ -379,18 +331,16 @@ export default function SalesProducts() {
           </TableCell>
           <TableCell className="text-right">{idx === 0 ? product.stock : ''}</TableCell>
           <TableCell className="text-right font-mono text-muted-foreground">-</TableCell>
-          <TableCell className="text-right font-mono font-bold">${yearlyCost.toFixed(2)}</TableCell>
+          <TableCell className="text-right font-mono font-bold">
+            <EditableValueCell
+              value={yearlyCost}
+              onSave={async (newYearlyCost) => handleRentalYearlyCostSave(term.id, term.payment_term, newYearlyCost)}
+            />
+          </TableCell>
           <TableCell className="text-right font-mono text-muted-foreground">${vat.toFixed(2)}</TableCell>
           <TableCell className="text-right font-mono font-bold">${total.toFixed(2)}</TableCell>
           <TableCell className="text-right">-</TableCell>
           <TableCell>{idx === 0 ? getStatusBadge(product) : null}</TableCell>
-          <TableCell>
-            {idx === 0 && (
-              <Button variant="ghost" size="icon" onClick={() => handleEditClick(product)}>
-                <Pencil className="h-4 w-4" />
-              </Button>
-            )}
-          </TableCell>
         </TableRow>
       );
     });
@@ -430,7 +380,7 @@ export default function SalesProducts() {
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Markup</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -470,7 +420,7 @@ export default function SalesProducts() {
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Markup</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -568,82 +518,6 @@ export default function SalesProducts() {
         </CardContent>
       </Card>
 
-      {/* Edit Price Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={handleDialogClose}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Product Pricing</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleUpdatePrice}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Product</Label>
-                <Input value={editingProduct?.name || ''} disabled />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>SKU</Label>
-                <Input value={editingProduct?.sku || ''} disabled />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Cost Price per Unit (Reference)</Label>
-                <Input 
-                  value={editingProduct?.cost_price ? `$${editingProduct.cost_price.toFixed(2)}` : 'N/A'} 
-                  disabled 
-                  className="bg-muted"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Current Stock</Label>
-                <Input value={editingProduct?.stock || 0} disabled className="bg-muted" />
-              </div>
-
-              {editingProduct && !editingProduct.is_rental_only && (
-                <div className="space-y-2">
-                  <Label htmlFor="sale_price">Sale Price *</Label>
-                  <Input
-                    id="sale_price"
-                    type="number"
-                    step="0.01"
-                    value={salePrice}
-                    onChange={(e) => setSalePrice(e.target.value)}
-                    placeholder="0.00"
-                    required
-                  />
-                  {editingProduct?.cost_price && salePrice && (
-                    <p className="text-sm text-muted-foreground">
-                      Markup: {calculateMarkup(parseFloat(salePrice), editingProduct.cost_price)}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {editingProduct && (editingProduct.is_rental || editingProduct.is_rental_only) && (
-                <div className="space-y-2">
-                  <Label htmlFor="rental_price">Rental Price *</Label>
-                  <Input
-                    id="rental_price"
-                    type="number"
-                    step="0.01"
-                    value={rentalPrice}
-                    onChange={(e) => setRentalPrice(e.target.value)}
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-              )}
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleDialogClose}>
-                Cancel
-              </Button>
-              <Button type="submit">Update Pricing</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* Divisions Table */}
       <Card>
