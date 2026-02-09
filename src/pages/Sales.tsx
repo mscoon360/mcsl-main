@@ -763,7 +763,7 @@ export default function Sales() {
                               .map((customer) => (
                                 <CommandItem
                                   key={customer.id}
-                                  value={customer.name}
+                                  value={customer.name || customer.company || customer.id}
                                   onSelect={() => {
                                     setSelectedCustomer(customer.id);
                                     setCustomerSearchOpen(false);
