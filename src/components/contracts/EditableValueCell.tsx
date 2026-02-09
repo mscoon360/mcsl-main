@@ -65,6 +65,16 @@ export function EditableValueCell({
     }
   };
 
+  const handleBlur = () => {
+    // Auto-save on blur if value changed
+    const newValue = parseFloat(editValue);
+    if (!isNaN(newValue) && newValue >= 0 && newValue !== value) {
+      handleSaveEdit();
+    } else {
+      handleCancelEdit();
+    }
+  };
+
   if (isEditing) {
     return (
       <div className="flex items-center gap-1">
@@ -75,6 +85,7 @@ export function EditableValueCell({
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
           className="h-7 w-24 text-sm"
           min="0"
           step="0.01"
@@ -84,6 +95,7 @@ export function EditableValueCell({
           variant="ghost"
           size="sm"
           className="h-7 w-7 p-0"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={handleSaveEdit}
           disabled={isSaving}
         >
@@ -93,6 +105,7 @@ export function EditableValueCell({
           variant="ghost"
           size="sm"
           className="h-7 w-7 p-0"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={handleCancelEdit}
           disabled={isSaving}
         >
