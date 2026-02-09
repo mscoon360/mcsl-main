@@ -298,10 +298,10 @@ export default function SalesProducts() {
           <TableCell className="font-medium">{product.name}</TableCell>
           <TableCell>
             <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-300">
-              Rental
+              -
             </Badge>
           </TableCell>
-          <TableCell className="text-sm text-muted-foreground">-</TableCell>
+          <TableCell className="text-sm text-muted-foreground">{product.units || 'pc'}</TableCell>
           <TableCell className="text-right">{product.stock}</TableCell>
           <TableCell className="text-right font-mono text-muted-foreground">-</TableCell>
           <TableCell className="text-right font-mono font-bold">
@@ -337,9 +337,7 @@ export default function SalesProducts() {
               {formatPaymentTerm(term.payment_term)}
             </Badge>
           </TableCell>
-          <TableCell className="text-sm text-muted-foreground">
-            {formatPaymentTerm(term.payment_term)}
-          </TableCell>
+          <TableCell className="text-sm text-muted-foreground">{idx === 0 ? (product.units || 'pc') : ''}</TableCell>
           <TableCell className="text-right">{idx === 0 ? product.stock : ''}</TableCell>
           <TableCell className="text-right font-mono text-muted-foreground">-</TableCell>
           <TableCell className="text-right font-mono font-bold">
@@ -384,13 +382,12 @@ export default function SalesProducts() {
                   <TableHead>Name</TableHead>
                   <TableHead>Service Frequency</TableHead>
                   <TableHead>UOM</TableHead>
-                  <TableHead className="text-right">Stock</TableHead>
+                  <TableHead className="text-right">QTY</TableHead>
                   <TableHead className="text-right">Cost Price</TableHead>
                   <TableHead className="text-right">Yearly Cost</TableHead>
                   <TableHead className="text-right">VAT 12.5%</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Markup</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -430,7 +427,6 @@ export default function SalesProducts() {
                   <TableHead className="text-right">VAT 12.5%</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Markup</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
