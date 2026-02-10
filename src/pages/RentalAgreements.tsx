@@ -683,14 +683,14 @@ export default function RentalAgreements() {
                         <CommandGroup>
                           {customers
                             .filter(customer => 
-                              customer.name.toLowerCase().includes(customerSearchValue.toLowerCase()) ||
-                              customer.company?.toLowerCase().includes(customerSearchValue.toLowerCase()) ||
-                              customer.email?.toLowerCase().includes(customerSearchValue.toLowerCase())
+                              (customer.name || '').toLowerCase().includes(customerSearchValue.toLowerCase()) ||
+                              (customer.company || '').toLowerCase().includes(customerSearchValue.toLowerCase()) ||
+                              (customer.email || '').toLowerCase().includes(customerSearchValue.toLowerCase())
                             )
                             .map((customer) => (
                               <CommandItem
                                 key={customer.id}
-                                value={customer.name}
+                                value={customer.name || customer.company || customer.id}
                                 onSelect={() => {
                                   setSelectedCustomer(customer.id);
                                   setCustomerSearchOpen(false);
