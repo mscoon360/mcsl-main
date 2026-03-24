@@ -146,7 +146,8 @@ const navigation: NavigationSection[] = [
     title: "Divisional Sales & Contracts Department",
     items: [
       { name: "Dashboard", href: "/", icon: BarChart3 },
-      { name: "Sales", href: "/sales", icon: ShoppingCart },
+      { name: "Point of Sale", href: "/pos", icon: ShoppingCart },
+      { name: "Sales Log", href: "/sales", icon: Receipt },
       { name: "Product Listing", href: "/product-listing", icon: Package },
       { name: "Promotions", href: "/promotions", icon: Tag },
       { name: "Contracts", href: "/rental-agreements", icon: FileText },
