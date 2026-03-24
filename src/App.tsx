@@ -45,6 +45,7 @@ import FinanceReports from "./pages/FinanceReports";
 import PurchaseOrders from "./pages/PurchaseOrders";
 import AssetRegistrar from "./pages/AssetRegistrar";
 import FinancePurchaseOrders from "./pages/FinancePurchaseOrders";
+import PointOfSale from "./pages/PointOfSale";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
