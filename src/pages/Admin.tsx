@@ -755,159 +755,103 @@ export default function Admin() {
                   <div className="space-y-3">
                     <Label>Navigation Sections (Select all that apply)</Label>
                     <div className="grid grid-cols-2 gap-3 p-4 border rounded-md bg-muted/50">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="nav-dashboard"
-                          checked={selectedNavSections.includes('Dashboard')}
-                          onCheckedChange={() => toggleNavSection('Dashboard')}
-                        />
-                        <label htmlFor="nav-dashboard" className="text-sm font-medium cursor-pointer">
-                          Dashboard
-                        </label>
+                      {/* Main Section */}
+                      <div className="col-span-2 font-semibold text-sm text-muted-foreground pt-1">Main</div>
+                      {[
+                        { id: 'data-extractor', label: 'Data Extractor', value: 'Data Extractor (Coming Soon)' },
+                        { id: 'fulfillment', label: 'Fulfillment', value: 'Fulfillment' },
+                      ].map(item => (
+                        <div key={item.id} className="flex items-center space-x-2">
+                          <Checkbox id={`nav-${item.id}`} checked={selectedNavSections.includes(item.value)} onCheckedChange={() => toggleNavSection(item.value)} />
+                          <label htmlFor={`nav-${item.id}`} className="text-sm font-medium cursor-pointer">{item.label}</label>
+                        </div>
+                      ))}
+
+                      {/* Group Supporting Departments */}
+                      <div className="col-span-2 font-semibold text-sm text-muted-foreground pt-2 border-t">Group Supporting Departments</div>
+                      {[
+                        { id: 'legal', label: 'Legal Dept.', value: 'Legal Dept.' },
+                        { id: 'finance-dept', label: 'Finance Dept.', value: 'Finance Dept.' },
+                        { id: 'hr', label: 'Human Resource Dept.', value: 'Human Resource Dept.' },
+                        { id: 'learning', label: 'Learning & Development Dept.', value: 'Learning & Development Dept.' },
+                        { id: 'policies', label: 'Policies & Standard Dept.', value: 'Policies & Standard Dept.' },
+                        { id: 'hsse', label: 'HSSE Dept.', value: 'HSSE Dept.' },
+                        { id: 'research', label: 'Research Development & A.I Dept.', value: 'Research Development & A.I Dept.' },
+                        { id: 'marketing', label: 'Marketing Dept.', value: 'Marketing Dept.' },
+                      ].map(item => (
+                        <div key={item.id} className="flex items-center space-x-2">
+                          <Checkbox id={`nav-${item.id}`} checked={selectedNavSections.includes(item.value)} onCheckedChange={() => toggleNavSection(item.value)} />
+                          <label htmlFor={`nav-${item.id}`} className="text-sm font-medium cursor-pointer">{item.label}</label>
+                        </div>
+                      ))}
+
+                      {/* Finance Department */}
+                      <div className="col-span-2 font-semibold text-sm text-muted-foreground pt-2 border-t">Finance Department</div>
+                      <div className="flex items-center space-x-2 col-span-2">
+                        <Checkbox id="nav-finance-all" checked={selectedNavSections.includes('Finance')} onCheckedChange={() => toggleNavSection('Finance')} />
+                        <label htmlFor="nav-finance-all" className="text-sm font-medium cursor-pointer">Finance (All)</label>
                       </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="nav-sales"
-                          checked={selectedNavSections.includes('Sales')}
-                          onCheckedChange={() => toggleNavSection('Sales')}
-                        />
-                        <label htmlFor="nav-sales" className="text-sm font-medium cursor-pointer">
-                          Sales
-                        </label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="nav-customers"
-                          checked={selectedNavSections.includes('Customers')}
-                          onCheckedChange={() => toggleNavSection('Customers')}
-                        />
-                        <label htmlFor="nav-customers" className="text-sm font-medium cursor-pointer">
-                          Customers
-                        </label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="nav-products"
-                          checked={selectedNavSections.includes('Products')}
-                          onCheckedChange={() => toggleNavSection('Products')}
-                        />
-                        <label htmlFor="nav-products" className="text-sm font-medium cursor-pointer">
-                          Products
-                        </label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="nav-inventory"
-                          checked={selectedNavSections.includes('Inventory')}
-                          onCheckedChange={() => toggleNavSection('Inventory')}
-                        />
-                        <label htmlFor="nav-inventory" className="text-sm font-medium cursor-pointer">
-                          Inventory
-                        </label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="nav-barcode-scanner"
-                          checked={selectedNavSections.includes('Barcode Scanner')}
-                          onCheckedChange={() => toggleNavSection('Barcode Scanner')}
-                        />
-                        <label htmlFor="nav-barcode-scanner" className="text-sm font-medium cursor-pointer">
-                          Barcode Scanner
-                        </label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="nav-contracts"
-                          checked={selectedNavSections.includes('Contracts')}
-                          onCheckedChange={() => toggleNavSection('Contracts')}
-                        />
-                        <label htmlFor="nav-contracts" className="text-sm font-medium cursor-pointer">
-                          Contracts
-                        </label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="nav-fulfillment"
-                          checked={selectedNavSections.includes('Fulfillment')}
-                          onCheckedChange={() => toggleNavSection('Fulfillment')}
-                        />
-                        <label htmlFor="nav-fulfillment" className="text-sm font-medium cursor-pointer">
-                          Fulfillment
-                        </label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 col-span-2 pt-2 border-t">
-                        <Checkbox 
-                          id="nav-finance-all"
-                          checked={selectedNavSections.includes('Finance')}
-                          onCheckedChange={() => toggleNavSection('Finance')}
-                        />
-                        <label htmlFor="nav-finance-all" className="text-sm font-medium cursor-pointer">
-                          Finance (All)
-                        </label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 pl-6">
-                        <Checkbox 
-                          id="nav-finance-overview"
-                          checked={selectedNavSections.includes('Finance-Overview')}
-                          onCheckedChange={() => toggleNavSection('Finance-Overview')}
-                        />
-                        <label htmlFor="nav-finance-overview" className="text-sm cursor-pointer">
-                          Overview
-                        </label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 pl-6">
-                        <Checkbox 
-                          id="nav-finance-income"
-                          checked={selectedNavSections.includes('Finance-Income')}
-                          onCheckedChange={() => toggleNavSection('Finance-Income')}
-                        />
-                        <label htmlFor="nav-finance-income" className="text-sm cursor-pointer">
-                          Income
-                        </label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 pl-6">
-                        <Checkbox 
-                          id="nav-finance-expenditure"
-                          checked={selectedNavSections.includes('Finance-Expenditure')}
-                          onCheckedChange={() => toggleNavSection('Finance-Expenditure')}
-                        />
-                        <label htmlFor="nav-finance-expenditure" className="text-sm cursor-pointer">
-                          Expenditure
-                        </label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 pl-6">
-                        <Checkbox 
-                          id="nav-finance-invoices"
-                          checked={selectedNavSections.includes('Finance-Invoices')}
-                          onCheckedChange={() => toggleNavSection('Finance-Invoices')}
-                        />
-                        <label htmlFor="nav-finance-invoices" className="text-sm cursor-pointer">
-                          Invoices
-                        </label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 pl-6">
-                        <Checkbox 
-                          id="nav-finance-collections"
-                          checked={selectedNavSections.includes('Finance-Collections')}
-                          onCheckedChange={() => toggleNavSection('Finance-Collections')}
-                        />
-                        <label htmlFor="nav-finance-collections" className="text-sm cursor-pointer">
-                          Collections
-                        </label>
-                      </div>
+                      {[
+                        { id: 'finance-overview', label: 'Overview', value: 'Finance-Overview' },
+                        { id: 'finance-income', label: 'Income', value: 'Finance-Income' },
+                        { id: 'finance-expenditure', label: 'Expenditure', value: 'Finance-Expenditure' },
+                        { id: 'finance-product-costing', label: 'Product/Service Costing', value: 'Finance-Product/Service Costing' },
+                        { id: 'finance-rental-costing', label: 'Rental Costing', value: 'Finance-Rental Costing' },
+                        { id: 'finance-chart-of-accounts', label: 'Chart of Accounts', value: 'Finance-Chart of Accounts' },
+                        { id: 'finance-trial-balance', label: 'Trial Balance', value: 'Finance-Trial Balance' },
+                        { id: 'finance-reports', label: 'Reports', value: 'Finance-Reports' },
+                        { id: 'finance-asset-registrar', label: 'Asset Registrar', value: 'Finance-Asset Registrar' },
+                        { id: 'finance-receivables', label: 'Receivables', value: 'Finance-Receivables' },
+                        { id: 'finance-purchase-orders', label: 'Purchase Orders', value: 'Finance-Purchase Orders' },
+                      ].map(item => (
+                        <div key={item.id} className="flex items-center space-x-2 pl-6">
+                          <Checkbox id={`nav-${item.id}`} checked={selectedNavSections.includes(item.value)} onCheckedChange={() => toggleNavSection(item.value)} />
+                          <label htmlFor={`nav-${item.id}`} className="text-sm cursor-pointer">{item.label}</label>
+                        </div>
+                      ))}
+
+                      {/* Procurement & Logistics */}
+                      <div className="col-span-2 font-semibold text-sm text-muted-foreground pt-2 border-t">Procurement & Logistics</div>
+                      {[
+                        { id: 'inventory', label: 'Inventory', value: 'Inventory' },
+                        { id: 'supplier-listing', label: 'Supplier Listing', value: 'Supplier Listing' },
+                        { id: 'purchase-orders', label: 'Purchase Orders', value: 'Purchase Orders' },
+                        { id: 'barcode-scanner', label: 'Barcode Scanner', value: 'Barcode Scanner' },
+                        { id: 'fleet', label: 'Fleet (All)', value: 'Fleet' },
+                      ].map(item => (
+                        <div key={item.id} className="flex items-center space-x-2">
+                          <Checkbox id={`nav-${item.id}`} checked={selectedNavSections.includes(item.value)} onCheckedChange={() => toggleNavSection(item.value)} />
+                          <label htmlFor={`nav-${item.id}`} className="text-sm font-medium cursor-pointer">{item.label}</label>
+                        </div>
+                      ))}
+
+                      {/* Divisional Sales & Contracts */}
+                      <div className="col-span-2 font-semibold text-sm text-muted-foreground pt-2 border-t">Divisional Sales & Contracts</div>
+                      {[
+                        { id: 'dashboard', label: 'Dashboard', value: 'Dashboard' },
+                        { id: 'pos', label: 'Point of Sale', value: 'Point of Sale' },
+                        { id: 'sales-log', label: 'Sales Log', value: 'Sales Log' },
+                        { id: 'product-listing', label: 'Product Listing', value: 'Product Listing' },
+                        { id: 'promotions', label: 'Promotions', value: 'Promotions' },
+                        { id: 'contracts', label: 'Contracts', value: 'Contracts' },
+                        { id: 'customers', label: 'Customer Database', value: 'Customer Database' },
+                      ].map(item => (
+                        <div key={item.id} className="flex items-center space-x-2">
+                          <Checkbox id={`nav-${item.id}`} checked={selectedNavSections.includes(item.value)} onCheckedChange={() => toggleNavSection(item.value)} />
+                          <label htmlFor={`nav-${item.id}`} className="text-sm font-medium cursor-pointer">{item.label}</label>
+                        </div>
+                      ))}
+
+                      {/* Operational Divisions */}
+                      <div className="col-span-2 font-semibold text-sm text-muted-foreground pt-2 border-t">Operational Divisions</div>
+                      {[
+                        { id: 'maintenance', label: 'Maintenance', value: 'Maintenance' },
+                      ].map(item => (
+                        <div key={item.id} className="flex items-center space-x-2">
+                          <Checkbox id={`nav-${item.id}`} checked={selectedNavSections.includes(item.value)} onCheckedChange={() => toggleNavSection(item.value)} />
+                          <label htmlFor={`nav-${item.id}`} className="text-sm font-medium cursor-pointer">{item.label}</label>
+                        </div>
+                      ))}
                     </div>
                     {selectedNavSections.length > 0 && (
                       <p className="text-sm text-muted-foreground">
