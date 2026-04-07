@@ -1644,6 +1644,20 @@ export default function Products() {
                                 <Badge variant="secondary" className="ml-2 text-sm">
                                   {group.products.length} items
                                 </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="ml-2 h-6 w-6 p-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setRenamingCategory(group.category);
+                                    setNewCategoryName(group.category === 'Uncategorized' ? '' : group.category);
+                                    setIsRenameCategoryDialogOpen(true);
+                                  }}
+                                  title="Rename category"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -1818,6 +1832,20 @@ export default function Products() {
                             <Badge variant="secondary" className="ml-2 text-sm">
                               {group.products.length} items
                             </Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="ml-2 h-6 w-6 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRenamingCategory(group.category);
+                                setNewCategoryName(group.category === 'Uncategorized' ? '' : group.category);
+                                setIsRenameCategoryDialogOpen(true);
+                              }}
+                              title="Rename category"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
