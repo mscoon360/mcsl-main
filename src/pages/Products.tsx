@@ -913,7 +913,7 @@ export default function Products() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="division">Division</Label>
                   <select
@@ -950,6 +950,25 @@ export default function Products() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="add-category">Category</Label>
+                <Input
+                  id="add-category"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  placeholder="e.g., Dispenser, Paper, Chemical"
+                  list="add-category-suggestions"
+                />
+                <datalist id="add-category-suggestions">
+                  {[...new Set(products.map(p => p.category).filter(Boolean))].sort().map(cat => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="units">U.O.M *</Label>
                   <select
