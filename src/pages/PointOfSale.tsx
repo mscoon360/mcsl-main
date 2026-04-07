@@ -168,6 +168,7 @@ export default function PointOfSale() {
         quantity: bundleItem.quantity,
         unitPrice: bundleItem.price,
         isRental: false,
+        isService: false,
         discountType: bundleItem.discount_type || 'none',
         discountValue: bundleItem.discount_value || 0,
       };
