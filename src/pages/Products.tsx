@@ -66,6 +66,10 @@ export default function Products() {
   const [initialCategoriesSet, setInitialCategoriesSet] = useState(false);
   const [sellingUnitType, setSellingUnitType] = useState<string>('');
   const [sellingUnitQty, setSellingUnitQty] = useState<number>(0);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [isRenameCategoryDialogOpen, setIsRenameCategoryDialogOpen] = useState(false);
+  const [renamingCategory, setRenamingCategory] = useState<string>('');
+  const [newCategoryName, setNewCategoryName] = useState<string>('');
 
   const SELLING_UNIT_TYPES = [
     { value: 'each', label: 'Each (Individual)' },
