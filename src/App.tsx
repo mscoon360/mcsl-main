@@ -42,6 +42,8 @@ import Fuel from "./pages/Fuel";
 import Parts from "./pages/Parts";
 import RentalCosting from "./pages/RentalCosting";
 import FinanceReports from "./pages/FinanceReports";
+import ServicesPage from "./pages/Services";
+import ServiceCostingPage from "./pages/ServiceCosting";
 import PurchaseOrders from "./pages/PurchaseOrders";
 import AssetRegistrar from "./pages/AssetRegistrar";
 import FinancePurchaseOrders from "./pages/FinancePurchaseOrders";
@@ -100,6 +102,8 @@ const App = () => (
               <Route path="finance-purchase-orders" element={<FinancePurchaseOrders />} />
               <Route path="asset-registrar" element={<AssetRegistrar />} />
               <Route path="rental-costing" element={<RentalCosting />} />
+              <Route path="services" element={<ServicesPage />} />
+              <Route path="service-costing" element={<ServiceCostingPage />} />
               <Route path="admin" element={<Admin />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

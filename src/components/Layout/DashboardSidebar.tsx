@@ -114,6 +114,7 @@ const navigation: NavigationSection[] = [
       },
       { name: "Product/Service Costing", href: "/sales-products", icon: Package },
       { name: "Rental Costing", href: "/rental-costing", icon: Calculator },
+      { name: "Service Costing", href: "/service-costing", icon: Calculator },
       { name: "Chart of Accounts", href: "/chart-of-accounts", icon: BookOpen },
       { name: "Trial Balance", href: "/trial-balance", icon: Scale },
       { name: "Reports", href: "/finance-reports", icon: FileText },
@@ -126,6 +127,7 @@ const navigation: NavigationSection[] = [
     title: "Procurement & Logistics Department",
     items: [
       { name: "Inventory", href: "/products", icon: Package },
+      { name: "Services", href: "/services", icon: Briefcase },
       { name: "Supplier Listing", href: "/suppliers", icon: Building2 },
       { name: "Purchase Orders", href: "/purchase-orders", icon: ClipboardList },
       { name: "Barcode Scanner", href: "/barcode-scanner", icon: ScanBarcode },
