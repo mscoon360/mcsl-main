@@ -194,7 +194,7 @@ export default function Services() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-primary">
               {services.filter(s => s.status === 'active').length}
             </div>
           </CardContent>
@@ -204,7 +204,7 @@ export default function Services() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Rental Services</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-accent-foreground">
               {services.filter(s => s.is_rental).length}
             </div>
           </CardContent>
@@ -214,7 +214,7 @@ export default function Services() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Needs Servicing</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">
+            <div className="text-2xl font-bold text-destructive">
               {services.filter(s => s.needs_servicing).length}
             </div>
           </CardContent>
