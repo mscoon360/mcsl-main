@@ -61,6 +61,7 @@ export default function Products() {
   const [supportingRelations, setSupportingRelations] = useState<{ product_id: string; supporting_product_id: string }[]>([]);
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
   const [editSelectedSupplierId, setEditSelectedSupplierId] = useState<string>('');
+  const [editCategory, setEditCategory] = useState<string>('');
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   const [initialCategoriesSet, setInitialCategoriesSet] = useState(false);
   const [sellingUnitType, setSellingUnitType] = useState<string>('');
