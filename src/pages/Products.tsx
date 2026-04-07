@@ -533,6 +533,39 @@ export default function Products() {
     setIsSupportingDialogOpen(true);
   };
 
+  const handleRenameCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a category name',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Find all products with the old category name and update them
+      const productsToUpdate = products.filter(p => (p.category || 'Uncategorized') === renamingCategory);
+      for (const product of productsToUpdate) {
+        await updateProduct(product.id, { category: newCategoryName.trim() });
+      }
+      
+      toast({
+        title: 'Category renamed',
+        description: `"${renamingCategory}" renamed to "${newCategoryName.trim()}" for ${productsToUpdate.length} product(s)`,
+      });
+      setIsRenameCategoryDialogOpen(false);
+      setRenamingCategory('');
+      setNewCategoryName('');
+    } catch (error: any) {
+      toast({
+        title: 'Error renaming category',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleAddDivision = async (e: React.FormEvent) => {
     e.preventDefault();
     
