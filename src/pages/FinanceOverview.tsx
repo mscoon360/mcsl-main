@@ -86,7 +86,7 @@ export default function FinanceOverview() {
     paymentMethod: p.payment_method || 'cash',
     status: 'paid' as const
   }));
-  console.log('Finance Overview - Expenditures loaded:', expenditures.length);
+  
 
   // Calculate period start and end dates
   const periodStart = startOfMonth(subMonths(periodEndDate, parseInt(periodLength) - 1));
@@ -231,8 +231,6 @@ export default function FinanceOverview() {
       netIncome: totalIncome - totalExpenses
     };
   })();
-  console.log('Current period data:', currentPeriodData);
-  console.log('Expenses for current period:', currentPeriodData.totalExpenses);
 
   // Calculate period-over-period changes
   const incomeChange = currentPeriodData.totalIncome - previousPeriodData.totalIncome;
@@ -417,13 +415,13 @@ export default function FinanceOverview() {
           </Select>
           <div className="flex items-center gap-2 border rounded-md px-3 py-2">
             <Button variant="ghost" size="icon" onClick={handlePreviousPeriod}>
-              <TrendingDown className="h-4 w-4 rotate-90" />
+              <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm font-medium min-w-[200px] text-center">
               {getPeriodLabel()}
             </span>
             <Button variant="ghost" size="icon" onClick={handleNextPeriod} disabled={periodEnd >= endOfMonth(new Date())}>
-              <TrendingUp className="h-4 w-4 rotate-90" />
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
           <Button variant="outline" onClick={handleExportFinancialReport}>

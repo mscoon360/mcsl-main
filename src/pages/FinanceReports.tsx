@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -187,57 +188,108 @@ export default function FinanceReports() {
   ];
 
   const generateExecutiveReport = () => {
-    const report = `
-EXECUTIVE FINANCIAL REPORT
-Period: ${format(dateRange.from, 'MMM dd, yyyy')} - ${format(dateRange.to, 'MMM dd, yyyy')}
-Generated: ${format(new Date(), 'MMM dd, yyyy HH:mm')}
+    try {
+      const wb = XLSX.utils.book_new();
 
-═══════════════════════════════════════════════════════════
+      // Summary sheet
+      const summaryData = [
+        { Category: 'REVENUE & PROFITABILITY', Amount: '' },
+        { Category: 'Total Revenue', Amount: metrics.totalRevenue },
+        { Category: 'Total Expenses', Amount: metrics.totalExpenses },
+        { Category: 'Gross Profit', Amount: metrics.grossProfit },
+        { Category: `Profit Margin`, Amount: metrics.totalRevenue > 0 ? `${((metrics.grossProfit / metrics.totalRevenue) * 100).toFixed(1)}%` : '0%' },
+        { Category: '', Amount: '' },
+        { Category: 'ACCOUNTS RECEIVABLE', Amount: '' },
+        { Category: 'Total Invoiced', Amount: metrics.totalReceivables },
+        { Category: 'Collected', Amount: metrics.receivablesCollected },
+        { Category: 'Outstanding', Amount: metrics.receivablesOutstanding },
+        { Category: 'Collection Rate', Amount: metrics.totalReceivables > 0 ? `${((metrics.receivablesCollected / metrics.totalReceivables) * 100).toFixed(1)}%` : '0%' },
+        { Category: '', Amount: '' },
+        { Category: 'ACCOUNTS PAYABLE', Amount: '' },
+        { Category: 'Total Bills', Amount: metrics.totalPayables },
+        { Category: 'Paid', Amount: metrics.payablesPaid },
+        { Category: 'Outstanding', Amount: metrics.payablesOutstanding },
+        { Category: '', Amount: '' },
+        { Category: 'VAT SUMMARY', Amount: '' },
+        { Category: 'Output VAT (Sales)', Amount: metrics.outputVAT },
+        { Category: 'Output VAT (Receivables)', Amount: metrics.outputVATFromReceivables },
+        { Category: 'Input VAT (Expenses)', Amount: metrics.inputVAT },
+        { Category: 'Input VAT (Payables)', Amount: metrics.inputVATFromBills },
+        { Category: `Net VAT ${metrics.netVAT >= 0 ? '(Payable)' : '(Refund)'}`, Amount: Math.abs(metrics.netVAT) },
+      ];
+      const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+      wsSummary['!cols'] = [{ width: 30 }, { width: 20 }];
+      XLSX.utils.book_append_sheet(wb, wsSummary, 'Executive Summary');
 
-REVENUE & PROFITABILITY
-─────────────────────────────────────────────────────────────
-Total Revenue:              $${metrics.totalRevenue.toLocaleString()}
-Total Expenses:             $${metrics.totalExpenses.toLocaleString()}
-Gross Profit:               $${metrics.grossProfit.toLocaleString()}
-Profit Margin:              ${metrics.totalRevenue > 0 ? ((metrics.grossProfit / metrics.totalRevenue) * 100).toFixed(1) : 0}%
+      // Sales detail sheet
+      const salesData = filteredSales.map(s => ({
+        Date: s.date,
+        Customer: s.customer_name,
+        Total: s.total,
+        VAT: s.vat_amount || 0,
+        Status: s.status,
+      }));
+      if (salesData.length > 0) {
+        const wsSales = XLSX.utils.json_to_sheet(salesData);
+        wsSales['!cols'] = [{ width: 12 }, { width: 30 }, { width: 15 }, { width: 12 }, { width: 12 }];
+        XLSX.utils.book_append_sheet(wb, wsSales, 'Sales');
+      }
 
-═══════════════════════════════════════════════════════════
+      // Expenses detail sheet
+      const expData = filteredExpenditures.map(e => ({
+        Date: e.date,
+        Description: e.description,
+        Category: e.category,
+        Type: e.type,
+        Subtotal: e.subtotal || e.amount,
+        VAT: e.vat_amount || 0,
+        Total: e.total || e.amount,
+      }));
+      if (expData.length > 0) {
+        const wsExp = XLSX.utils.json_to_sheet(expData);
+        wsExp['!cols'] = [{ width: 12 }, { width: 40 }, { width: 18 }, { width: 18 }, { width: 12 }, { width: 12 }, { width: 12 }];
+        XLSX.utils.book_append_sheet(wb, wsExp, 'Expenses');
+      }
 
-ACCOUNTS RECEIVABLE
-─────────────────────────────────────────────────────────────
-Total Invoiced:             $${metrics.totalReceivables.toLocaleString()}
-Collected:                  $${metrics.receivablesCollected.toLocaleString()}
-Outstanding:                $${metrics.receivablesOutstanding.toLocaleString()}
-Collection Rate:            ${metrics.totalReceivables > 0 ? ((metrics.receivablesCollected / metrics.totalReceivables) * 100).toFixed(1) : 0}%
+      // AP detail sheet
+      const apData = filteredBills.map(b => ({
+        Vendor: b.vendor_name,
+        'Bill #': b.bill_number,
+        'Bill Date': b.bill_date,
+        'Due Date': b.due_date,
+        Subtotal: b.subtotal || 0,
+        VAT: b.vat_amount || 0,
+        Total: b.amount,
+        Status: b.status,
+      }));
+      if (apData.length > 0) {
+        const wsAP = XLSX.utils.json_to_sheet(apData);
+        wsAP['!cols'] = [{ width: 25 }, { width: 15 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }];
+        XLSX.utils.book_append_sheet(wb, wsAP, 'Accounts Payable');
+      }
 
-═══════════════════════════════════════════════════════════
+      // AR detail sheet
+      const arData = filteredInvoices.map((i: any) => ({
+        Customer: i.customer_name,
+        'Invoice #': i.invoice_number,
+        'Issue Date': i.issue_date,
+        'Due Date': i.due_date,
+        Subtotal: i.subtotal || 0,
+        Tax: i.tax_amount || 0,
+        Total: i.total || 0,
+        Status: i.status,
+      }));
+      if (arData.length > 0) {
+        const wsAR = XLSX.utils.json_to_sheet(arData);
+        wsAR['!cols'] = [{ width: 25 }, { width: 15 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }];
+        XLSX.utils.book_append_sheet(wb, wsAR, 'Accounts Receivable');
+      }
 
-ACCOUNTS PAYABLE
-─────────────────────────────────────────────────────────────
-Total Bills:                $${metrics.totalPayables.toLocaleString()}
-Paid:                       $${metrics.payablesPaid.toLocaleString()}
-Outstanding:                $${metrics.payablesOutstanding.toLocaleString()}
-
-═══════════════════════════════════════════════════════════
-
-VAT SUMMARY
-─────────────────────────────────────────────────────────────
-Output VAT (Collected):     $${(metrics.outputVAT + metrics.outputVATFromReceivables).toLocaleString()}
-Input VAT (Paid):           $${(metrics.inputVAT + metrics.inputVATFromBills).toLocaleString()}
-Net VAT Liability:          $${metrics.netVAT.toLocaleString()}
-
-═══════════════════════════════════════════════════════════
-    `.trim();
-
-    const blob = new Blob([report], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `executive-report-${format(new Date(), 'yyyy-MM-dd')}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      const filename = `Executive_Report_${format(dateRange.from, 'yyyy-MM-dd')}_to_${format(dateRange.to, 'yyyy-MM-dd')}.xlsx`;
+      XLSX.writeFile(wb, filename);
+    } catch (error) {
+      console.error('Export error:', error);
+    }
   };
 
   return (

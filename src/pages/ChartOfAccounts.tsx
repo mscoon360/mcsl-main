@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, Edit, Trash2, Search, Download, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useChartOfAccounts, ChartOfAccount } from '@/hooks/useChartOfAccounts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import * as XLSX from 'xlsx';
 import type { Database } from '@/integrations/supabase/types';
 
 type AccountType = Database['public']['Enums']['account_type'];
@@ -50,6 +52,11 @@ export default function ChartOfAccounts() {
   const { accounts, loading, addAccount, updateAccount, deleteAccount } = useChartOfAccounts();
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<ChartOfAccount | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<string>('all');
+  const [filterSubtype, setFilterSubtype] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState<{
     account_number: string;
     account_name: string;
@@ -66,12 +73,61 @@ export default function ChartOfAccounts() {
     is_active: true,
   });
 
+  // Filtered accounts
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter(account => {
+      const matchesSearch = searchTerm === '' ||
+        account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        account.account_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (account.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = filterType === 'all' || account.account_type === filterType;
+      const matchesSubtype = filterSubtype === 'all' || account.account_subtype === filterSubtype;
+      const matchesStatus = filterStatus === 'all' || 
+        (filterStatus === 'active' && account.is_active) ||
+        (filterStatus === 'inactive' && !account.is_active);
+      return matchesSearch && matchesType && matchesSubtype && matchesStatus;
+    });
+  }, [accounts, searchTerm, filterType, filterSubtype, filterStatus]);
+
+  // Summary stats
+  const stats = useMemo(() => {
+    const byType: Record<string, number> = {};
+    accountTypes.forEach(t => { byType[t.value] = 0; });
+    accounts.forEach(a => { byType[a.account_type] = (byType[a.account_type] || 0) + 1; });
+    const activeCount = accounts.filter(a => a.is_active).length;
+    return { byType, total: accounts.length, active: activeCount, inactive: accounts.length - activeCount };
+  }, [accounts]);
+
+  // Grouped accounts
+  const groupedAccounts = useMemo(() => {
+    const grouped: Record<string, ChartOfAccount[]> = {};
+    filteredAccounts.forEach(account => {
+      if (!grouped[account.account_type]) grouped[account.account_type] = [];
+      grouped[account.account_type].push(account);
+    });
+    return grouped;
+  }, [filteredAccounts]);
+
+  // Available subtypes based on selected filter type
+  const availableSubtypes = useMemo(() => {
+    if (filterType === 'all') {
+      return Object.values(accountSubtypes).flat();
+    }
+    return accountSubtypes[filterType] || [];
+  }, [filterType]);
+
+  const toggleGroup = (type: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.account_type || !formData.account_subtype) {
-      return;
-    }
+    if (!formData.account_type || !formData.account_subtype) return;
 
     const accountData = {
       ...formData,
@@ -120,6 +176,26 @@ export default function ChartOfAccounts() {
     resetForm();
   };
 
+  const handleExport = () => {
+    const exportData = filteredAccounts.map(a => ({
+      'Account Number': a.account_number,
+      'Account Name': a.account_name,
+      'Type': a.account_type.charAt(0).toUpperCase() + a.account_type.slice(1),
+      'Subtype': a.account_subtype.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      'Balance': a.balance,
+      'Status': a.is_active ? 'Active' : 'Inactive',
+      'Description': a.description || '',
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    ws['!cols'] = [
+      { width: 15 }, { width: 40 }, { width: 12 }, { width: 20 },
+      { width: 15 }, { width: 10 }, { width: 40 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, 'Chart of Accounts');
+    XLSX.writeFile(wb, `Chart_of_Accounts_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
       asset: 'bg-green-500/10 text-green-500',
@@ -131,24 +207,96 @@ export default function ChartOfAccounts() {
     return colors[type] || 'bg-gray-500/10 text-gray-500';
   };
 
-  const groupedAccounts = accounts.reduce((acc, account) => {
-    if (!acc[account.account_type]) {
-      acc[account.account_type] = [];
-    }
-    acc[account.account_type].push(account);
-    return acc;
-  }, {} as Record<string, ChartOfAccount[]>);
-
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Chart of Accounts</h1>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Account
-        </Button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Chart of Accounts</h1>
+          <p className="text-muted-foreground">{stats.total} accounts ({stats.active} active, {stats.inactive} inactive)</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Account
+          </Button>
+        </div>
       </div>
 
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        {accountTypes.map(type => (
+          <Card key={type.value} className="cursor-pointer hover:border-primary transition-colors"
+            onClick={() => { setFilterType(filterType === type.value ? 'all' : type.value); setFilterSubtype('all'); }}>
+            <CardContent className="p-4 text-center">
+              <Badge className={`${getTypeColor(type.value)} mb-2`}>{type.label}</Badge>
+              <p className="text-2xl font-bold">{stats.byType[type.value] || 0}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Search & Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by account number, name, or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={filterType} onValueChange={(v) => { setFilterType(v); setFilterSubtype('all'); }}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="All Types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            {accountTypes.map(t => (
+              <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterSubtype} onValueChange={setFilterSubtype}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="All Subtypes" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Subtypes</SelectItem>
+            {availableSubtypes.map(s => (
+              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-[130px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Results count */}
+      {(searchTerm || filterType !== 'all' || filterSubtype !== 'all' || filterStatus !== 'all') && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing {filteredAccounts.length} of {accounts.length} accounts
+          </p>
+          <Button variant="ghost" size="sm" onClick={() => { setSearchTerm(''); setFilterType('all'); setFilterSubtype('all'); setFilterStatus('all'); }}>
+            Clear Filters
+          </Button>
+        </div>
+      )}
+
+      {/* Add/Edit Dialog */}
       <Dialog open={showForm} onOpenChange={handleCancel}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -239,86 +387,101 @@ export default function ChartOfAccounts() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleCancel}>
-                Cancel
-              </Button>
-              <Button type="submit">
-                {editingAccount ? 'Update' : 'Add'} Account
-              </Button>
+              <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
+              <Button type="submit">{editingAccount ? 'Update' : 'Add'} Account</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
+      {/* Account Groups */}
       {loading ? (
         <div className="text-center py-8">Loading accounts...</div>
       ) : (
-        <div className="space-y-6">
-          {Object.entries(groupedAccounts).map(([type, typeAccounts]) => (
-            <Card key={type}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Badge className={getTypeColor(type)}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </Badge>
-                  <span className="text-sm font-normal text-muted-foreground">
-                    ({typeAccounts.length} accounts)
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Number</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Subtype</TableHead>
-                      <TableHead>Balance</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {typeAccounts.map((account) => (
-                      <TableRow key={account.id}>
-                        <TableCell className="font-mono">{account.account_number}</TableCell>
-                        <TableCell className="font-medium">{account.account_name}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {account.account_subtype.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </TableCell>
-                        <TableCell className="font-mono">
-                          ${account.balance.toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={account.is_active ? 'default' : 'secondary'}>
-                            {account.is_active ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEdit(account)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => deleteAccount(account.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="space-y-4">
+          {Object.entries(groupedAccounts)
+            .sort(([a], [b]) => {
+              const order = ['asset', 'liability', 'equity', 'revenue', 'expense'];
+              return order.indexOf(a) - order.indexOf(b);
+            })
+            .map(([type, typeAccounts]) => {
+              const isCollapsed = collapsedGroups.has(type);
+              const typeTotal = typeAccounts.reduce((sum, a) => sum + a.balance, 0);
+              return (
+                <Card key={type}>
+                  <CardHeader 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors py-3"
+                    onClick={() => toggleGroup(type)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-3">
+                        {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        <Badge className={getTypeColor(type)}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </Badge>
+                        <span className="text-sm font-normal text-muted-foreground">
+                          {typeAccounts.length} accounts
+                        </span>
+                      </CardTitle>
+                      <span className="text-sm font-mono font-semibold">
+                        ${typeTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </CardHeader>
+                  {!isCollapsed && (
+                    <CardContent className="pt-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[120px]">Number</TableHead>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Subtype</TableHead>
+                            <TableHead className="text-right">Balance</TableHead>
+                            <TableHead className="w-[80px]">Status</TableHead>
+                            <TableHead className="w-[100px]">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {typeAccounts.map((account) => (
+                            <TableRow key={account.id} className={!account.is_active ? 'opacity-50' : ''}>
+                              <TableCell className="font-mono text-sm">{account.account_number}</TableCell>
+                              <TableCell className="font-medium">{account.account_name}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {account.account_subtype.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </TableCell>
+                              <TableCell className="font-mono text-right">
+                                ${account.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={account.is_active ? 'default' : 'secondary'} className="text-xs">
+                                  {account.is_active ? 'Active' : 'Inactive'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleEdit(account); }}>
+                                    <Edit className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); deleteAccount(account.id); }}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            })}
+          {filteredAccounts.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-lg">No accounts found</p>
+              <p className="text-sm">Try adjusting your search or filters</p>
+            </div>
+          )}
         </div>
       )}
     </div>
