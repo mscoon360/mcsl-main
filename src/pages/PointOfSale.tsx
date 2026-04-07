@@ -33,6 +33,7 @@ interface CartItem {
   quantity: number;
   unitPrice: number;
   isRental: boolean;
+  isService: boolean;
   discountType: 'none' | 'percentage' | 'fixed';
   discountValue: number;
   paymentTerm?: PaymentTerm;
