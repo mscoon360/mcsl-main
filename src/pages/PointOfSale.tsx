@@ -244,7 +244,7 @@ export default function PointOfSale() {
 
       // Update stock for non-rental items
       for (const item of cart) {
-        if (!item.isRental) {
+        if (!item.isRental && !item.isService) {
           const product = products.find(p => p.id === item.productId);
           if (product) {
             await updateProduct(item.productId, {
