@@ -342,6 +342,7 @@ export default function Products() {
       description,
       price,
       rental_price,
+      category: selectedCategory || null,
       division_id: selectedDivisionId || null,
       subdivision_id: selectedSubdivisionId || null,
       units,
@@ -378,6 +379,7 @@ export default function Products() {
       setIsSupportingItem(false);
       setAssignToProductIds([]);
       setSelectedSupplierId('');
+      setSelectedCategory('');
       setIsIgieneProduct(false);
       setSellingUnitType('');
       setSellingUnitQty(0);
