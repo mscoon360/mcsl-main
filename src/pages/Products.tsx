@@ -1795,8 +1795,33 @@ export default function Products() {
         const uncategorizedProducts = products.filter(p => !p.division_id);
         return uncategorizedProducts.length > 0 ? (
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Product Listing - Uncategorized</CardTitle>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={async () => {
+                  if (!window.confirm(`Are you sure you want to delete all ${uncategorizedProducts.length} uncategorized product(s)? This action cannot be undone.`)) return;
+                  try {
+                    for (const product of uncategorizedProducts) {
+                      await deleteProduct(product.id);
+                    }
+                    toast({
+                      title: 'Uncategorized products removed',
+                      description: `${uncategorizedProducts.length} product(s) have been deleted.`,
+                    });
+                  } catch (error: any) {
+                    toast({
+                      title: 'Error removing products',
+                      description: error.message,
+                      variant: 'destructive',
+                    });
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Remove All Uncategorized
+              </Button>
             </CardHeader>
             <CardContent>
               <Table>
