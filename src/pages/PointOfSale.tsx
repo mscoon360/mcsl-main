@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Search, Plus, Minus, Trash2, ShoppingCart, ChevronsUpDown, Check, User, Receipt, X, Package } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ShoppingCart, ChevronsUpDown, Check, User, Receipt, X, Package, Wrench } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
+import { useServices } from "@/hooks/useServices";
 import { useCustomers } from "@/hooks/useCustomers";
 import { usePromotions } from "@/hooks/usePromotions";
 import { useRentalPaymentTerms, RentalPaymentTerm, PaymentTerm } from "@/hooks/useRentalPaymentTerms";
