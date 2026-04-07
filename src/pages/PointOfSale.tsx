@@ -194,6 +194,7 @@ export default function PointOfSale() {
 
       // Check stock
       for (const item of cart) {
+        if (item.isService) continue; // Services have no stock
         const product = products.find(p => p.id === item.productId);
         if (product && !item.isRental && product.stock < item.quantity) {
           toast({ title: "Insufficient Stock", description: `${item.productName} only has ${product.stock} units available.`, variant: "destructive" });
