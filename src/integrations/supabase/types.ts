@@ -1792,6 +1792,152 @@ export type Database = {
           },
         ]
       }
+      service_costings: {
+        Row: {
+          battery_cost: number | null
+          battery_frequency_months: number | null
+          created_at: string | null
+          id: string
+          indirect_cost_percentage: number | null
+          margin_percentage: number | null
+          notes: string | null
+          payment_term: string
+          refill_cost: number | null
+          rental_price: number
+          service_id: string
+          total_cost: number | null
+          total_direct_costs: number | null
+          unit_cost: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          battery_cost?: number | null
+          battery_frequency_months?: number | null
+          created_at?: string | null
+          id?: string
+          indirect_cost_percentage?: number | null
+          margin_percentage?: number | null
+          notes?: string | null
+          payment_term: string
+          refill_cost?: number | null
+          rental_price?: number
+          service_id: string
+          total_cost?: number | null
+          total_direct_costs?: number | null
+          unit_cost?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          battery_cost?: number | null
+          battery_frequency_months?: number | null
+          created_at?: string | null
+          id?: string
+          indirect_cost_percentage?: number | null
+          margin_percentage?: number | null
+          notes?: string | null
+          payment_term?: string
+          refill_cost?: number | null
+          rental_price?: number
+          service_id?: string
+          total_cost?: number | null
+          total_direct_costs?: number | null
+          unit_cost?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_costings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          category: string | null
+          cost_price: number | null
+          created_at: string | null
+          description: string | null
+          division_id: string | null
+          id: string
+          is_rental: boolean | null
+          is_rental_only: boolean | null
+          name: string
+          needs_servicing: boolean | null
+          price: number
+          rental_price: number | null
+          service_frequency: string | null
+          sku: string
+          status: string | null
+          subdivision_id: string | null
+          supplier_name: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          cost_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          division_id?: string | null
+          id?: string
+          is_rental?: boolean | null
+          is_rental_only?: boolean | null
+          name: string
+          needs_servicing?: boolean | null
+          price?: number
+          rental_price?: number | null
+          service_frequency?: string | null
+          sku: string
+          status?: string | null
+          subdivision_id?: string | null
+          supplier_name?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          cost_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          division_id?: string | null
+          id?: string
+          is_rental?: boolean | null
+          is_rental_only?: boolean | null
+          name?: string
+          needs_servicing?: boolean | null
+          price?: number
+          rental_price?: number | null
+          service_frequency?: string | null
+          sku?: string
+          status?: string | null
+          subdivision_id?: string | null
+          supplier_name?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "services_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_subdivision_id_fkey"
+            columns: ["subdivision_id"]
+            isOneToOne: false
+            referencedRelation: "subdivisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subdivisions: {
         Row: {
           created_at: string
