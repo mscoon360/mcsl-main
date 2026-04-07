@@ -281,13 +281,33 @@ export default function PointOfSale() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-120px)]">
-      {/* Left Panel - Product Grid */}
+      {/* Left Panel - Product/Service Grid */}
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex items-center gap-3 mb-4">
+          <div className="flex rounded-lg border bg-muted p-0.5">
+            <Button
+              variant={posTab === 'products' ? 'default' : 'ghost'}
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setPosTab('products')}
+            >
+              <Package className="h-4 w-4" />
+              Products
+            </Button>
+            <Button
+              variant={posTab === 'services' ? 'default' : 'ghost'}
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setPosTab('services')}
+            >
+              <Wrench className="h-4 w-4" />
+              Services
+            </Button>
+          </div>
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search products by name or SKU..."
+              placeholder={`Search ${posTab} by name or SKU...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
@@ -308,40 +328,79 @@ export default function PointOfSale() {
 
         <ScrollArea className="flex-1">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
-            {availableProducts.map(product => (
-              <Card
-                key={product.id}
-                className="cursor-pointer hover:border-primary transition-colors group"
-                onClick={() => addToCart(product)}
-              >
-                <CardContent className="p-3">
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-start justify-between gap-1">
-                      <h4 className="text-sm font-medium leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-                        {product.name}
-                      </h4>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{product.sku}</p>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-sm font-bold text-primary">
-                        ${(product.is_rental ? (product.rental_price || product.price) : product.price).toFixed(2)}
-                      </span>
-                      <Badge variant={product.stock > 0 ? "secondary" : "destructive"} className="text-xs">
-                        {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
-                      </Badge>
-                    </div>
-                    {(product.is_rental || product.is_rental_only) && (
-                      <Badge variant="outline" className="text-xs w-fit">Rental</Badge>
-                    )}
+            {posTab === 'products' ? (
+              <>
+                {availableProducts.map(product => (
+                  <Card
+                    key={product.id}
+                    className="cursor-pointer hover:border-primary transition-colors group"
+                    onClick={() => addToCart(product, false)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex flex-col gap-1.5">
+                        <h4 className="text-sm font-medium leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                          {product.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">{product.sku}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-sm font-bold text-primary">
+                            ${(product.is_rental ? (product.rental_price || product.price) : product.price).toFixed(2)}
+                          </span>
+                          <Badge variant={product.stock > 0 ? "secondary" : "destructive"} className="text-xs">
+                            {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
+                          </Badge>
+                        </div>
+                        {(product.is_rental || product.is_rental_only) && (
+                          <Badge variant="outline" className="text-xs w-fit">Rental</Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {availableProducts.length === 0 && (
+                  <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <Package className="h-12 w-12 mb-2 opacity-50" />
+                    <p>No products found</p>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-            {availableProducts.length === 0 && (
-              <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <Package className="h-12 w-12 mb-2 opacity-50" />
-                <p>No products found</p>
-              </div>
+                )}
+              </>
+            ) : (
+              <>
+                {availableServices.map(service => (
+                  <Card
+                    key={service.id}
+                    className="cursor-pointer hover:border-primary transition-colors group"
+                    onClick={() => addToCart(service, true)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex flex-col gap-1.5">
+                        <h4 className="text-sm font-medium leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                          {service.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">{service.sku}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-sm font-bold text-primary">
+                            ${(service.is_rental ? (service.rental_price || service.price) : service.price).toFixed(2)}
+                          </span>
+                          <Badge variant="secondary" className="text-xs">
+                            <Wrench className="h-3 w-3 mr-1" />
+                            Service
+                          </Badge>
+                        </div>
+                        {(service.is_rental || service.is_rental_only) && (
+                          <Badge variant="outline" className="text-xs w-fit">Rental</Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {availableServices.length === 0 && (
+                  <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <Wrench className="h-12 w-12 mb-2 opacity-50" />
+                    <p>No services found</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </ScrollArea>
