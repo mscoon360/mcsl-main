@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Search, Plus, Minus, Trash2, ShoppingCart, ChevronsUpDown, Check, User, Receipt, X, Package } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ShoppingCart, ChevronsUpDown, Check, User, Receipt, X, Package, Wrench } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
+import { useServices } from "@/hooks/useServices";
 import { useCustomers } from "@/hooks/useCustomers";
 import { usePromotions } from "@/hooks/usePromotions";
 import { useRentalPaymentTerms, RentalPaymentTerm, PaymentTerm } from "@/hooks/useRentalPaymentTerms";
@@ -32,6 +33,7 @@ interface CartItem {
   quantity: number;
   unitPrice: number;
   isRental: boolean;
+  isService: boolean;
   discountType: 'none' | 'percentage' | 'fixed';
   discountValue: number;
   paymentTerm?: PaymentTerm;
@@ -42,6 +44,7 @@ export default function PointOfSale() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { products, updateProduct } = useProducts();
+  const { services } = useServices();
   const { customers } = useCustomers();
   const { promotions } = usePromotions();
   const { getPaymentTermsForProduct } = useRentalPaymentTerms();
@@ -56,6 +59,7 @@ export default function PointOfSale() {
   const [selectedPromotion, setSelectedPromotion] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [posTab, setPosTab] = useState<'products' | 'services'>('products');
 
   // Filter products for POS (only main products, exclude rental-only)
   const availableProducts = useMemo(() => {
@@ -67,15 +71,25 @@ export default function PointOfSale() {
     });
   }, [products, searchTerm, selectedCategory]);
 
-  const addToCart = async (product: any) => {
-    const existingIndex = cart.findIndex(item => item.productId === product.id);
+  // Filter services for POS
+  const availableServices = useMemo(() => {
+    return services.filter(s => {
+      const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.sku.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === "all" || s.division_id === selectedCategory;
+      return matchesSearch && matchesCategory && s.status !== 'discontinued';
+    });
+  }, [services, searchTerm, selectedCategory]);
+
+  const addToCart = async (product: any, isService = false) => {
+    const existingIndex = cart.findIndex(item => item.productId === product.id && item.isService === isService);
     if (existingIndex >= 0) {
       updateCartQuantity(existingIndex, cart[existingIndex].quantity + 1);
       return;
     }
 
     let paymentTerms: RentalPaymentTerm[] = [];
-    if (product.is_rental || product.is_rental_only) {
+    if (!isService && (product.is_rental || product.is_rental_only)) {
       paymentTerms = await getPaymentTermsForProduct(product.id);
     }
 
@@ -85,6 +99,7 @@ export default function PointOfSale() {
       quantity: 1,
       unitPrice: product.is_rental ? (paymentTerms[0]?.rental_price || product.rental_price || product.price) : product.price,
       isRental: product.is_rental || product.is_rental_only || false,
+      isService,
       discountType: 'none',
       discountValue: 0,
       paymentTerm: paymentTerms.length > 0 ? paymentTerms[0].payment_term as PaymentTerm : undefined,
@@ -153,6 +168,7 @@ export default function PointOfSale() {
         quantity: bundleItem.quantity,
         unitPrice: bundleItem.price,
         isRental: false,
+        isService: false,
         discountType: bundleItem.discount_type || 'none',
         discountValue: bundleItem.discount_value || 0,
       };
@@ -178,6 +194,7 @@ export default function PointOfSale() {
 
       // Check stock
       for (const item of cart) {
+        if (item.isService) continue; // Services have no stock
         const product = products.find(p => p.id === item.productId);
         if (product && !item.isRental && product.stock < item.quantity) {
           toast({ title: "Insufficient Stock", description: `${item.productName} only has ${product.stock} units available.`, variant: "destructive" });
@@ -227,7 +244,7 @@ export default function PointOfSale() {
 
       // Update stock for non-rental items
       for (const item of cart) {
-        if (!item.isRental) {
+        if (!item.isRental && !item.isService) {
           const product = products.find(p => p.id === item.productId);
           if (product) {
             await updateProduct(item.productId, {
@@ -265,13 +282,33 @@ export default function PointOfSale() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-120px)]">
-      {/* Left Panel - Product Grid */}
+      {/* Left Panel - Product/Service Grid */}
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex items-center gap-3 mb-4">
+          <div className="flex rounded-lg border bg-muted p-0.5">
+            <Button
+              variant={posTab === 'products' ? 'default' : 'ghost'}
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setPosTab('products')}
+            >
+              <Package className="h-4 w-4" />
+              Products
+            </Button>
+            <Button
+              variant={posTab === 'services' ? 'default' : 'ghost'}
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setPosTab('services')}
+            >
+              <Wrench className="h-4 w-4" />
+              Services
+            </Button>
+          </div>
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search products by name or SKU..."
+              placeholder={`Search ${posTab} by name or SKU...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
@@ -292,40 +329,79 @@ export default function PointOfSale() {
 
         <ScrollArea className="flex-1">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
-            {availableProducts.map(product => (
-              <Card
-                key={product.id}
-                className="cursor-pointer hover:border-primary transition-colors group"
-                onClick={() => addToCart(product)}
-              >
-                <CardContent className="p-3">
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-start justify-between gap-1">
-                      <h4 className="text-sm font-medium leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-                        {product.name}
-                      </h4>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{product.sku}</p>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-sm font-bold text-primary">
-                        ${(product.is_rental ? (product.rental_price || product.price) : product.price).toFixed(2)}
-                      </span>
-                      <Badge variant={product.stock > 0 ? "secondary" : "destructive"} className="text-xs">
-                        {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
-                      </Badge>
-                    </div>
-                    {(product.is_rental || product.is_rental_only) && (
-                      <Badge variant="outline" className="text-xs w-fit">Rental</Badge>
-                    )}
+            {posTab === 'products' ? (
+              <>
+                {availableProducts.map(product => (
+                  <Card
+                    key={product.id}
+                    className="cursor-pointer hover:border-primary transition-colors group"
+                    onClick={() => addToCart(product, false)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex flex-col gap-1.5">
+                        <h4 className="text-sm font-medium leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                          {product.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">{product.sku}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-sm font-bold text-primary">
+                            ${(product.is_rental ? (product.rental_price || product.price) : product.price).toFixed(2)}
+                          </span>
+                          <Badge variant={product.stock > 0 ? "secondary" : "destructive"} className="text-xs">
+                            {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
+                          </Badge>
+                        </div>
+                        {(product.is_rental || product.is_rental_only) && (
+                          <Badge variant="outline" className="text-xs w-fit">Rental</Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {availableProducts.length === 0 && (
+                  <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <Package className="h-12 w-12 mb-2 opacity-50" />
+                    <p>No products found</p>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-            {availableProducts.length === 0 && (
-              <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <Package className="h-12 w-12 mb-2 opacity-50" />
-                <p>No products found</p>
-              </div>
+                )}
+              </>
+            ) : (
+              <>
+                {availableServices.map(service => (
+                  <Card
+                    key={service.id}
+                    className="cursor-pointer hover:border-primary transition-colors group"
+                    onClick={() => addToCart(service, true)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex flex-col gap-1.5">
+                        <h4 className="text-sm font-medium leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                          {service.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">{service.sku}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-sm font-bold text-primary">
+                            ${(service.is_rental ? (service.rental_price || service.price) : service.price).toFixed(2)}
+                          </span>
+                          <Badge variant="secondary" className="text-xs">
+                            <Wrench className="h-3 w-3 mr-1" />
+                            Service
+                          </Badge>
+                        </div>
+                        {(service.is_rental || service.is_rental_only) && (
+                          <Badge variant="outline" className="text-xs w-fit">Rental</Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {availableServices.length === 0 && (
+                  <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <Wrench className="h-12 w-12 mb-2 opacity-50" />
+                    <p>No services found</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </ScrollArea>
@@ -429,7 +505,10 @@ export default function PointOfSale() {
                   <div key={index} className="flex flex-col gap-2 p-3 rounded-lg border bg-card">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.productName}</p>
+                        <p className="text-sm font-medium truncate flex items-center gap-1">
+                          {item.isService && <Wrench className="h-3 w-3 text-muted-foreground shrink-0" />}
+                          {item.productName}
+                        </p>
                         <p className="text-xs text-muted-foreground">${item.unitPrice.toFixed(2)} each</p>
                       </div>
                       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => removeFromCart(index)}>
