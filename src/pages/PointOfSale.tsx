@@ -59,6 +59,7 @@ export default function PointOfSale() {
   const [selectedPromotion, setSelectedPromotion] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [posTab, setPosTab] = useState<'products' | 'services'>('products');
 
   // Filter products for POS (only main products, exclude rental-only)
   const availableProducts = useMemo(() => {
@@ -70,15 +71,25 @@ export default function PointOfSale() {
     });
   }, [products, searchTerm, selectedCategory]);
 
-  const addToCart = async (product: any) => {
-    const existingIndex = cart.findIndex(item => item.productId === product.id);
+  // Filter services for POS
+  const availableServices = useMemo(() => {
+    return services.filter(s => {
+      const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.sku.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === "all" || s.division_id === selectedCategory;
+      return matchesSearch && matchesCategory && s.status !== 'discontinued';
+    });
+  }, [services, searchTerm, selectedCategory]);
+
+  const addToCart = async (product: any, isService = false) => {
+    const existingIndex = cart.findIndex(item => item.productId === product.id && item.isService === isService);
     if (existingIndex >= 0) {
       updateCartQuantity(existingIndex, cart[existingIndex].quantity + 1);
       return;
     }
 
     let paymentTerms: RentalPaymentTerm[] = [];
-    if (product.is_rental || product.is_rental_only) {
+    if (!isService && (product.is_rental || product.is_rental_only)) {
       paymentTerms = await getPaymentTermsForProduct(product.id);
     }
 
@@ -88,6 +99,7 @@ export default function PointOfSale() {
       quantity: 1,
       unitPrice: product.is_rental ? (paymentTerms[0]?.rental_price || product.rental_price || product.price) : product.price,
       isRental: product.is_rental || product.is_rental_only || false,
+      isService,
       discountType: 'none',
       discountValue: 0,
       paymentTerm: paymentTerms.length > 0 ? paymentTerms[0].payment_term as PaymentTerm : undefined,
