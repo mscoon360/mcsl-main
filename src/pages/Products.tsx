@@ -66,6 +66,10 @@ export default function Products() {
   const [initialCategoriesSet, setInitialCategoriesSet] = useState(false);
   const [sellingUnitType, setSellingUnitType] = useState<string>('');
   const [sellingUnitQty, setSellingUnitQty] = useState<number>(0);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [isRenameCategoryDialogOpen, setIsRenameCategoryDialogOpen] = useState(false);
+  const [renamingCategory, setRenamingCategory] = useState<string>('');
+  const [newCategoryName, setNewCategoryName] = useState<string>('');
 
   const SELLING_UNIT_TYPES = [
     { value: 'each', label: 'Each (Individual)' },
@@ -338,6 +342,7 @@ export default function Products() {
       description,
       price,
       rental_price,
+      category: selectedCategory || null,
       division_id: selectedDivisionId || null,
       subdivision_id: selectedSubdivisionId || null,
       units,
@@ -374,6 +379,7 @@ export default function Products() {
       setIsSupportingItem(false);
       setAssignToProductIds([]);
       setSelectedSupplierId('');
+      setSelectedCategory('');
       setIsIgieneProduct(false);
       setSellingUnitType('');
       setSellingUnitQty(0);
@@ -525,6 +531,39 @@ export default function Products() {
   const handleOpenSupportingProducts = (product: any) => {
     setSupportingDialogProduct(product);
     setIsSupportingDialogOpen(true);
+  };
+
+  const handleRenameCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a category name',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Find all products with the old category name and update them
+      const productsToUpdate = products.filter(p => (p.category || 'Uncategorized') === renamingCategory);
+      for (const product of productsToUpdate) {
+        await updateProduct(product.id, { category: newCategoryName.trim() });
+      }
+      
+      toast({
+        title: 'Category renamed',
+        description: `"${renamingCategory}" renamed to "${newCategoryName.trim()}" for ${productsToUpdate.length} product(s)`,
+      });
+      setIsRenameCategoryDialogOpen(false);
+      setRenamingCategory('');
+      setNewCategoryName('');
+    } catch (error: any) {
+      toast({
+        title: 'Error renaming category',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleAddDivision = async (e: React.FormEvent) => {
@@ -907,7 +946,7 @@ export default function Products() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="division">Division</Label>
                   <select
@@ -944,6 +983,25 @@ export default function Products() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="add-category">Category</Label>
+                <Input
+                  id="add-category"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  placeholder="e.g., Dispenser, Paper, Chemical"
+                  list="add-category-suggestions"
+                />
+                <datalist id="add-category-suggestions">
+                  {[...new Set(products.map(p => p.category).filter(Boolean))].sort().map(cat => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="units">U.O.M *</Label>
                   <select
@@ -1402,6 +1460,20 @@ export default function Products() {
                                   <Badge variant="secondary" className="ml-2 text-sm">
                                     {group.products.length} items
                                   </Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="ml-2 h-6 w-6 p-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setRenamingCategory(group.category);
+                                      setNewCategoryName(group.category === 'Uncategorized' ? '' : group.category);
+                                      setIsRenameCategoryDialogOpen(true);
+                                    }}
+                                    title="Rename category"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -1572,6 +1644,20 @@ export default function Products() {
                                 <Badge variant="secondary" className="ml-2 text-sm">
                                   {group.products.length} items
                                 </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="ml-2 h-6 w-6 p-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setRenamingCategory(group.category);
+                                    setNewCategoryName(group.category === 'Uncategorized' ? '' : group.category);
+                                    setIsRenameCategoryDialogOpen(true);
+                                  }}
+                                  title="Rename category"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -1746,6 +1832,20 @@ export default function Products() {
                             <Badge variant="secondary" className="ml-2 text-sm">
                               {group.products.length} items
                             </Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="ml-2 h-6 w-6 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRenamingCategory(group.category);
+                                setNewCategoryName(group.category === 'Uncategorized' ? '' : group.category);
+                                setIsRenameCategoryDialogOpen(true);
+                              }}
+                              title="Rename category"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -2162,6 +2262,40 @@ export default function Products() {
         allProducts={products}
         divisions={divisions}
       />
+
+      {/* Rename Category Dialog */}
+      <Dialog open={isRenameCategoryDialogOpen} onOpenChange={setIsRenameCategoryDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename Category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Renaming "<strong>{renamingCategory}</strong>" will update all products in this category.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="new-category-name">New Category Name *</Label>
+              <Input
+                id="new-category-name"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Enter new category name"
+                list="rename-category-suggestions"
+              />
+              <datalist id="rename-category-suggestions">
+                {[...new Set(products.map(p => p.category).filter(Boolean))].sort()
+                  .filter(cat => cat !== renamingCategory)
+                  .map(cat => (
+                    <option key={cat} value={cat} />
+                  ))}
+              </datalist>
+            </div>
+            <Button onClick={handleRenameCategory} className="w-full">
+              Rename Category
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
