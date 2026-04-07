@@ -505,7 +505,10 @@ export default function PointOfSale() {
                   <div key={index} className="flex flex-col gap-2 p-3 rounded-lg border bg-card">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.productName}</p>
+                        <p className="text-sm font-medium truncate flex items-center gap-1">
+                          {item.isService && <Wrench className="h-3 w-3 text-muted-foreground shrink-0" />}
+                          {item.productName}
+                        </p>
                         <p className="text-xs text-muted-foreground">${item.unitPrice.toFixed(2)} each</p>
                       </div>
                       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => removeFromCart(index)}>
