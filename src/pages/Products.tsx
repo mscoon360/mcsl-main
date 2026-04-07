@@ -410,6 +410,7 @@ export default function Products() {
       name: formData.get('name') as string,
       sku: formData.get('sku') as string,
       description: formData.get('description') as string,
+      category: editCategory || null,
       division_id: editDivisionId || null,
       subdivision_id: editSubdivisionId || null,
       units: formData.get('units') as string,
@@ -478,6 +479,7 @@ export default function Products() {
     setEditingProduct(product);
     setEditDivisionId(product.division_id || '');
     setEditSubdivisionId(product.subdivision_id || '');
+    setEditCategory(product.category || '');
     // Find supplier ID by name
     const supplier = suppliers.find(s => s.name === product.supplier_name);
     setEditSelectedSupplierId(supplier?.id || '');
@@ -1913,7 +1915,7 @@ export default function Products() {
                 <Textarea id="edit-description" name="description" defaultValue={editingProduct.description} />
               </div>
 
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-division">Division</Label>
                   <select
@@ -1949,6 +1951,24 @@ export default function Products() {
                       </option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-category">Category</Label>
+                  <Input
+                    id="edit-category"
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value)}
+                    placeholder="e.g., Dispenser, Paper, Rental"
+                    list="edit-category-suggestions"
+                  />
+                  <datalist id="edit-category-suggestions">
+                    {[...new Set(products.map(p => p.category).filter(Boolean))].sort().map(cat => (
+                      <option key={cat} value={cat} />
+                    ))}
+                  </datalist>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-stock">Stock</Label>
