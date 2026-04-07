@@ -2262,6 +2262,40 @@ export default function Products() {
         allProducts={products}
         divisions={divisions}
       />
+
+      {/* Rename Category Dialog */}
+      <Dialog open={isRenameCategoryDialogOpen} onOpenChange={setIsRenameCategoryDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename Category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Renaming "<strong>{renamingCategory}</strong>" will update all products in this category.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="new-category-name">New Category Name *</Label>
+              <Input
+                id="new-category-name"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Enter new category name"
+                list="rename-category-suggestions"
+              />
+              <datalist id="rename-category-suggestions">
+                {[...new Set(products.map(p => p.category).filter(Boolean))].sort()
+                  .filter(cat => cat !== renamingCategory)
+                  .map(cat => (
+                    <option key={cat} value={cat} />
+                  ))}
+              </datalist>
+            </div>
+            <Button onClick={handleRenameCategory} className="w-full">
+              Rename Category
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
