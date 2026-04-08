@@ -268,6 +268,27 @@ export default function PointOfSale() {
 
       await supabase.from('fulfillment_items').insert(fulfillmentItems);
 
+      // Notify Procurement & Logistics
+      const productList = cart.map(i => `${i.quantity}x ${i.productName}`).join(', ');
+      await supabase.from('notifications').insert([
+        {
+          type: 'fulfillment_needed',
+          title: 'New Order to Fulfill',
+          message: `Sale to ${customerName}: ${productList}. Total: $${(grandTotal + vatAmount).toFixed(2)}`,
+          department: 'Procurement',
+          sale_id: saleData.id,
+          user_id: user.id,
+        },
+        {
+          type: 'new_sale',
+          title: 'New Sale Recorded',
+          message: `Sale to ${customerName} for $${(grandTotal + vatAmount).toFixed(2)} has been completed.`,
+          department: 'Finance',
+          sale_id: saleData.id,
+          user_id: user.id,
+        },
+      ]);
+
       toast({ title: "Sale Completed!", description: `Sale of $${(grandTotal + vatAmount).toFixed(2)} recorded successfully.` });
       clearCart();
     } catch (error: any) {
