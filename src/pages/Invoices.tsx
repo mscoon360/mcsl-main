@@ -60,6 +60,7 @@ export default function Invoices() {
   const [searchTerm, setSearchTerm] = useState('');
   const [salesWithInvoices, setSalesWithInvoices] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
+  const [salesPage, setSalesPage] = useState(1);
   const PAGE_SIZE = 10;
 
   // Check access permissions
@@ -945,62 +946,84 @@ export default function Invoices() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {salesLoading ? <div className="text-center py-8">
-              <p className="text-muted-foreground">Loading sales...</p>
-            </div> : salesLog.filter(sale => sale.status === 'completed').length > 0 ? <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Sales Rep</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {salesLog.filter(sale => sale.status === 'completed').map(sale => <TableRow key={sale.id}>
-                    <TableCell className="font-medium">{sale.customer_name}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {sale.items.map((item, idx) => <div key={idx} className="text-sm">
-                            {item.quantity}x {item.product_name}
-                          </div>)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{sale.rep_name}</TableCell>
-                    <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right font-medium">
-                      ${sale.total.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button 
-                        size="sm" 
-                        variant={salesWithInvoices.has(String(sale.id)) ? "secondary" : "default"} 
-                        onClick={() => handleCreateInvoiceFromSale(sale)} 
-                        className="gap-2"
-                        disabled={salesWithInvoices.has(String(sale.id))}
-                      >
-                        {salesWithInvoices.has(String(sale.id)) ? (
-                          <>
-                            <FileText className="h-4 w-4" />
-                            Invoice Generated
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="h-4 w-4" />
-                            Create Invoice
-                          </>
-                        )}
-                      </Button>
-                    </TableCell>
-                  </TableRow>)}
-              </TableBody>
-            </Table> : <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-              <p className="text-muted-foreground">No completed sales found</p>
-            </div>}
-        </CardContent>
+           {salesLoading ? <div className="text-center py-8">
+               <p className="text-muted-foreground">Loading sales...</p>
+             </div> : (() => {
+               const completedSales = salesLog.filter(sale => sale.status === 'completed');
+               const salesTotalPages = Math.ceil(completedSales.length / PAGE_SIZE);
+               const paginatedSales = completedSales.slice((salesPage - 1) * PAGE_SIZE, salesPage * PAGE_SIZE);
+               return completedSales.length > 0 ? <>
+               <Table>
+               <TableHeader>
+                 <TableRow>
+                   <TableHead>Customer</TableHead>
+                   <TableHead>Items</TableHead>
+                   <TableHead>Sales Rep</TableHead>
+                   <TableHead>Date</TableHead>
+                   <TableHead className="text-right">Total</TableHead>
+                   <TableHead className="text-right">Action</TableHead>
+                 </TableRow>
+               </TableHeader>
+               <TableBody>
+                 {paginatedSales.map(sale => <TableRow key={sale.id}>
+                     <TableCell className="font-medium">{sale.customer_name}</TableCell>
+                     <TableCell>
+                       <div className="space-y-1">
+                         {sale.items.map((item, idx) => <div key={idx} className="text-sm">
+                             {item.quantity}x {item.product_name}
+                           </div>)}
+                       </div>
+                     </TableCell>
+                     <TableCell className="text-sm text-muted-foreground">{sale.rep_name}</TableCell>
+                     <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
+                     <TableCell className="text-right font-medium">
+                       ${sale.total.toFixed(2)}
+                     </TableCell>
+                     <TableCell className="text-right">
+                       <Button 
+                         size="sm" 
+                         variant={salesWithInvoices.has(String(sale.id)) ? "secondary" : "default"} 
+                         onClick={() => handleCreateInvoiceFromSale(sale)} 
+                         className="gap-2"
+                         disabled={salesWithInvoices.has(String(sale.id))}
+                       >
+                         {salesWithInvoices.has(String(sale.id)) ? (
+                           <>
+                             <FileText className="h-4 w-4" />
+                             Invoice Generated
+                           </>
+                         ) : (
+                           <>
+                             <Plus className="h-4 w-4" />
+                             Create Invoice
+                           </>
+                         )}
+                       </Button>
+                     </TableCell>
+                   </TableRow>)}
+               </TableBody>
+             </Table>
+             {salesTotalPages > 1 && (
+               <div className="flex items-center justify-between pt-4 border-t mt-4">
+                 <p className="text-sm text-muted-foreground">
+                   Showing {(salesPage - 1) * PAGE_SIZE + 1}–{Math.min(salesPage * PAGE_SIZE, completedSales.length)} of {completedSales.length}
+                 </p>
+                 <div className="flex gap-2">
+                   <Button variant="outline" size="sm" disabled={salesPage === 1} onClick={() => setSalesPage(p => p - 1)}>
+                     Previous
+                   </Button>
+                   <Button variant="outline" size="sm" disabled={salesPage === salesTotalPages} onClick={() => setSalesPage(p => p + 1)}>
+                     Next
+                   </Button>
+                 </div>
+               </div>
+             )}
+             </> : <div className="text-center py-8">
+               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+               <p className="text-muted-foreground">No completed sales found</p>
+             </div>;
+             })()}
+         </CardContent>
       </Card>
 
       {/* Invoice Form */}
