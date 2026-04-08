@@ -71,6 +71,7 @@ export default function PurchaseOrders() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const { vendors } = useVendors();
+  const { divisions } = useDivisions();
   const { products } = useProducts();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [purpose, setPurpose] = useState<string>("");
