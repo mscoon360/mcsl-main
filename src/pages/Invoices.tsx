@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,7 @@ export default function Invoices() {
     isAdmin
   } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showForm, setShowForm] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'sent' | 'paid' | 'overdue'>('all');
@@ -219,6 +220,18 @@ export default function Invoices() {
     });
     setSalesWithInvoices(saleIds);
   }, [invoices]);
+
+  // Auto-fill invoice from sale_id query param (from Finance notification)
+  useEffect(() => {
+    const saleId = searchParams.get('sale_id');
+    if (!saleId || salesLoading || salesLog.length === 0) return;
+
+    const sale = salesLog.find(s => s.id === saleId);
+    if (sale) {
+      handleCreateInvoiceFromSale(sale);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, salesLog, salesLoading]);
 
   // Get available items for the selected customer (products + rental items)
   const getAvailableItemsForCustomer = () => {
