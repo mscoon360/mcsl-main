@@ -1269,7 +1269,7 @@ export default function Invoices() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredInvoices.map(invoice => <TableRow key={invoice.id}>
+                  {paginatedInvoices.map(invoice => <TableRow key={invoice.id}>
                       <TableCell className="font-medium text-xs md:text-sm">{invoice.invoiceNumber}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -1322,6 +1322,21 @@ export default function Invoices() {
                     </TableRow>)}
                 </TableBody>
               </Table>
+            </div>
+          )}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t mt-4">
+              <p className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredInvoices.length)} of {filteredInvoices.length}
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
