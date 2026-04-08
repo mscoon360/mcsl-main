@@ -53,6 +53,16 @@ export function DashboardHeader() {
 
         <div className="flex items-center gap-2 md:gap-4">
           <ThemeSwitcher />
+          <DepartmentNotifications
+            department="Procurement"
+            icon={<Truck className="h-4 w-4 md:h-5 md:w-5" />}
+            label="Procurement & Logistics"
+          />
+          <DepartmentNotifications
+            department="Finance"
+            icon={<DollarSign className="h-4 w-4 md:h-5 md:w-5" />}
+            label="Finance"
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
