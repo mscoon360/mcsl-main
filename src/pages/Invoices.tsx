@@ -938,7 +938,7 @@ export default function Invoices() {
         <CardHeader>
           <CardTitle className="text-card-foreground flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Sales Log
+            Pending Invoices
           </CardTitle>
           <CardDescription>
             Create invoices from completed sales
