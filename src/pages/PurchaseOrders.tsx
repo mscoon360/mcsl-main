@@ -455,21 +455,12 @@ export default function PurchaseOrders() {
                         <TableRow key={index}>
                           <TableCell>
                             {isRestockPurpose ? (
-                              <Select
-                                value={item.productId || ""}
-                                onValueChange={(value) => handleProductSelect(index, value)}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select product" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {products.map((product) => (
-                                    <SelectItem key={product.id} value={product.id}>
-                                      {product.name} ({product.sku})
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <GroupedProductSelect
+                                products={products}
+                                divisions={divisions}
+                                value={item.productId}
+                                onSelect={(productId) => handleProductSelect(index, productId)}
+                              />
                             ) : (
                               <Input
                                 value={item.description}
