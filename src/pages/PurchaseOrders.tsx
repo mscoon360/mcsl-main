@@ -36,6 +36,8 @@ import { Plus, Trash2, FileText, Clock, CheckCircle, XCircle, PackageCheck, Truc
 import { toast } from "sonner";
 import { useVendors } from "@/hooks/useVendors";
 import { useProducts } from "@/hooks/useProducts";
+import { useDivisions } from "@/hooks/useDivisions";
+import { GroupedProductSelect } from "@/components/purchase-orders/GroupedProductSelect";
 
 interface OrderItem {
   description: string;
@@ -69,6 +71,7 @@ export default function PurchaseOrders() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const { vendors } = useVendors();
+  const { divisions } = useDivisions();
   const { products } = useProducts();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [purpose, setPurpose] = useState<string>("");
@@ -452,21 +455,12 @@ export default function PurchaseOrders() {
                         <TableRow key={index}>
                           <TableCell>
                             {isRestockPurpose ? (
-                              <Select
-                                value={item.productId || ""}
-                                onValueChange={(value) => handleProductSelect(index, value)}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select product" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {products.map((product) => (
-                                    <SelectItem key={product.id} value={product.id}>
-                                      {product.name} ({product.sku})
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <GroupedProductSelect
+                                products={products}
+                                divisions={divisions}
+                                value={item.productId}
+                                onSelect={(productId) => handleProductSelect(index, productId)}
+                              />
                             ) : (
                               <Input
                                 value={item.description}
