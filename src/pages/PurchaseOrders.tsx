@@ -36,6 +36,8 @@ import { Plus, Trash2, FileText, Clock, CheckCircle, XCircle, PackageCheck, Truc
 import { toast } from "sonner";
 import { useVendors } from "@/hooks/useVendors";
 import { useProducts } from "@/hooks/useProducts";
+import { useDivisions } from "@/hooks/useDivisions";
+import { GroupedProductSelect } from "@/components/purchase-orders/GroupedProductSelect";
 
 interface OrderItem {
   description: string;
