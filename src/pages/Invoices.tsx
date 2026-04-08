@@ -59,6 +59,8 @@ export default function Invoices() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'sent' | 'paid' | 'overdue'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [salesWithInvoices, setSalesWithInvoices] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   // Check access permissions
   useEffect(() => {
@@ -836,6 +838,13 @@ export default function Invoices() {
     const matchesSearch = searchTerm === '' || invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) || invoice.customerName.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredInvoices.length / PAGE_SIZE);
+  const paginatedInvoices = filteredInvoices.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [statusFilter, searchTerm]);
 
   // Calculate statistics
   const totalInvoices = invoices.length;
