@@ -1,4 +1,4 @@
-import { Bell, Package, DollarSign, CheckCheck } from "lucide-react";
+import { CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 
 interface DepartmentNotificationsProps {
@@ -19,6 +20,17 @@ interface DepartmentNotificationsProps {
 
 export function DepartmentNotifications({ department, icon, label }: DepartmentNotificationsProps) {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(department);
+  const navigate = useNavigate();
+
+  const handleNotificationClick = (notif: typeof notifications[0]) => {
+    if (!notif.is_read) markAsRead(notif.id);
+
+    if (department === 'Finance' && notif.sale_id) {
+      navigate(`/invoices?sale_id=${notif.sale_id}`);
+    } else if (department === 'Procurement' && notif.sale_id) {
+      navigate(`/fulfillment`);
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -61,7 +73,7 @@ export function DepartmentNotifications({ department, icon, label }: DepartmentN
               <DropdownMenuItem
                 key={notif.id}
                 className={`flex flex-col items-start gap-1 p-3 cursor-pointer ${!notif.is_read ? 'bg-accent/50' : ''}`}
-                onClick={() => !notif.is_read && markAsRead(notif.id)}
+                onClick={() => handleNotificationClick(notif)}
               >
                 <p className="font-medium text-sm">{notif.title}</p>
                 <p className="text-xs text-muted-foreground line-clamp-2">{notif.message}</p>
