@@ -59,6 +59,8 @@ export default function Invoices() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'sent' | 'paid' | 'overdue'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [salesWithInvoices, setSalesWithInvoices] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   // Check access permissions
   useEffect(() => {
@@ -837,6 +839,13 @@ export default function Invoices() {
     return matchesStatus && matchesSearch;
   });
 
+  // Pagination
+  const totalPages = Math.ceil(filteredInvoices.length / PAGE_SIZE);
+  const paginatedInvoices = filteredInvoices.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [statusFilter, searchTerm]);
+
   // Calculate statistics
   const totalInvoices = invoices.length;
   const paidInvoices = invoices.filter(inv => inv.status === 'paid').length;
@@ -1260,7 +1269,7 @@ export default function Invoices() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredInvoices.map(invoice => <TableRow key={invoice.id}>
+                  {paginatedInvoices.map(invoice => <TableRow key={invoice.id}>
                       <TableCell className="font-medium text-xs md:text-sm">{invoice.invoiceNumber}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -1313,6 +1322,21 @@ export default function Invoices() {
                     </TableRow>)}
                 </TableBody>
               </Table>
+            </div>
+          )}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t mt-4">
+              <p className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredInvoices.length)} of {filteredInvoices.length}
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
