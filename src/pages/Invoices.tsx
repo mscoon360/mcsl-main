@@ -221,6 +221,18 @@ export default function Invoices() {
     setSalesWithInvoices(saleIds);
   }, [invoices]);
 
+  // Auto-fill invoice from sale_id query param (from Finance notification)
+  useEffect(() => {
+    const saleId = searchParams.get('sale_id');
+    if (!saleId || salesLoading || salesLog.length === 0) return;
+
+    const sale = salesLog.find(s => s.id === saleId);
+    if (sale) {
+      handleCreateInvoiceFromSale(sale);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, salesLog, salesLoading]);
+
   // Get available items for the selected customer (products + rental items)
   const getAvailableItemsForCustomer = () => {
     const availableItems = [];
