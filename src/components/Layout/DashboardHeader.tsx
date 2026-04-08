@@ -1,4 +1,4 @@
-import { Bell, Search, User, AlertCircle, Package } from "lucide-react";
+import { Bell, Search, User, AlertCircle, Package, Truck, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -11,6 +11,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { DepartmentNotifications } from "./DepartmentNotifications";
 export function DashboardHeader() {
   const {
     user,
