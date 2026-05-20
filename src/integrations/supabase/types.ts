@@ -1772,10 +1772,12 @@ export type Database = {
           item_discount_value: number | null
           payment_period: string | null
           price: number
+          product_id: string | null
           product_name: string
           quantity: number
           sale_id: string
           start_date: string | null
+          unit_cost: number | null
           vat_amount: number | null
         }
         Insert: {
@@ -1788,10 +1790,12 @@ export type Database = {
           item_discount_value?: number | null
           payment_period?: string | null
           price: number
+          product_id?: string | null
           product_name: string
           quantity: number
           sale_id: string
           start_date?: string | null
+          unit_cost?: number | null
           vat_amount?: number | null
         }
         Update: {
@@ -1804,10 +1808,12 @@ export type Database = {
           item_discount_value?: number | null
           payment_period?: string | null
           price?: number
+          product_id?: string | null
           product_name?: string
           quantity?: number
           sale_id?: string
           start_date?: string | null
+          unit_cost?: number | null
           vat_amount?: number | null
         }
         Relationships: [

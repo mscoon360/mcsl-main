@@ -226,18 +226,23 @@ export default function PointOfSale() {
       if (saleError) throw saleError;
 
       // Insert sale items
-      const saleItems = cart.map(item => ({
-        sale_id: saleData.id,
-        product_name: item.productName,
-        quantity: item.quantity,
-        price: item.unitPrice,
-        is_rental: item.isRental,
-        contract_length: item.isRental ? '12 months' : null,
-        payment_period: item.paymentTerm || null,
-        item_discount_type: item.discountType !== 'none' ? item.discountType : null,
-        item_discount_value: item.discountValue || 0,
-        vat_amount: getItemTotal(item) * vatRate,
-      }));
+      const saleItems = cart.map(item => {
+        const product = item.isService ? undefined : products.find(p => p.id === item.productId);
+        return {
+          sale_id: saleData.id,
+          product_id: item.isService ? null : (item.productId || null),
+          product_name: item.productName,
+          quantity: item.quantity,
+          price: item.unitPrice,
+          unit_cost: product?.cost_price ?? null,
+          is_rental: item.isRental,
+          contract_length: item.isRental ? '12 months' : null,
+          payment_period: item.paymentTerm || null,
+          item_discount_type: item.discountType !== 'none' ? item.discountType : null,
+          item_discount_value: item.discountValue || 0,
+          vat_amount: getItemTotal(item) * vatRate,
+        };
+      });
 
       const { error: itemsError } = await supabase.from('sale_items').insert(saleItems);
       if (itemsError) throw itemsError;
