@@ -24,6 +24,7 @@ import FinanceOverview from "./pages/FinanceOverview";
 import Income from "./pages/Income";
 import Expenditure from "./pages/Expenditure";
 import ChartOfAccounts from "./pages/ChartOfAccounts";
+import AccountMappings from "./pages/AccountMappings";
 import TrialBalance from "./pages/TrialBalance";
 import AccountsPayable from "./pages/AccountsPayable";
 import AccountsReceivable from "./pages/AccountsReceivable";
@@ -92,6 +93,7 @@ const App = () => (
               <Route path="income" element={<Income />} />
               <Route path="expenditure" element={<Expenditure />} />
               <Route path="chart-of-accounts" element={<ChartOfAccounts />} />
+              <Route path="account-mappings" element={<AccountMappings />} />
               <Route path="trial-balance" element={<TrialBalance />} />
               <Route path="finance-reports" element={<FinanceReports />} />
               <Route path="reports" element={<Reports />}>

@@ -116,6 +116,7 @@ const navigation: NavigationSection[] = [
       { name: "Rental Costing", href: "/rental-costing", icon: Calculator },
       { name: "Service Costing", href: "/service-costing", icon: Calculator },
       { name: "Chart of Accounts", href: "/chart-of-accounts", icon: BookOpen },
+      { name: "Account Mappings", href: "/account-mappings", icon: Calculator },
       { name: "Trial Balance", href: "/trial-balance", icon: Scale },
       {
         name: "Reports",
