@@ -462,9 +462,11 @@ export default function RentalAgreements() {
         if (!product) throw new Error(`Product ${item.product} not found`);
         
         return {
+          product_id: product.id,
           product_name: product.name,
           quantity: item.quantity,
           price: product.price,
+          unit_cost: product.cost_price ?? null,
           is_rental: true,
           contract_length: contractLength,
           payment_period: paymentPeriod,

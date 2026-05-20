@@ -32,9 +32,10 @@ const WORKFLOWS: WorkflowGroup[] = [
     description: 'Posted when a sale is recorded as completed.',
     status: 'active',
     roles: [
-      { key: 'accounts_receivable', label: 'Accounts Receivable',  hint: 'Amount owed by the customer', fallback: '1100_accounts_receivable', side: 'DR', acceptTypes: ['asset'] },
-      { key: 'sales_revenue',       label: 'Sales Revenue',        hint: 'Net revenue from the sale',   fallback: '4000_sales_revenue',       side: 'CR', acceptTypes: ['revenue'] },
-      { key: 'output_vat',          label: 'Output VAT',           hint: 'VAT collected from customer', fallback: '2300_vat_payable',         side: 'CR', acceptTypes: ['liability'] },
+      { key: 'accounts_receivable', label: 'Accounts Receivable',  hint: 'Amount owed by the customer',                                fallback: '1100_accounts_receivable', side: 'DR', acceptTypes: ['asset'] },
+      { key: 'sales_revenue',       label: 'Sales Revenue',        hint: 'Net revenue from the sale',                                  fallback: '4000_sales_revenue',       side: 'CR', acceptTypes: ['revenue'] },
+      { key: 'output_vat',          label: 'Output VAT',           hint: 'VAT collected from customer',                                fallback: '2300_vat_payable',         side: 'CR', acceptTypes: ['liability'] },
+      { key: 'inventory',           label: 'Inventory',            hint: 'Asset credited per item when COGS is posted on a sale',      fallback: '1001_inventory',           side: 'CR', acceptTypes: ['asset'] },
     ],
   },
   {

@@ -279,14 +279,19 @@ export default function Sales() {
       if (saleError) throw saleError;
 
       // Insert sale items
-      const saleItemsData = salesItems.map(item => ({
-        sale_id: saleData.id,
-        product_name: products.find(p => p.id === item.product)?.name || "Unknown Product",
-        quantity: item.quantity,
-        price: item.price,
-        item_discount_type: item.discount_type || 'none',
-        item_discount_value: item.discount_value || 0
-      }));
+      const saleItemsData = salesItems.map(item => {
+        const product = products.find(p => p.id === item.product);
+        return {
+          sale_id: saleData.id,
+          product_id: product?.id ?? null,
+          product_name: product?.name || "Unknown Product",
+          quantity: item.quantity,
+          price: item.price,
+          unit_cost: product?.cost_price ?? null,
+          item_discount_type: item.discount_type || 'none',
+          item_discount_value: item.discount_value || 0,
+        };
+      });
 
       const { error: itemsError } = await supabase
         .from('sale_items')
