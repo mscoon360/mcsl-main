@@ -6,6 +6,8 @@ import type { Database } from '@/integrations/supabase/types';
 type AccountType = Database['public']['Enums']['account_type'];
 type AccountSubtype = Database['public']['Enums']['account_subtype'];
 
+export type CogsKind = 'sale' | 'rental' | 'both';
+
 export interface ChartOfAccount {
   id: string;
   user_id: string;
@@ -17,6 +19,8 @@ export interface ChartOfAccount {
   description?: string | null;
   balance: number;
   is_active: boolean;
+  product_id?: string | null;
+  cogs_kind?: CogsKind | null;
   created_at?: string;
   updated_at?: string;
 }
