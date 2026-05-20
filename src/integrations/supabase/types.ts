@@ -239,11 +239,13 @@ export type Database = {
           account_subtype: Database["public"]["Enums"]["account_subtype"]
           account_type: Database["public"]["Enums"]["account_type"]
           balance: number | null
+          cogs_kind: string | null
           created_at: string | null
           description: string | null
           id: string
           is_active: boolean | null
           parent_account_id: string | null
+          product_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -253,11 +255,13 @@ export type Database = {
           account_subtype: Database["public"]["Enums"]["account_subtype"]
           account_type: Database["public"]["Enums"]["account_type"]
           balance?: number | null
+          cogs_kind?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           parent_account_id?: string | null
+          product_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -267,11 +271,13 @@ export type Database = {
           account_subtype?: Database["public"]["Enums"]["account_subtype"]
           account_type?: Database["public"]["Enums"]["account_type"]
           balance?: number | null
+          cogs_kind?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           parent_account_id?: string | null
+          product_id?: string | null
           updated_at?: string | null
           user_id?: string
         }

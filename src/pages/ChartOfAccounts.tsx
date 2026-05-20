@@ -445,7 +445,23 @@ export default function ChartOfAccounts() {
                           {typeAccounts.map((account) => (
                             <TableRow key={account.id} className={!account.is_active ? 'opacity-50' : ''}>
                               <TableCell className="font-mono text-sm">{account.account_number}</TableCell>
-                              <TableCell className="font-medium">{account.account_name}</TableCell>
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span>{account.account_name}</span>
+                                  {account.product_id && account.cogs_kind && (
+                                    <Badge
+                                      variant="outline"
+                                      className={
+                                        account.cogs_kind === 'rental' ? 'bg-purple-500/10 text-purple-600 border-purple-500/30 text-[10px]' :
+                                        account.cogs_kind === 'both'   ? 'bg-amber-500/10 text-amber-600 border-amber-500/30 text-[10px]' :
+                                                                          'bg-sky-500/10 text-sky-600 border-sky-500/30 text-[10px]'
+                                      }
+                                    >
+                                      {account.cogs_kind === 'sale' ? 'Sale' : account.cogs_kind === 'rental' ? 'Rental' : 'Both'}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
                               <TableCell className="text-sm text-muted-foreground">
                                 {account.account_subtype.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                               </TableCell>
