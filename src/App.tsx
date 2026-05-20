@@ -48,6 +48,15 @@ import PurchaseOrders from "./pages/PurchaseOrders";
 import AssetRegistrar from "./pages/AssetRegistrar";
 import FinancePurchaseOrders from "./pages/FinancePurchaseOrders";
 import PointOfSale from "./pages/PointOfSale";
+import Reports from "./pages/Reports";
+import GeneralLedger from "./pages/reports/GeneralLedger";
+import AccountLedger from "./pages/reports/AccountLedger";
+import JournalDayBook from "./pages/reports/JournalDayBook";
+import ProfitAndLoss from "./pages/reports/ProfitAndLoss";
+import BalanceSheet from "./pages/reports/BalanceSheet";
+import ARAging from "./pages/reports/ARAging";
+import APAging from "./pages/reports/APAging";
+import VATReport from "./pages/reports/VATReport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -85,6 +94,16 @@ const App = () => (
               <Route path="chart-of-accounts" element={<ChartOfAccounts />} />
               <Route path="trial-balance" element={<TrialBalance />} />
               <Route path="finance-reports" element={<FinanceReports />} />
+              <Route path="reports" element={<Reports />}>
+                <Route path="general-ledger" element={<GeneralLedger />} />
+                <Route path="account-ledger" element={<AccountLedger />} />
+                <Route path="journal-day-book" element={<JournalDayBook />} />
+                <Route path="profit-and-loss" element={<ProfitAndLoss />} />
+                <Route path="balance-sheet" element={<BalanceSheet />} />
+                <Route path="ar-aging" element={<ARAging />} />
+                <Route path="ap-aging" element={<APAging />} />
+                <Route path="vat-report" element={<VATReport />} />
+              </Route>
               <Route path="accounts-payable" element={<AccountsPayable />} />
               <Route path="accounts-receivable" element={<AccountsReceivable />} />
               <Route path="vendors" element={<Suppliers />} />
