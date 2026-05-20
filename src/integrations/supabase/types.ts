@@ -202,6 +202,36 @@ export type Database = {
           },
         ]
       }
+      account_mappings: {
+        Row: {
+          id: string
+          user_id: string
+          workflow: string
+          role: string
+          account_code: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          workflow: string
+          role: string
+          account_code: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          workflow?: string
+          role?: string
+          account_code?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chart_of_accounts: {
         Row: {
           account_name: string
