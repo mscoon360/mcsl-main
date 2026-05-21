@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -96,6 +97,19 @@ export const useFuelRecords = () => {
       });
     },
   });
+
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("fuel_records_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "fuel_records" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["fuel-records"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
 
   return {
     fuelRecords,

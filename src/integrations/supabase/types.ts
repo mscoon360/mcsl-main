@@ -539,7 +539,8 @@ export type Database = {
           current_mileage: number | null
           division: string | null
           driver_name: string
-          driver_phone: string
+          driver_phone: string | null
+          driver_user_id: string | null
           engine_number: string | null
           financing_status: string | null
           fuel_type: string | null
@@ -585,7 +586,8 @@ export type Database = {
           current_mileage?: number | null
           division?: string | null
           driver_name: string
-          driver_phone: string
+          driver_phone?: string | null
+          driver_user_id?: string | null
           engine_number?: string | null
           financing_status?: string | null
           fuel_type?: string | null
@@ -631,7 +633,8 @@ export type Database = {
           current_mileage?: number | null
           division?: string | null
           driver_name?: string
-          driver_phone?: string
+          driver_phone?: string | null
+          driver_user_id?: string | null
           engine_number?: string | null
           financing_status?: string | null
           fuel_type?: string | null

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -101,9 +102,80 @@ export function useInspections() {
     },
   });
 
+  const addInspection = useMutation({
+    mutationFn: async (input: {
+      vehicle_id: string;
+      inspection_date: string;
+      status: "pending" | "passed" | "failed";
+      notes?: string | null;
+      photos?: string[];
+    }) => {
+      if (!user) throw new Error("User not authenticated");
+
+      const { data, error } = await supabase
+        .from("inspections")
+        .insert({
+          user_id: user.id,
+          vehicle_id: input.vehicle_id,
+          inspection_date: input.inspection_date,
+          status: input.status,
+          notes: input.notes ?? null,
+          photos: input.photos ?? [],
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // If the inspection is recorded as already passed/failed, update the
+      // vehicle status to match so the Fleet page reflects it.
+      if (input.status === "passed" || input.status === "failed") {
+        const vehicleStatus = input.status === "passed" ? "active" : "inspection failed";
+        await supabase
+          .from("fleet_vehicles")
+          .update({
+            status: vehicleStatus,
+            last_inspection_date: input.inspection_date,
+          })
+          .eq("id", input.vehicle_id);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inspections"] });
+      queryClient.invalidateQueries({ queryKey: ["fleet-vehicles"] });
+      toast({
+        title: "Inspection Recorded",
+        description: "The inspection has been added.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to add inspection: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("inspections_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "inspections" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["inspections"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
+
   return {
     inspections,
     isLoading,
+    addInspection,
     updateInspectionStatus,
   };
 }

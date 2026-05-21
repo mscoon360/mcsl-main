@@ -46,6 +46,7 @@ export default function Fleet() {
     technician: "",
     licensePlate: "",
     driverName: "",
+    driverUserId: "",
     driverPhone: "",
     mpg: "",
     inspectionCycle: "",
@@ -179,7 +180,8 @@ export default function Fleet() {
         model: formData.model,
         license_plate: formData.licensePlate,
         driver_name: formData.driverName,
-        driver_phone: formData.driverPhone,
+        driver_user_id: formData.driverUserId || null,
+        driver_phone: formData.driverPhone || null,
         mpg: parseFloat(formData.mpg),
         inspection_cycle: formData.inspectionCycle,
         next_inspection_date: nextInspectionDate.toISOString().split('T')[0],
@@ -234,6 +236,7 @@ export default function Fleet() {
         technician: "",
         licensePlate: "",
         driverName: "",
+        driverUserId: "",
         driverPhone: "",
         mpg: "",
         inspectionCycle: "",
@@ -349,10 +352,10 @@ export default function Fleet() {
                     value={formData.driverName}
                     onValueChange={(value) => {
                       const selectedUser = users.find(u => u.name === value);
-                      setFormData({ 
-                        ...formData, 
+                      setFormData({
+                        ...formData,
                         driverName: value,
-                        driverPhone: selectedUser?.id || ""
+                        driverUserId: selectedUser?.id || "",
                       });
                       setErrors({ ...errors, driverName: "" });
                     }}
@@ -373,6 +376,16 @@ export default function Fleet() {
                     </SelectContent>
                   </Select>
                   {errors.driverName && <p className="text-sm text-destructive">{errors.driverName}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="driverPhone">Driver Phone</Label>
+                  <Input
+                    id="driverPhone"
+                    type="tel"
+                    value={formData.driverPhone}
+                    onChange={(e) => setFormData({ ...formData, driverPhone: e.target.value })}
+                    placeholder="e.g., +1 555-123-4567"
+                  />
                 </div>
               </div>
 
@@ -678,7 +691,7 @@ export default function Fleet() {
                       <TableCell className="font-medium">{vehicle.license_plate}</TableCell>
                       <TableCell>{vehicle.make} {vehicle.model}</TableCell>
                       <TableCell>{vehicle.driver_name}</TableCell>
-                      <TableCell>{vehicle.driver_phone}</TableCell>
+                      <TableCell>{vehicle.driver_phone || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell>{vehicle.mpg} MPG</TableCell>
                       <TableCell>{vehicle.inspection_cycle}</TableCell>
                       <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
@@ -762,7 +775,7 @@ export default function Fleet() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Driver Phone</Label>
-                  <p className="font-medium">{selectedVehicle.driver_phone}</p>
+                  <p className="font-medium">{selectedVehicle.driver_phone || '—'}</p>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Miles Per Gallon</Label>
