@@ -32,11 +32,31 @@ export default function Fleet() {
   const [formData, setFormData] = useState({
     make: "",
     model: "",
+    year: "",
+    vin: "",
+    engineNumber: "",
+    vehicleType: "",
+    fuelType: "",
+    transmission: "",
+    color: "",
+    seatingCapacity: "",
+    company: "",
+    division: "",
+    subDivision: "",
+    technician: "",
     licensePlate: "",
     driverName: "",
     driverPhone: "",
     mpg: "",
     inspectionCycle: "",
+    purchaseDate: "",
+    purchasePrice: "",
+    financingStatus: "",
+    monthlyPayment: "",
+    insuranceProvider: "",
+    insuranceExpiry: "",
+    registrationExpiry: "",
+    warrantyExpiry: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
@@ -156,17 +176,57 @@ export default function Fleet() {
         next_inspection_date: nextInspectionDate.toISOString().split('T')[0],
         status: 'active',
         mileage: 0,
-      });
+        year: formData.year ? parseInt(formData.year) : null,
+        vin: formData.vin || null,
+        engine_number: formData.engineNumber || null,
+        vehicle_type: formData.vehicleType || null,
+        fuel_type: formData.fuelType || null,
+        transmission: formData.transmission || null,
+        color: formData.color || null,
+        seating_capacity: formData.seatingCapacity ? parseInt(formData.seatingCapacity) : null,
+        company: formData.company || null,
+        division: formData.division || null,
+        sub_division: formData.subDivision || null,
+        technician: formData.technician || null,
+        purchase_date: formData.purchaseDate || null,
+        purchase_price: formData.purchasePrice ? parseFloat(formData.purchasePrice) : null,
+        financing_status: formData.financingStatus || null,
+        monthly_payment: formData.monthlyPayment ? parseFloat(formData.monthlyPayment) : null,
+        insurance_provider: formData.insuranceProvider || null,
+        insurance_expiry: formData.insuranceExpiry || null,
+        registration_expiry: formData.registrationExpiry || null,
+        warranty_expiry: formData.warrantyExpiry || null,
+      } as any);
       
       // Reset form and close dialog
       setFormData({
         make: "",
         model: "",
+        year: "",
+        vin: "",
+        engineNumber: "",
+        vehicleType: "",
+        fuelType: "",
+        transmission: "",
+        color: "",
+        seatingCapacity: "",
+        company: "",
+        division: "",
+        subDivision: "",
+        technician: "",
         licensePlate: "",
         driverName: "",
         driverPhone: "",
         mpg: "",
         inspectionCycle: "",
+        purchaseDate: "",
+        purchasePrice: "",
+        financingStatus: "",
+        monthlyPayment: "",
+        insuranceProvider: "",
+        insuranceExpiry: "",
+        registrationExpiry: "",
+        warrantyExpiry: "",
       });
       setErrors({});
       setIsDialogOpen(false);
@@ -320,6 +380,132 @@ export default function Fleet() {
                   {errors.inspectionCycle && <p className="text-sm text-destructive">{errors.inspectionCycle}</p>}
                 </div>
               </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="year">Year</Label>
+                  <Input id="year" type="number" value={formData.year} onChange={(e) => handleInputChange("year", e.target.value)} placeholder="e.g., 2022" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="vin">VIN</Label>
+                  <Input id="vin" value={formData.vin} onChange={(e) => handleInputChange("vin", e.target.value)} placeholder="VIN" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="engineNumber">Engine #</Label>
+                  <Input id="engineNumber" value={formData.engineNumber} onChange={(e) => handleInputChange("engineNumber", e.target.value)} placeholder="Engine number" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="vehicleType">Vehicle Type</Label>
+                  <Input id="vehicleType" value={formData.vehicleType} onChange={(e) => handleInputChange("vehicleType", e.target.value)} placeholder="e.g., Sedan, Truck" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fuelType">Fuel Type</Label>
+                  <Select value={formData.fuelType} onValueChange={(v) => handleInputChange("fuelType", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select fuel" /></SelectTrigger>
+                    <SelectContent className="bg-background z-50">
+                      <SelectItem value="gasoline">Gasoline</SelectItem>
+                      <SelectItem value="diesel">Diesel</SelectItem>
+                      <SelectItem value="electric">Electric</SelectItem>
+                      <SelectItem value="hybrid">Hybrid</SelectItem>
+                      <SelectItem value="lpg">LPG</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="transmission">Transmission</Label>
+                  <Select value={formData.transmission} onValueChange={(v) => handleInputChange("transmission", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent className="bg-background z-50">
+                      <SelectItem value="automatic">Automatic</SelectItem>
+                      <SelectItem value="manual">Manual</SelectItem>
+                      <SelectItem value="cvt">CVT</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="color">Color</Label>
+                  <Input id="color" value={formData.color} onChange={(e) => handleInputChange("color", e.target.value)} placeholder="e.g., White" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="seatingCapacity">Seating Capacity</Label>
+                  <Input id="seatingCapacity" type="number" value={formData.seatingCapacity} onChange={(e) => handleInputChange("seatingCapacity", e.target.value)} placeholder="e.g., 5" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="company">Company</Label>
+                  <Input id="company" value={formData.company} onChange={(e) => handleInputChange("company", e.target.value)} placeholder="Company" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="division">Division</Label>
+                  <Input id="division" value={formData.division} onChange={(e) => handleInputChange("division", e.target.value)} placeholder="Division" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subDivision">Sub Division</Label>
+                  <Input id="subDivision" value={formData.subDivision} onChange={(e) => handleInputChange("subDivision", e.target.value)} placeholder="Sub-division" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="technician">Technician</Label>
+                  <Input id="technician" value={formData.technician} onChange={(e) => handleInputChange("technician", e.target.value)} placeholder="Technician" />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t">
+                <h3 className="text-sm font-semibold mb-3">Ownership & Financial</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="purchaseDate">Purchase Date</Label>
+                    <Input id="purchaseDate" type="date" value={formData.purchaseDate} onChange={(e) => handleInputChange("purchaseDate", e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="purchasePrice">Purchase Price</Label>
+                    <Input id="purchasePrice" type="number" step="0.01" value={formData.purchasePrice} onChange={(e) => handleInputChange("purchasePrice", e.target.value)} placeholder="0.00" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="financingStatus">Financing / Lease Status</Label>
+                    <Select value={formData.financingStatus} onValueChange={(v) => handleInputChange("financingStatus", v)}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent className="bg-background z-50">
+                        <SelectItem value="owned">Owned</SelectItem>
+                        <SelectItem value="financed">Financed</SelectItem>
+                        <SelectItem value="leased">Leased</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="monthlyPayment">Monthly Payment</Label>
+                    <Input id="monthlyPayment" type="number" step="0.01" value={formData.monthlyPayment} onChange={(e) => handleInputChange("monthlyPayment", e.target.value)} placeholder="0.00" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="insuranceProvider">Insurance Provider</Label>
+                    <Input id="insuranceProvider" value={formData.insuranceProvider} onChange={(e) => handleInputChange("insuranceProvider", e.target.value)} placeholder="Provider" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="insuranceExpiry">Insurance Expiry</Label>
+                    <Input id="insuranceExpiry" type="date" value={formData.insuranceExpiry} onChange={(e) => handleInputChange("insuranceExpiry", e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="registrationExpiry">Registration Expiry</Label>
+                    <Input id="registrationExpiry" type="date" value={formData.registrationExpiry} onChange={(e) => handleInputChange("registrationExpiry", e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="warrantyExpiry">Warranty Expiry</Label>
+                    <Input id="warrantyExpiry" type="date" value={formData.warrantyExpiry} onChange={(e) => handleInputChange("warrantyExpiry", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>

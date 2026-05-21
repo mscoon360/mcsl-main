@@ -202,36 +202,6 @@ export type Database = {
           },
         ]
       }
-      account_mappings: {
-        Row: {
-          id: string
-          user_id: string
-          workflow: string
-          role: string
-          account_code: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          workflow: string
-          role: string
-          account_code: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          workflow?: string
-          role?: string
-          account_code?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       chart_of_accounts: {
         Row: {
           account_name: string
@@ -239,13 +209,11 @@ export type Database = {
           account_subtype: Database["public"]["Enums"]["account_subtype"]
           account_type: Database["public"]["Enums"]["account_type"]
           balance: number | null
-          cogs_kind: string | null
           created_at: string | null
           description: string | null
           id: string
           is_active: boolean | null
           parent_account_id: string | null
-          product_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -255,13 +223,11 @@ export type Database = {
           account_subtype: Database["public"]["Enums"]["account_subtype"]
           account_type: Database["public"]["Enums"]["account_type"]
           balance?: number | null
-          cogs_kind?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           parent_account_id?: string | null
-          product_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -271,13 +237,11 @@ export type Database = {
           account_subtype?: Database["public"]["Enums"]["account_subtype"]
           account_type?: Database["public"]["Enums"]["account_type"]
           balance?: number | null
-          cogs_kind?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           parent_account_id?: string | null
-          product_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -511,55 +475,115 @@ export type Database = {
       }
       fleet_vehicles: {
         Row: {
+          color: string | null
+          company: string | null
           created_at: string
+          division: string | null
           driver_name: string
           driver_phone: string
+          engine_number: string | null
+          financing_status: string | null
+          fuel_type: string | null
           id: string
           inspection_cycle: string
+          insurance_expiry: string | null
+          insurance_provider: string | null
           last_inspection_date: string | null
           license_plate: string
           make: string
           mileage: number
           model: string
+          monthly_payment: number | null
           mpg: number
           next_inspection_date: string | null
+          purchase_date: string | null
+          purchase_price: number | null
+          registration_expiry: string | null
+          seating_capacity: number | null
           status: string
+          sub_division: string | null
+          technician: string | null
+          transmission: string | null
           updated_at: string
           user_id: string
+          vehicle_type: string | null
+          vin: string | null
+          warranty_expiry: string | null
+          year: number | null
         }
         Insert: {
+          color?: string | null
+          company?: string | null
           created_at?: string
+          division?: string | null
           driver_name: string
           driver_phone: string
+          engine_number?: string | null
+          financing_status?: string | null
+          fuel_type?: string | null
           id?: string
           inspection_cycle: string
+          insurance_expiry?: string | null
+          insurance_provider?: string | null
           last_inspection_date?: string | null
           license_plate: string
           make: string
           mileage?: number
           model: string
+          monthly_payment?: number | null
           mpg: number
           next_inspection_date?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          registration_expiry?: string | null
+          seating_capacity?: number | null
           status?: string
+          sub_division?: string | null
+          technician?: string | null
+          transmission?: string | null
           updated_at?: string
           user_id: string
+          vehicle_type?: string | null
+          vin?: string | null
+          warranty_expiry?: string | null
+          year?: number | null
         }
         Update: {
+          color?: string | null
+          company?: string | null
           created_at?: string
+          division?: string | null
           driver_name?: string
           driver_phone?: string
+          engine_number?: string | null
+          financing_status?: string | null
+          fuel_type?: string | null
           id?: string
           inspection_cycle?: string
+          insurance_expiry?: string | null
+          insurance_provider?: string | null
           last_inspection_date?: string | null
           license_plate?: string
           make?: string
           mileage?: number
           model?: string
+          monthly_payment?: number | null
           mpg?: number
           next_inspection_date?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          registration_expiry?: string | null
+          seating_capacity?: number | null
           status?: string
+          sub_division?: string | null
+          technician?: string | null
+          transmission?: string | null
           updated_at?: string
           user_id?: string
+          vehicle_type?: string | null
+          vin?: string | null
+          warranty_expiry?: string | null
+          year?: number | null
         }
         Relationships: []
       }
@@ -1772,12 +1796,10 @@ export type Database = {
           item_discount_value: number | null
           payment_period: string | null
           price: number
-          product_id: string | null
           product_name: string
           quantity: number
           sale_id: string
           start_date: string | null
-          unit_cost: number | null
           vat_amount: number | null
         }
         Insert: {
@@ -1790,12 +1812,10 @@ export type Database = {
           item_discount_value?: number | null
           payment_period?: string | null
           price: number
-          product_id?: string | null
           product_name: string
           quantity: number
           sale_id: string
           start_date?: string | null
-          unit_cost?: number | null
           vat_amount?: number | null
         }
         Update: {
@@ -1808,12 +1828,10 @@ export type Database = {
           item_discount_value?: number | null
           payment_period?: string | null
           price?: number
-          product_id?: string | null
           product_name?: string
           quantity?: number
           sale_id?: string
           start_date?: string | null
-          unit_cost?: number | null
           vat_amount?: number | null
         }
         Relationships: [
