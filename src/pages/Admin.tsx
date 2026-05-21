@@ -463,34 +463,54 @@ export default function Admin() {
       updates.revokeAdmin = true;
     }
 
-    if (Object.keys(updates).length === 0) {
+    const titleChanged = (editTitle ?? '') !== (editingUser.title ?? '');
+    const divisionChanged = (editDivision ?? '') !== (editingUser.division ?? '');
+
+    if (Object.keys(updates).length === 0 && !titleChanged && !divisionChanged) {
       toast.error('No changes to save');
       setSubmitting(false);
       return;
     }
 
-    const { data: { session } } = await supabase.auth.getSession();
+    if (Object.keys(updates).length > 0) {
+      const { data: { session } } = await supabase.auth.getSession();
 
-    const { data, error } = await supabase.functions.invoke('update-user', {
-      headers: {
-        Authorization: `Bearer ${session?.access_token ?? ''}`,
-      },
-      body: {
-        userId: editingUser.id,
-        ...updates,
-      },
-    });
+      const { data, error } = await supabase.functions.invoke('update-user', {
+        headers: {
+          Authorization: `Bearer ${session?.access_token ?? ''}`,
+        },
+        body: {
+          userId: editingUser.id,
+          ...updates,
+        },
+      });
 
-    if (error) {
-      toast.error(error.message || 'Failed to update user');
-      setSubmitting(false);
-      return;
+      if (error) {
+        toast.error(error.message || 'Failed to update user');
+        setSubmitting(false);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        setSubmitting(false);
+        return;
+      }
     }
 
-    if (data?.error) {
-      toast.error(data.error);
-      setSubmitting(false);
-      return;
+    if (titleChanged || divisionChanged) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          ...(titleChanged ? { title: editTitle || null } : {}),
+          ...(divisionChanged ? { division: editDivision || null } : {}),
+        })
+        .eq('id', editingUser.id);
+      if (profileError) {
+        toast.error('Failed to update title/division');
+        setSubmitting(false);
+        return;
+      }
     }
 
     toast.success('User updated successfully');
@@ -498,6 +518,8 @@ export default function Admin() {
     setEditUsername('');
     setEditPassword('');
     setEditDepartment('');
+    setEditTitle('');
+    setEditDivision('');
     setRevokeAdminRole(false);
     loadUsers();
     loadUserRoles();
