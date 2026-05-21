@@ -73,6 +73,8 @@ export default function Fleet() {
   const { toast } = useToast();
   const { vehicles, isLoading, addVehicle, deleteVehicle } = useFleetVehicles();
   const { users, isLoading: usersLoading, error: usersError } = useUsers();
+  const { divisions } = useDivisions();
+  const selectedDivision = divisions.find((d) => d.name === formData.division);
   const { isAdmin } = useAuth();
 
   console.log("[Fleet] render", {
