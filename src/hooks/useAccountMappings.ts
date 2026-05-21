@@ -21,7 +21,7 @@ export const useAccountMappings = () => {
 
   const fetchMappings = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('account_mappings')
         .select('*')
         .order('workflow', { ascending: true })
@@ -41,7 +41,7 @@ export const useAccountMappings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('account_mappings')
         .upsert(
           { user_id: user.id, workflow, role, account_code },
@@ -60,7 +60,7 @@ export const useAccountMappings = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('account_mappings')
         .delete()
         .eq('user_id', user.id)
