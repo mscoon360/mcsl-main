@@ -796,8 +796,8 @@ export default function Admin() {
                         {sortColumn === 'department' && <ArrowUpDown className="w-3 h-3" />}
                       </div>
                     </TableHead>
-                    <TableHead>Title</TableHead>
                     <TableHead>Division</TableHead>
+                    <TableHead>Title</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
