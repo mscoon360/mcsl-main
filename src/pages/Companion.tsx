@@ -501,6 +501,145 @@ export default function Companion() {
         </Card>
       </Collapsible>
 
+      {/* Vehicle Status Report - Collapsible */}
+      <Collapsible open={isStatusOpen} onOpenChange={setIsStatusOpen}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5" />
+                    Vehicle Status Report
+                  </CardTitle>
+                  <CardDescription>GPS, documents, and operational status</CardDescription>
+                </div>
+                {isStatusOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label>Select Vehicle</Label>
+                <Select value={statusVehicle} onValueChange={setStatusVehicle}>
+                  <SelectTrigger><SelectValue placeholder="Choose vehicle" /></SelectTrigger>
+                  <SelectContent>
+                    {vehicles.map((v) => (
+                      <SelectItem key={v.id} value={v.id}>{v.license_plate} - {v.make} {v.model}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* GPS & Tracking */}
+              <div className="space-y-4 border rounded-lg p-4">
+                <h3 className="font-semibold flex items-center gap-2"><Navigation className="h-4 w-4" /> GPS & Tracking</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="flex items-center justify-between space-x-2">
+                    <Label htmlFor="gps-installed">GPS Installed</Label>
+                    <Switch id="gps-installed" checked={gpsInstalled} onCheckedChange={setGpsInstalled} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tracker ID</Label>
+                    <Input value={trackerId} onChange={(e) => setTrackerId(e.target.value)} placeholder="Tracker ID" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Fuel Card Assigned</Label>
+                    <Input value={fuelCardAssigned} onChange={(e) => setFuelCardAssigned(e.target.value)} placeholder="Fuel card #" />
+                  </div>
+                  <div className="flex items-center justify-between space-x-2">
+                    <Label htmlFor="dashcam">Dashcam Installed</Label>
+                    <Switch id="dashcam" checked={dashcamInstalled} onCheckedChange={setDashcamInstalled} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Average Daily Mileage (km)</Label>
+                    <Input type="number" step="0.01" value={avgDailyMileage} onChange={(e) => setAvgDailyMileage(e.target.value)} placeholder="0" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Document Upload */}
+              <div className="space-y-4 border rounded-lg p-4">
+                <h3 className="font-semibold flex items-center gap-2"><FileText className="h-4 w-4" /> Document Upload</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {([
+                    ["insurance", "Insurance"],
+                    ["registration", "Registration"],
+                    ["inspection", "Inspection"],
+                    ["service", "Service Records"],
+                    ["accident", "Accident Report"],
+                  ] as const).map(([key, label]) => (
+                    <div key={key} className="space-y-2">
+                      <Label>{label}</Label>
+                      <Input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        onChange={(e) => setDocs((p) => ({ ...p, [key]: e.target.files?.[0] }))}
+                      />
+                      {docs[key] && <p className="text-xs text-muted-foreground">{docs[key]!.name}</p>}
+                    </div>
+                  ))}
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Vehicle Photos</Label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => setVehiclePhotos(Array.from(e.target.files || []))}
+                    />
+                    {vehiclePhotos.length > 0 && <p className="text-xs text-muted-foreground">{vehiclePhotos.length} photo(s) selected</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Operational Status */}
+              <div className="space-y-4 border rounded-lg p-4">
+                <h3 className="font-semibold flex items-center gap-2"><Activity className="h-4 w-4" /> Operational Status</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Vehicle Availability</Label>
+                    <Select value={vehicleAvailability} onValueChange={setVehicleAvailability}>
+                      <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="available">Available</SelectItem>
+                        <SelectItem value="on_job">On Job</SelectItem>
+                        <SelectItem value="out_of_service">Out of Service</SelectItem>
+                        <SelectItem value="in_maintenance">In Maintenance</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Current Location</Label>
+                    <Input value={currentLocation} onChange={(e) => setCurrentLocation(e.target.value)} placeholder="e.g. Main depot" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Assigned Route / Zone</Label>
+                    <Input value={assignedRouteZone} onChange={(e) => setAssignedRouteZone(e.target.value)} placeholder="Route or zone" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Last Inspection Passed</Label>
+                    <Input type="date" value={lastInspectionPassed} onChange={(e) => setLastInspectionPassed(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Notes (Optional)</Label>
+                <Textarea value={statusNotes} onChange={(e) => setStatusNotes(e.target.value)} rows={3} />
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={handleSubmitStatus} disabled={isSubmittingStatus}>
+                  {isSubmittingStatus ? "Saving..." : "Save Status Report"}
+                </Button>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+
       {/* Vehicle Inspection Form - Collapsible */}
       <Collapsible open={isInspectionOpen} onOpenChange={setIsInspectionOpen}>
         <Card>
