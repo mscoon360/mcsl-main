@@ -202,36 +202,6 @@ export type Database = {
           },
         ]
       }
-      account_mappings: {
-        Row: {
-          id: string
-          user_id: string
-          workflow: string
-          role: string
-          account_code: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          workflow: string
-          role: string
-          account_code: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          workflow?: string
-          role?: string
-          account_code?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       chart_of_accounts: {
         Row: {
           account_name: string
@@ -239,13 +209,11 @@ export type Database = {
           account_subtype: Database["public"]["Enums"]["account_subtype"]
           account_type: Database["public"]["Enums"]["account_type"]
           balance: number | null
-          cogs_kind: string | null
           created_at: string | null
           description: string | null
           id: string
           is_active: boolean | null
           parent_account_id: string | null
-          product_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -255,13 +223,11 @@ export type Database = {
           account_subtype: Database["public"]["Enums"]["account_subtype"]
           account_type: Database["public"]["Enums"]["account_type"]
           balance?: number | null
-          cogs_kind?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           parent_account_id?: string | null
-          product_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -271,13 +237,11 @@ export type Database = {
           account_subtype?: Database["public"]["Enums"]["account_subtype"]
           account_type?: Database["public"]["Enums"]["account_type"]
           balance?: number | null
-          cogs_kind?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           parent_account_id?: string | null
-          product_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -1772,12 +1736,10 @@ export type Database = {
           item_discount_value: number | null
           payment_period: string | null
           price: number
-          product_id: string | null
           product_name: string
           quantity: number
           sale_id: string
           start_date: string | null
-          unit_cost: number | null
           vat_amount: number | null
         }
         Insert: {
@@ -1790,12 +1752,10 @@ export type Database = {
           item_discount_value?: number | null
           payment_period?: string | null
           price: number
-          product_id?: string | null
           product_name: string
           quantity: number
           sale_id: string
           start_date?: string | null
-          unit_cost?: number | null
           vat_amount?: number | null
         }
         Update: {
@@ -1808,12 +1768,10 @@ export type Database = {
           item_discount_value?: number | null
           payment_period?: string | null
           price?: number
-          product_id?: string | null
           product_name?: string
           quantity?: number
           sale_id?: string
           start_date?: string | null
-          unit_cost?: number | null
           vat_amount?: number | null
         }
         Relationships: [
