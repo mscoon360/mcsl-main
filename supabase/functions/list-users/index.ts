@@ -99,6 +99,8 @@ serve(async (req) => {
         username: profile?.username || '',
         name: profile?.name || '',
         department: profile?.department || '',
+        title: profile?.title || '',
+        division: profile?.division || '',
       };
     });
 
