@@ -719,7 +719,7 @@ export default function Fleet() {
                       vehicle.model.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .map((vehicle) => (
-                    <TableRow key={vehicle.id}>
+                    <TableRow key={vehicle.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewDetails(vehicle)}>
                       <TableCell className="font-medium">{vehicle.license_plate}</TableCell>
                       <TableCell>{vehicle.make} {vehicle.model}</TableCell>
                       <TableCell>{vehicle.driver_name}</TableCell>
