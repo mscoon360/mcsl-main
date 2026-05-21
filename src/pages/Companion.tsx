@@ -36,6 +36,86 @@ export default function Companion() {
   const { addFuelRecord } = useFuelRecords();
   const { user } = useAuth();
 
+  // Vehicle status report state
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [statusVehicle, setStatusVehicle] = useState("");
+  const [gpsInstalled, setGpsInstalled] = useState(false);
+  const [trackerId, setTrackerId] = useState("");
+  const [fuelCardAssigned, setFuelCardAssigned] = useState("");
+  const [dashcamInstalled, setDashcamInstalled] = useState(false);
+  const [avgDailyMileage, setAvgDailyMileage] = useState("");
+  const [vehicleAvailability, setVehicleAvailability] = useState("");
+  const [currentLocation, setCurrentLocation] = useState("");
+  const [assignedRouteZone, setAssignedRouteZone] = useState("");
+  const [lastInspectionPassed, setLastInspectionPassed] = useState("");
+  const [statusNotes, setStatusNotes] = useState("");
+  const [docs, setDocs] = useState<{ insurance?: File; registration?: File; inspection?: File; service?: File; accident?: File }>({});
+  const [vehiclePhotos, setVehiclePhotos] = useState<File[]>([]);
+  const [isSubmittingStatus, setIsSubmittingStatus] = useState(false);
+
+  const uploadFile = async (file: File) => {
+    if (!user) return undefined;
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/${Date.now()}-${Math.random()}.${ext}`;
+    const { error } = await supabase.storage.from('inspection-photos').upload(path, file);
+    if (error) throw error;
+    const { data: { publicUrl } } = supabase.storage.from('inspection-photos').getPublicUrl(path);
+    return publicUrl;
+  };
+
+  const handleSubmitStatus = async () => {
+    if (!statusVehicle) {
+      toast({ title: "Missing Vehicle", description: "Please select a vehicle", variant: "destructive" });
+      return;
+    }
+    if (!user) {
+      toast({ title: "Authentication Required", variant: "destructive" });
+      return;
+    }
+    setIsSubmittingStatus(true);
+    try {
+      const [insurance_doc, registration_doc, inspection_doc, service_records_doc, accident_report_doc] = await Promise.all([
+        docs.insurance ? uploadFile(docs.insurance) : Promise.resolve(undefined),
+        docs.registration ? uploadFile(docs.registration) : Promise.resolve(undefined),
+        docs.inspection ? uploadFile(docs.inspection) : Promise.resolve(undefined),
+        docs.service ? uploadFile(docs.service) : Promise.resolve(undefined),
+        docs.accident ? uploadFile(docs.accident) : Promise.resolve(undefined),
+      ]);
+      const photoUrls = await Promise.all(vehiclePhotos.map(uploadFile));
+
+      const { error } = await (supabase as any).from('vehicle_status_reports').insert({
+        user_id: user.id,
+        vehicle_id: statusVehicle,
+        gps_installed: gpsInstalled,
+        tracker_id: trackerId || null,
+        fuel_card_assigned: fuelCardAssigned || null,
+        dashcam_installed: dashcamInstalled,
+        average_daily_mileage: avgDailyMileage ? parseFloat(avgDailyMileage) : null,
+        insurance_doc: insurance_doc || null,
+        registration_doc: registration_doc || null,
+        inspection_doc: inspection_doc || null,
+        service_records_doc: service_records_doc || null,
+        vehicle_photos: photoUrls.filter(Boolean),
+        accident_report_doc: accident_report_doc || null,
+        vehicle_availability: vehicleAvailability || null,
+        current_location: currentLocation || null,
+        assigned_route_zone: assignedRouteZone || null,
+        last_inspection_passed: lastInspectionPassed || null,
+        notes: statusNotes || null,
+      });
+      if (error) throw error;
+      toast({ title: "Status Report Saved", description: "Vehicle status has been recorded" });
+      setStatusVehicle(""); setGpsInstalled(false); setTrackerId(""); setFuelCardAssigned("");
+      setDashcamInstalled(false); setAvgDailyMileage(""); setVehicleAvailability("");
+      setCurrentLocation(""); setAssignedRouteZone(""); setLastInspectionPassed("");
+      setStatusNotes(""); setDocs({}); setVehiclePhotos([]);
+    } catch (err: any) {
+      toast({ title: "Submission Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSubmittingStatus(false);
+    }
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setUploadedImages((prev) => [...prev, ...files]);
