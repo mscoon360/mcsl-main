@@ -256,6 +256,13 @@
   body {
     @apply bg-background text-foreground font-sans;
   }
+
+  /* Allow free text selection on mobile in content areas (fixes single-word selection) */
+  p, span, h1, h2, h3, h4, h5, h6, li, td, th, dd, dt, blockquote, label, article {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
 }
 
 @layer components {
