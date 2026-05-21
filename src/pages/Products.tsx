@@ -946,7 +946,7 @@ export default function Products() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="division">Division</Label>
                   <select
@@ -1001,7 +1001,7 @@ export default function Products() {
                 </datalist>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="units">U.O.M *</Label>
                   <select
@@ -1101,7 +1101,7 @@ export default function Products() {
                           {rawCostPrice > 0 && (
                             <>
                               <Separator className="my-2" />
-                              <div className="grid grid-cols-2 gap-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                   <p className="text-sm font-medium">
                                     Cost per Case: <span className="text-primary text-lg">${(rawCostPrice / rawStock).toFixed(2)}</span>
@@ -1159,7 +1159,7 @@ export default function Products() {
                           {rawCostPrice > 0 && (
                             <>
                               <Separator className="my-2" />
-                              <div className="grid grid-cols-2 gap-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                   <p className="text-sm font-medium">
                                     Cost per Drum: <span className="text-primary text-lg">${(rawCostPrice / rawStock).toFixed(2)}</span>
@@ -1217,7 +1217,7 @@ export default function Products() {
                           {rawCostPrice > 0 && (
                             <>
                               <Separator className="my-2" />
-                              <div className="grid grid-cols-2 gap-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                   <p className="text-sm font-medium">
                                     Cost per Gallon: <span className="text-primary text-lg">${(rawCostPrice / rawStock).toFixed(2)}</span>
@@ -1246,7 +1246,7 @@ export default function Products() {
                 </div>
               )}
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sku">SKU</Label>
                   <Input id="sku" name="sku" />
@@ -1275,7 +1275,7 @@ export default function Products() {
                 <p className="text-sm text-muted-foreground">
                   Configure how this product is sold (e.g., sold by case, sold by box)
                 </p>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="selling_unit_type">Selling Unit Type</Label>
                     <Select value={sellingUnitType} onValueChange={setSellingUnitType}>
@@ -2008,7 +2008,7 @@ export default function Products() {
           </DialogHeader>
           {editingProduct && (
             <form onSubmit={handleEditProduct} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-name">Product Name *</Label>
                   <Input id="edit-name" name="name" defaultValue={editingProduct.name} required />
@@ -2040,7 +2040,7 @@ export default function Products() {
                 <Textarea id="edit-description" name="description" defaultValue={editingProduct.description} />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-division">Division</Label>
                   <select
@@ -2079,7 +2079,7 @@ export default function Products() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-category">Category</Label>
                   <Input
@@ -2120,7 +2120,7 @@ export default function Products() {
           </DialogHeader>
           {selectedProduct && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
                     <Label className="text-muted-foreground">Product Name</Label>
