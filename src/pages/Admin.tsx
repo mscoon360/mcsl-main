@@ -663,22 +663,63 @@ export default function Admin() {
 
           <Card>
             <CardHeader>
-              <CardTitle>All Users</CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <CardTitle>All Users</CardTitle>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Select value={filterDepartment} onValueChange={setFilterDepartment}>
+                    <SelectTrigger className="w-[220px]">
+                      <SelectValue placeholder="Filter by department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Departments</SelectItem>
+                      <SelectItem value="sales">Sales</SelectItem>
+                      <SelectItem value="finance department">Finance Department</SelectItem>
+                      <SelectItem value="executive department">Executive Department</SelectItem>
+                      <SelectItem value="procurement & logistics department">Procurement & Logistics Department</SelectItem>
+                      <SelectItem value="divisional">Divisional</SelectItem>
+                      <SelectItem value="operational divisions">Operational Divisions</SelectItem>
+                      <SelectItem value="contract department">Contract Department</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Username</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Department</TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort('username')}>
+                      <div className="flex items-center gap-1">
+                        Username
+                        {sortColumn === 'username' && <ArrowUpDown className="w-3 h-3" />}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort('email')}>
+                      <div className="flex items-center gap-1">
+                        Email
+                        {sortColumn === 'email' && <ArrowUpDown className="w-3 h-3" />}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
+                      <div className="flex items-center gap-1">
+                        Name
+                        {sortColumn === 'name' && <ArrowUpDown className="w-3 h-3" />}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort('department')}>
+                      <div className="flex items-center gap-1">
+                        Department
+                        {sortColumn === 'department' && <ArrowUpDown className="w-3 h-3" />}
+                      </div>
+                    </TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => {
+                  {filteredAndSortedUsers.map((user) => {
                     const isUserAdmin = userRoles.some(
                       (role) => role.user_id === user.id && role.role === 'admin'
                     );
@@ -724,6 +765,13 @@ export default function Admin() {
                       </TableRow>
                     );
                   })}
+                  {filteredAndSortedUsers.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        No users found
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
