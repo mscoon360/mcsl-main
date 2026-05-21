@@ -104,7 +104,7 @@ export default function ChangePassword() {
                 placeholder="••••••••"
               />
               <p className="text-xs text-muted-foreground">
-                Must be at least 8 characters with uppercase, lowercase, and number
+                Must be at least 8 characters with at least one letter and one number
               </p>
             </div>
             <div className="space-y-2">
