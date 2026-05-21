@@ -41,7 +41,7 @@ export const useAccountMappings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('account_mappings')
         .upsert(
           { user_id: user.id, workflow, role, account_code },
