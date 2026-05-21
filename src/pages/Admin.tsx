@@ -100,6 +100,8 @@ export default function Admin() {
   const [submitting, setSubmitting] = useState(false);
   const [grantAdmin, setGrantAdmin] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedDivision, setSelectedDivision] = useState('');
+  const [newUserTitle, setNewUserTitle] = useState('');
   const [selectedNavSections, setSelectedNavSections] = useState<string[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
@@ -246,10 +248,21 @@ export default function Admin() {
       return;
     }
 
+    // Set title/division on profile (handle_new_user trigger created the base profile)
+    const newUserId = data?.user?.id;
+    if (newUserId && (newUserTitle || selectedDivision)) {
+      await supabase
+        .from('profiles')
+        .update({ title: newUserTitle || null, division: selectedDivision || null })
+        .eq('id', newUserId);
+    }
+
     toast.success('User created successfully');
     e.currentTarget.reset();
     setGrantAdmin(false);
     setSelectedDepartment('');
+    setSelectedDivision('');
+    setNewUserTitle('');
     loadUsers();
     loadUserRoles();
     setSubmitting(false);
@@ -677,15 +690,38 @@ export default function Admin() {
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="sales">Sales</SelectItem>
-                        <SelectItem value="finance department">Finance Department</SelectItem>
-                        <SelectItem value="executive department">Executive Department</SelectItem>
-                        <SelectItem value="procurement & logistics department">Procurement & Logistics Department</SelectItem>
-                        <SelectItem value="divisional">Divisional</SelectItem>
-                        <SelectItem value="operational divisions">Operational Divisions</SelectItem>
-                        <SelectItem value="contract department">Contract Department</SelectItem>
+                        <SelectItem value="executive department">Executive</SelectItem>
+                        <SelectItem value="group supporting">Group Supporting</SelectItem>
+                        <SelectItem value="finance department">Finance</SelectItem>
+                        <SelectItem value="procurement & logistics department">Procurement and Logistics</SelectItem>
+                        <SelectItem value="divisional sales & contracts dept.">Divisional Sales & Contracts Dept.</SelectItem>
+                        <SelectItem value="operations dept i">Operations Dept I</SelectItem>
+                        <SelectItem value="operations dept ii">Operations Dept II</SelectItem>
+                        <SelectItem value="operations dept iii">Operations Dept III</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-division">Division</Label>
+                    <Select value={selectedDivision} onValueChange={setSelectedDivision}>
+                      <SelectTrigger id="new-division">
+                        <SelectValue placeholder="Select division" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {divisions.map((d) => (
+                          <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-title">Title</Label>
+                    <Input
+                      id="new-title"
+                      value={newUserTitle}
+                      onChange={(e) => setNewUserTitle(e.target.value)}
+                      placeholder="e.g. Manager"
+                    />
                   </div>
                   <div className="flex items-center space-x-2 pt-8">
                     <Checkbox 
@@ -723,7 +759,6 @@ export default function Admin() {
                       <SelectItem value="group supporting">Group Supporting</SelectItem>
                       <SelectItem value="finance department">Finance</SelectItem>
                       <SelectItem value="procurement & logistics department">Procurement and Logistics</SelectItem>
-                      <SelectItem value="sales">Sales Dept</SelectItem>
                       <SelectItem value="divisional sales & contracts dept.">Divisional Sales & Contracts Dept.</SelectItem>
                       <SelectItem value="operations dept i">Operations Dept I</SelectItem>
                       <SelectItem value="operations dept ii">Operations Dept II</SelectItem>
@@ -761,8 +796,8 @@ export default function Admin() {
                         {sortColumn === 'department' && <ArrowUpDown className="w-3 h-3" />}
                       </div>
                     </TableHead>
-                    <TableHead>Title</TableHead>
                     <TableHead>Division</TableHead>
+                    <TableHead>Title</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -780,16 +815,6 @@ export default function Admin() {
                         <TableCell>{user.name}</TableCell>
                         <TableCell className="capitalize">{user.department}</TableCell>
                         <TableCell>
-                          <Input
-                            value={titleValue}
-                            onChange={(e) => setTitleDrafts(prev => ({ ...prev, [user.id]: e.target.value }))}
-                            onBlur={() => saveTitle(user.id, user.title)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                            placeholder="Add title"
-                            className="h-8 min-w-[140px]"
-                          />
-                        </TableCell>
-                        <TableCell>
                           <Select
                             value={user.division ?? ''}
                             onValueChange={(val) => saveDivision(user.id, val)}
@@ -803,6 +828,16 @@ export default function Admin() {
                               ))}
                             </SelectContent>
                           </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={titleValue}
+                            onChange={(e) => setTitleDrafts(prev => ({ ...prev, [user.id]: e.target.value }))}
+                            onBlur={() => saveTitle(user.id, user.title)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                            placeholder="Add title"
+                            className="h-8 min-w-[140px]"
+                          />
                         </TableCell>
                         <TableCell>
                           {isUserAdmin ? (
