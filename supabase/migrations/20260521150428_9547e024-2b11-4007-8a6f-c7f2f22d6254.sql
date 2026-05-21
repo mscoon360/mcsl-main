@@ -1,0 +1,1 @@
+ALTER TABLE public.fleet_vehicles ADD COLUMN IF NOT EXISTS driver_user_id uuid;

@@ -540,6 +540,7 @@ export type Database = {
           division: string | null
           driver_name: string
           driver_phone: string
+          driver_user_id: string | null
           engine_number: string | null
           financing_status: string | null
           fuel_type: string | null
@@ -586,6 +587,7 @@ export type Database = {
           division?: string | null
           driver_name: string
           driver_phone: string
+          driver_user_id?: string | null
           engine_number?: string | null
           financing_status?: string | null
           fuel_type?: string | null
@@ -632,6 +634,7 @@ export type Database = {
           division?: string | null
           driver_name?: string
           driver_phone?: string
+          driver_user_id?: string | null
           engine_number?: string | null
           financing_status?: string | null
           fuel_type?: string | null
