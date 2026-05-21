@@ -21,7 +21,7 @@ export const useAccountMappings = () => {
 
   const fetchMappings = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('account_mappings')
         .select('*')
         .order('workflow', { ascending: true })
