@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from '@/components/ui/badge';
 import { z } from 'zod';
 import { formatDistanceToNow } from 'date-fns';
+import { useDivisions } from '@/hooks/useDivisions';
 
 const createUserSchema = z.object({
   email: z
@@ -54,6 +55,8 @@ interface Profile {
   username: string;
   name: string;
   department: string;
+  title?: string;
+  division?: string;
 }
 
 interface UserRole {
@@ -107,6 +110,8 @@ export default function Admin() {
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const [sortColumn, setSortColumn] = useState<keyof Profile>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [titleDrafts, setTitleDrafts] = useState<Record<string, string>>({});
+  const { divisions } = useDivisions();
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -484,6 +489,28 @@ export default function Admin() {
     setSubmitting(false);
   };
 
+  const saveTitle = async (userId: string, currentTitle: string | undefined) => {
+    const newTitle = titleDrafts[userId] ?? '';
+    if (newTitle === (currentTitle ?? '')) return;
+    const { error } = await supabase.from('profiles').update({ title: newTitle }).eq('id', userId);
+    if (error) {
+      toast.error('Failed to update title');
+    } else {
+      toast.success('Title updated');
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, title: newTitle } : u));
+    }
+  };
+
+  const saveDivision = async (userId: string, division: string) => {
+    const { error } = await supabase.from('profiles').update({ division }).eq('id', userId);
+    if (error) {
+      toast.error('Failed to update division');
+    } else {
+      toast.success('Division updated');
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, division } : u));
+    }
+  };
+
   const handleSort = (column: keyof Profile) => {
     if (sortColumn === column) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -692,13 +719,15 @@ export default function Admin() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Departments</SelectItem>
-                      <SelectItem value="sales">Sales</SelectItem>
-                      <SelectItem value="finance department">Finance Department</SelectItem>
-                      <SelectItem value="executive department">Executive Department</SelectItem>
-                      <SelectItem value="procurement & logistics department">Procurement & Logistics Department</SelectItem>
-                      <SelectItem value="divisional">Divisional</SelectItem>
-                      <SelectItem value="operational divisions">Operational Divisions</SelectItem>
-                      <SelectItem value="contract department">Contract Department</SelectItem>
+                      <SelectItem value="executive department">Executive</SelectItem>
+                      <SelectItem value="group supporting">Group Supporting</SelectItem>
+                      <SelectItem value="finance department">Finance</SelectItem>
+                      <SelectItem value="procurement & logistics department">Procurement and Logistics</SelectItem>
+                      <SelectItem value="sales">Sales Dept</SelectItem>
+                      <SelectItem value="divisional sales & contracts dept.">Divisional Sales & Contracts Dept.</SelectItem>
+                      <SelectItem value="operations dept i">Operations Dept I</SelectItem>
+                      <SelectItem value="operations dept ii">Operations Dept II</SelectItem>
+                      <SelectItem value="operations dept iii">Operations Dept III</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -732,6 +761,8 @@ export default function Admin() {
                         {sortColumn === 'department' && <ArrowUpDown className="w-3 h-3" />}
                       </div>
                     </TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Division</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -741,12 +772,38 @@ export default function Admin() {
                     const isUserAdmin = userRoles.some(
                       (role) => role.user_id === user.id && role.role === 'admin'
                     );
+                    const titleValue = titleDrafts[user.id] ?? user.title ?? '';
                     return (
                       <TableRow key={user.id}>
                         <TableCell>{user.username}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{user.name}</TableCell>
                         <TableCell className="capitalize">{user.department}</TableCell>
+                        <TableCell>
+                          <Input
+                            value={titleValue}
+                            onChange={(e) => setTitleDrafts(prev => ({ ...prev, [user.id]: e.target.value }))}
+                            onBlur={() => saveTitle(user.id, user.title)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                            placeholder="Add title"
+                            className="h-8 min-w-[140px]"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={user.division ?? ''}
+                            onValueChange={(val) => saveDivision(user.id, val)}
+                          >
+                            <SelectTrigger className="h-8 min-w-[160px]">
+                              <SelectValue placeholder="Select division" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {divisions.map((d) => (
+                                <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
                         <TableCell>
                           {isUserAdmin ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-primary-foreground">
@@ -785,7 +842,7 @@ export default function Admin() {
                   })}
                   {filteredAndSortedUsers.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                         No users found
                       </TableCell>
                     </TableRow>
