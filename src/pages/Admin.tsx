@@ -489,6 +489,28 @@ export default function Admin() {
     setSubmitting(false);
   };
 
+  const saveTitle = async (userId: string, currentTitle: string | undefined) => {
+    const newTitle = titleDrafts[userId] ?? '';
+    if (newTitle === (currentTitle ?? '')) return;
+    const { error } = await supabase.from('profiles').update({ title: newTitle }).eq('id', userId);
+    if (error) {
+      toast.error('Failed to update title');
+    } else {
+      toast.success('Title updated');
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, title: newTitle } : u));
+    }
+  };
+
+  const saveDivision = async (userId: string, division: string) => {
+    const { error } = await supabase.from('profiles').update({ division }).eq('id', userId);
+    if (error) {
+      toast.error('Failed to update division');
+    } else {
+      toast.success('Division updated');
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, division } : u));
+    }
+  };
+
   const handleSort = (column: keyof Profile) => {
     if (sortColumn === column) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
