@@ -205,6 +205,15 @@ export default function Fleet() {
         insurance_expiry: formData.insuranceExpiry || null,
         registration_expiry: formData.registrationExpiry || null,
         warranty_expiry: formData.warrantyExpiry || null,
+        current_mileage: formData.currentMileage ? parseFloat(formData.currentMileage) : null,
+        last_service_date: formData.lastServiceDate || null,
+        next_service_date: formData.nextServiceDate || null,
+        oil_change_interval: formData.oilChangeInterval || null,
+        tire_change_date: formData.tireChangeDate || null,
+        battery_change_date: formData.batteryChangeDate || null,
+        brake_service_date: formData.brakeServiceDate || null,
+        maintenance_status: formData.maintenanceStatus || null,
+        preferred_mechanic: formData.preferredMechanic || null,
       } as any);
       
       // Reset form and close dialog
