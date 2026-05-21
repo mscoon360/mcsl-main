@@ -54,6 +54,8 @@ interface Profile {
   username: string;
   name: string;
   department: string;
+  title?: string;
+  division?: string;
 }
 
 interface UserRole {
