@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { useFleetVehicles } from "@/hooks/useFleetVehicles";
 import { useUsers } from "@/hooks/useUsers";
+import { useDivisions } from "@/hooks/useDivisions";
 import { useAuth } from "@/contexts/AuthContext";
 
 const vehicleSchema = z.object({
