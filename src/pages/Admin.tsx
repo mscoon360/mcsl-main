@@ -885,6 +885,8 @@ export default function Admin() {
                                 setEditUsername(user.username);
                                 setEditPassword('');
                                 setEditDepartment(user.department);
+                                setEditTitle(user.title ?? '');
+                                setEditDivision(user.division ?? '');
                                 setRevokeAdminRole(false);
                               }}
                             >
