@@ -108,6 +108,8 @@ export default function Admin() {
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editDepartment, setEditDepartment] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [editDivision, setEditDivision] = useState('');
   const [revokeAdminRole, setRevokeAdminRole] = useState(false);
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const [sortColumn, setSortColumn] = useState<keyof Profile>('name');
@@ -461,34 +463,54 @@ export default function Admin() {
       updates.revokeAdmin = true;
     }
 
-    if (Object.keys(updates).length === 0) {
+    const titleChanged = (editTitle ?? '') !== (editingUser.title ?? '');
+    const divisionChanged = (editDivision ?? '') !== (editingUser.division ?? '');
+
+    if (Object.keys(updates).length === 0 && !titleChanged && !divisionChanged) {
       toast.error('No changes to save');
       setSubmitting(false);
       return;
     }
 
-    const { data: { session } } = await supabase.auth.getSession();
+    if (Object.keys(updates).length > 0) {
+      const { data: { session } } = await supabase.auth.getSession();
 
-    const { data, error } = await supabase.functions.invoke('update-user', {
-      headers: {
-        Authorization: `Bearer ${session?.access_token ?? ''}`,
-      },
-      body: {
-        userId: editingUser.id,
-        ...updates,
-      },
-    });
+      const { data, error } = await supabase.functions.invoke('update-user', {
+        headers: {
+          Authorization: `Bearer ${session?.access_token ?? ''}`,
+        },
+        body: {
+          userId: editingUser.id,
+          ...updates,
+        },
+      });
 
-    if (error) {
-      toast.error(error.message || 'Failed to update user');
-      setSubmitting(false);
-      return;
+      if (error) {
+        toast.error(error.message || 'Failed to update user');
+        setSubmitting(false);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        setSubmitting(false);
+        return;
+      }
     }
 
-    if (data?.error) {
-      toast.error(data.error);
-      setSubmitting(false);
-      return;
+    if (titleChanged || divisionChanged) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          ...(titleChanged ? { title: editTitle || null } : {}),
+          ...(divisionChanged ? { division: editDivision || null } : {}),
+        })
+        .eq('id', editingUser.id);
+      if (profileError) {
+        toast.error('Failed to update title/division');
+        setSubmitting(false);
+        return;
+      }
     }
 
     toast.success('User updated successfully');
@@ -496,6 +518,8 @@ export default function Admin() {
     setEditUsername('');
     setEditPassword('');
     setEditDepartment('');
+    setEditTitle('');
+    setEditDivision('');
     setRevokeAdminRole(false);
     loadUsers();
     loadUserRoles();
@@ -560,6 +584,8 @@ export default function Admin() {
           setEditUsername('');
           setEditPassword('');
           setEditDepartment('');
+          setEditTitle('');
+          setEditDivision('');
           setRevokeAdminRole(false);
         }
       }}>
@@ -567,7 +593,7 @@ export default function Admin() {
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
-              Update username, department, and/or password for {editingUser?.name}
+              Update username, department, division, title, and/or password for {editingUser?.name}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditUser} className="space-y-4">
@@ -587,15 +613,38 @@ export default function Admin() {
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sales">Sales</SelectItem>
-                  <SelectItem value="finance department">Finance Department</SelectItem>
-                  <SelectItem value="executive department">Executive Department</SelectItem>
-                  <SelectItem value="procurement & logistics department">Procurement & Logistics Department</SelectItem>
-                  <SelectItem value="divisional">Divisional</SelectItem>
-                  <SelectItem value="operational divisions">Operational Divisions</SelectItem>
-                  <SelectItem value="contract department">Contract Department</SelectItem>
+                  <SelectItem value="executive department">Executive</SelectItem>
+                  <SelectItem value="group supporting">Group Supporting</SelectItem>
+                  <SelectItem value="finance department">Finance</SelectItem>
+                  <SelectItem value="procurement & logistics department">Procurement and Logistics</SelectItem>
+                  <SelectItem value="divisional sales & contracts dept.">Divisional Sales & Contracts Dept.</SelectItem>
+                  <SelectItem value="operations dept i">Operations Dept I</SelectItem>
+                  <SelectItem value="operations dept ii">Operations Dept II</SelectItem>
+                  <SelectItem value="operations dept iii">Operations Dept III</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-division">Division</Label>
+              <Select value={editDivision} onValueChange={setEditDivision}>
+                <SelectTrigger id="edit-division">
+                  <SelectValue placeholder="Select division" />
+                </SelectTrigger>
+                <SelectContent>
+                  {divisions.map((d) => (
+                    <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Title</Label>
+              <Input
+                id="edit-title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="e.g. Manager"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-password">New Password (optional)</Label>
@@ -637,6 +686,8 @@ export default function Admin() {
                   setEditUsername('');
                   setEditPassword('');
                   setEditDepartment('');
+                  setEditTitle('');
+                  setEditDivision('');
                   setRevokeAdminRole(false);
                 }}
               >
@@ -807,38 +858,14 @@ export default function Admin() {
                     const isUserAdmin = userRoles.some(
                       (role) => role.user_id === user.id && role.role === 'admin'
                     );
-                    const titleValue = titleDrafts[user.id] ?? user.title ?? '';
                     return (
                       <TableRow key={user.id}>
                         <TableCell>{user.username}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{user.name}</TableCell>
                         <TableCell className="capitalize">{user.department}</TableCell>
-                        <TableCell>
-                          <Select
-                            value={user.division ?? ''}
-                            onValueChange={(val) => saveDivision(user.id, val)}
-                          >
-                            <SelectTrigger className="h-8 min-w-[160px]">
-                              <SelectValue placeholder="Select division" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {divisions.map((d) => (
-                                <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={titleValue}
-                            onChange={(e) => setTitleDrafts(prev => ({ ...prev, [user.id]: e.target.value }))}
-                            onBlur={() => saveTitle(user.id, user.title)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                            placeholder="Add title"
-                            className="h-8 min-w-[140px]"
-                          />
-                        </TableCell>
+                        <TableCell>{user.division || <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell>{user.title || <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell>
                           {isUserAdmin ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-primary-foreground">
@@ -858,6 +885,8 @@ export default function Admin() {
                                 setEditUsername(user.username);
                                 setEditPassword('');
                                 setEditDepartment(user.department);
+                                setEditTitle(user.title ?? '');
+                                setEditDivision(user.division ?? '');
                                 setRevokeAdminRole(false);
                               }}
                             >
