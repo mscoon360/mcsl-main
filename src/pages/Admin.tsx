@@ -759,7 +759,6 @@ export default function Admin() {
                       <SelectItem value="group supporting">Group Supporting</SelectItem>
                       <SelectItem value="finance department">Finance</SelectItem>
                       <SelectItem value="procurement & logistics department">Procurement and Logistics</SelectItem>
-                      <SelectItem value="sales">Sales Dept</SelectItem>
                       <SelectItem value="divisional sales & contracts dept.">Divisional Sales & Contracts Dept.</SelectItem>
                       <SelectItem value="operations dept i">Operations Dept I</SelectItem>
                       <SelectItem value="operations dept ii">Operations Dept II</SelectItem>
