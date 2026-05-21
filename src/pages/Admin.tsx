@@ -248,10 +248,21 @@ export default function Admin() {
       return;
     }
 
+    // Set title/division on profile (handle_new_user trigger created the base profile)
+    const newUserId = data?.user?.id;
+    if (newUserId && (newUserTitle || selectedDivision)) {
+      await supabase
+        .from('profiles')
+        .update({ title: newUserTitle || null, division: selectedDivision || null })
+        .eq('id', newUserId);
+    }
+
     toast.success('User created successfully');
     e.currentTarget.reset();
     setGrantAdmin(false);
     setSelectedDepartment('');
+    setSelectedDivision('');
+    setNewUserTitle('');
     loadUsers();
     loadUserRoles();
     setSubmitting(false);
