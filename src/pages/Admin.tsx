@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from '@/components/ui/badge';
 import { z } from 'zod';
 import { formatDistanceToNow } from 'date-fns';
+import { useDivisions } from '@/hooks/useDivisions';
 
 const createUserSchema = z.object({
   email: z
