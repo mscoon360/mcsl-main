@@ -109,13 +109,19 @@ export const useDivisions = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');
 
-      // Update division name
-      const { error: divisionError } = await supabase
+      // Update division name. Use .select() so we can confirm a row was
+      // actually changed -- a row-level-security denial returns no error
+      // but updates zero rows, which previously masked the bug as success.
+      const { data: updatedRows, error: divisionError } = await supabase
         .from('divisions')
         .update({ name: divisionName })
-        .eq('id', id);
+        .eq('id', id)
+        .select('id');
 
       if (divisionError) throw divisionError;
+      if (!updatedRows || updatedRows.length === 0) {
+        throw new Error('Update was not applied. You may not have permission to edit this division.');
+      }
 
       // Get existing subdivisions
       const { data: existingSubdivisions, error: fetchError } = await supabase
@@ -197,9 +203,11 @@ export const useDivisions = () => {
   useEffect(() => {
     fetchDivisions();
 
-    // Set up realtime subscription
+    // Unique channel name per hook instance so multiple components calling
+    // useDivisions don't collide on the same Supabase channel.
+    const channelName = `divisions-changes-${Math.random().toString(36).slice(2, 10)}`;
     const channel = supabase
-      .channel('divisions-changes')
+      .channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'divisions' }, fetchDivisions)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subdivisions' }, fetchDivisions)
       .subscribe();
