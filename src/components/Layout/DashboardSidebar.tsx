@@ -155,6 +155,7 @@ const navigation: NavigationSection[] = [
           { name: "Driver Companion", href: "/companion" },
           { name: "Fuel Records", href: "/fuel" },
           { name: "Parts & Maintenance", href: "/parts" },
+          { name: "Driver Management", href: "/driver-management" },
         ]
       },
     ]
