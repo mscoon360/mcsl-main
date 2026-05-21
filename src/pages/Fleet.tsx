@@ -732,7 +732,7 @@ export default function Fleet() {
                           ? new Date(vehicle.next_inspection_date).toLocaleDateString()
                           : "Not scheduled"}
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" onClick={() => handleViewDetails(vehicle)}>
                             View Details
