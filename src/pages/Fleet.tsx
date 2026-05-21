@@ -236,6 +236,15 @@ export default function Fleet() {
         insuranceExpiry: "",
         registrationExpiry: "",
         warrantyExpiry: "",
+        currentMileage: "",
+        lastServiceDate: "",
+        nextServiceDate: "",
+        oilChangeInterval: "",
+        tireChangeDate: "",
+        batteryChangeDate: "",
+        brakeServiceDate: "",
+        maintenanceStatus: "",
+        preferredMechanic: "",
       });
       setErrors({});
       setIsDialogOpen(false);
