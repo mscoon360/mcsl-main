@@ -719,7 +719,7 @@ export default function Fleet() {
                       vehicle.model.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .map((vehicle) => (
-                    <TableRow key={vehicle.id}>
+                    <TableRow key={vehicle.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewDetails(vehicle)}>
                       <TableCell className="font-medium">{vehicle.license_plate}</TableCell>
                       <TableCell>{vehicle.make} {vehicle.model}</TableCell>
                       <TableCell>{vehicle.driver_name}</TableCell>
@@ -732,7 +732,7 @@ export default function Fleet() {
                           ? new Date(vehicle.next_inspection_date).toLocaleDateString()
                           : "Not scheduled"}
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" onClick={() => handleViewDetails(vehicle)}>
                             View Details
@@ -775,77 +775,87 @@ export default function Fleet() {
 
       {/* Vehicle Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-2xl bg-background z-50">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-background z-50">
           <DialogHeader>
             <DialogTitle>Vehicle Details</DialogTitle>
             <DialogDescription>
               Complete information for {selectedVehicle?.license_plate}
             </DialogDescription>
           </DialogHeader>
-          {selectedVehicle && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">License Plate</Label>
-                  <p className="font-medium">{selectedVehicle.license_plate}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Status</Label>
-                  <div>{getStatusBadge(selectedVehicle.status)}</div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Make</Label>
-                  <p className="font-medium">{selectedVehicle.make}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Model</Label>
-                  <p className="font-medium">{selectedVehicle.model}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Driver Name</Label>
-                  <p className="font-medium">{selectedVehicle.driver_name}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Driver Phone</Label>
-                  <p className="font-medium">{selectedVehicle.driver_phone || '—'}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Miles Per Gallon</Label>
-                  <p className="font-medium">{selectedVehicle.mpg} MPG</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Current Mileage</Label>
-                  <p className="font-medium">{selectedVehicle.mileage.toLocaleString()} miles</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Inspection Cycle</Label>
-                  <p className="font-medium capitalize">{selectedVehicle.inspection_cycle}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Next Inspection</Label>
-                  <p className="font-medium">
-                    {selectedVehicle.next_inspection_date
-                      ? new Date(selectedVehicle.next_inspection_date).toLocaleDateString()
-                      : "Not scheduled"}
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Last Inspection</Label>
-                  <p className="font-medium">
-                    {selectedVehicle.last_inspection_date
-                      ? new Date(selectedVehicle.last_inspection_date).toLocaleDateString()
-                      : "No previous inspection"}
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Added to Fleet</Label>
-                  <p className="font-medium">
-                    {new Date(selectedVehicle.created_at).toLocaleDateString()}
-                  </p>
-                </div>
+          {selectedVehicle && (() => {
+            const v: any = selectedVehicle;
+            const Field = ({ label, value }: { label: string; value: any }) => (
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-xs">{label}</Label>
+                <p className="font-medium text-sm">{value ?? <span className="text-muted-foreground">—</span>}</p>
               </div>
-            </div>
-          )}
+            );
+            const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString() : null);
+            const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold border-b pb-2">{title}</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">{children}</div>
+              </div>
+            );
+            return (
+              <div className="space-y-6">
+                <Section title="Identification">
+                  <Field label="License Plate" value={v.license_plate} />
+                  <Field label="Make" value={v.make} />
+                  <Field label="Model" value={v.model} />
+                  <Field label="Year" value={v.year} />
+                  <Field label="VIN" value={v.vin} />
+                  <Field label="Engine Number" value={v.engine_number} />
+                  <Field label="Vehicle Type" value={v.vehicle_type} />
+                  <Field label="Fuel Type" value={v.fuel_type} />
+                  <Field label="Transmission" value={v.transmission} />
+                  <Field label="Color" value={v.color} />
+                  <Field label="Seating Capacity" value={v.seating_capacity} />
+                  <Field label="Status" value={getStatusBadge(v.status)} />
+                </Section>
+
+                <Section title="Assignment">
+                  <Field label="Company" value={v.company} />
+                  <Field label="Division" value={v.division} />
+                  <Field label="Sub Division" value={v.sub_division} />
+                  <Field label="Technician" value={v.technician} />
+                  <Field label="Driver Name" value={v.driver_name} />
+                  <Field label="Driver Phone" value={v.driver_phone} />
+                </Section>
+
+                <Section title="Ownership & Financial">
+                  <Field label="Purchase Date" value={fmtDate(v.purchase_date)} />
+                  <Field label="Purchase Price" value={v.purchase_price != null ? `$${Number(v.purchase_price).toLocaleString()}` : null} />
+                  <Field label="Financing Status" value={v.financing_status} />
+                  <Field label="Monthly Payment" value={v.monthly_payment != null ? `$${Number(v.monthly_payment).toLocaleString()}` : null} />
+                  <Field label="Insurance Provider" value={v.insurance_provider} />
+                  <Field label="Insurance Expiry" value={fmtDate(v.insurance_expiry)} />
+                  <Field label="Registration Expiry" value={fmtDate(v.registration_expiry)} />
+                  <Field label="Warranty Expiry" value={fmtDate(v.warranty_expiry)} />
+                </Section>
+
+                <Section title="Service & Maintenance">
+                  <Field label="Current Mileage" value={v.current_mileage != null ? Number(v.current_mileage).toLocaleString() : v.mileage?.toLocaleString()} />
+                  <Field label="MPG" value={`${v.mpg} MPG`} />
+                  <Field label="Last Service" value={fmtDate(v.last_service_date)} />
+                  <Field label="Next Service" value={fmtDate(v.next_service_date)} />
+                  <Field label="Oil Change Interval" value={v.oil_change_interval} />
+                  <Field label="Tire Change" value={fmtDate(v.tire_change_date)} />
+                  <Field label="Battery Change" value={fmtDate(v.battery_change_date)} />
+                  <Field label="Brake Service" value={fmtDate(v.brake_service_date)} />
+                  <Field label="Maintenance Status" value={v.maintenance_status} />
+                  <Field label="Preferred Mechanic" value={v.preferred_mechanic} />
+                </Section>
+
+                <Section title="Inspection">
+                  <Field label="Inspection Cycle" value={<span className="capitalize">{v.inspection_cycle}</span>} />
+                  <Field label="Last Inspection" value={fmtDate(v.last_inspection_date)} />
+                  <Field label="Next Inspection" value={fmtDate(v.next_inspection_date)} />
+                  <Field label="Added to Fleet" value={fmtDate(v.created_at)} />
+                </Section>
+              </div>
+            );
+          })()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>
               Close
