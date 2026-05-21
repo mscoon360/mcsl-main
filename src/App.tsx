@@ -41,6 +41,7 @@ import Companion from "./pages/Companion";
 import Inspections from "./pages/Inspections";
 import Fuel from "./pages/Fuel";
 import Parts from "./pages/Parts";
+import DriverManagement from "./pages/DriverManagement";
 import RentalCosting from "./pages/RentalCosting";
 import FinanceReports from "./pages/FinanceReports";
 import ServicesPage from "./pages/Services";
