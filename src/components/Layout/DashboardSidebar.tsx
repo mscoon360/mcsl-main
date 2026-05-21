@@ -156,6 +156,7 @@ const navigation: NavigationSection[] = [
           { name: "Fuel Records", href: "/fuel" },
           { name: "Parts & Maintenance", href: "/parts" },
           { name: "Driver Management", href: "/driver-management" },
+          { name: "Alerts & Automations", href: "/alerts-automations" },
         ]
       },
     ]
