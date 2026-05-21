@@ -108,6 +108,8 @@ export default function Admin() {
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editDepartment, setEditDepartment] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [editDivision, setEditDivision] = useState('');
   const [revokeAdminRole, setRevokeAdminRole] = useState(false);
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const [sortColumn, setSortColumn] = useState<keyof Profile>('name');
