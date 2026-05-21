@@ -719,13 +719,15 @@ export default function Admin() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Departments</SelectItem>
-                      <SelectItem value="sales">Sales</SelectItem>
-                      <SelectItem value="finance department">Finance Department</SelectItem>
-                      <SelectItem value="executive department">Executive Department</SelectItem>
-                      <SelectItem value="procurement & logistics department">Procurement & Logistics Department</SelectItem>
-                      <SelectItem value="divisional">Divisional</SelectItem>
-                      <SelectItem value="operational divisions">Operational Divisions</SelectItem>
-                      <SelectItem value="contract department">Contract Department</SelectItem>
+                      <SelectItem value="executive department">Executive</SelectItem>
+                      <SelectItem value="group supporting">Group Supporting</SelectItem>
+                      <SelectItem value="finance department">Finance</SelectItem>
+                      <SelectItem value="procurement & logistics department">Procurement and Logistics</SelectItem>
+                      <SelectItem value="sales">Sales Dept</SelectItem>
+                      <SelectItem value="divisional sales & contracts dept.">Divisional Sales & Contracts Dept.</SelectItem>
+                      <SelectItem value="operations dept i">Operations Dept I</SelectItem>
+                      <SelectItem value="operations dept ii">Operations Dept II</SelectItem>
+                      <SelectItem value="operations dept iii">Operations Dept III</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
