@@ -36,7 +36,7 @@ export function useFleetVehicles() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as FleetVehicle[];
+      return data as unknown as FleetVehicle[];
     },
     enabled: !!user,
   });
