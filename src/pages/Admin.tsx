@@ -584,6 +584,8 @@ export default function Admin() {
           setEditUsername('');
           setEditPassword('');
           setEditDepartment('');
+          setEditTitle('');
+          setEditDivision('');
           setRevokeAdminRole(false);
         }
       }}>
@@ -591,7 +593,7 @@ export default function Admin() {
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
-              Update username, department, and/or password for {editingUser?.name}
+              Update username, department, division, title, and/or password for {editingUser?.name}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditUser} className="space-y-4">
@@ -611,15 +613,38 @@ export default function Admin() {
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sales">Sales</SelectItem>
-                  <SelectItem value="finance department">Finance Department</SelectItem>
-                  <SelectItem value="executive department">Executive Department</SelectItem>
-                  <SelectItem value="procurement & logistics department">Procurement & Logistics Department</SelectItem>
-                  <SelectItem value="divisional">Divisional</SelectItem>
-                  <SelectItem value="operational divisions">Operational Divisions</SelectItem>
-                  <SelectItem value="contract department">Contract Department</SelectItem>
+                  <SelectItem value="executive department">Executive</SelectItem>
+                  <SelectItem value="group supporting">Group Supporting</SelectItem>
+                  <SelectItem value="finance department">Finance</SelectItem>
+                  <SelectItem value="procurement & logistics department">Procurement and Logistics</SelectItem>
+                  <SelectItem value="divisional sales & contracts dept.">Divisional Sales & Contracts Dept.</SelectItem>
+                  <SelectItem value="operations dept i">Operations Dept I</SelectItem>
+                  <SelectItem value="operations dept ii">Operations Dept II</SelectItem>
+                  <SelectItem value="operations dept iii">Operations Dept III</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-division">Division</Label>
+              <Select value={editDivision} onValueChange={setEditDivision}>
+                <SelectTrigger id="edit-division">
+                  <SelectValue placeholder="Select division" />
+                </SelectTrigger>
+                <SelectContent>
+                  {divisions.map((d) => (
+                    <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Title</Label>
+              <Input
+                id="edit-title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="e.g. Manager"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-password">New Password (optional)</Label>
