@@ -485,6 +485,24 @@ export default function Admin() {
     setSubmitting(false);
   };
 
+  const handleSort = (column: keyof Profile) => {
+    if (sortColumn === column) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const filteredAndSortedUsers = users
+    .filter(user => filterDepartment === 'all' || user.department === filterDepartment)
+    .sort((a, b) => {
+      const aVal = a[sortColumn] ?? '';
+      const bVal = b[sortColumn] ?? '';
+      const comparison = String(aVal).localeCompare(String(bVal), undefined, { sensitivity: 'base' });
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
