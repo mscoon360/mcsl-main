@@ -858,38 +858,14 @@ export default function Admin() {
                     const isUserAdmin = userRoles.some(
                       (role) => role.user_id === user.id && role.role === 'admin'
                     );
-                    const titleValue = titleDrafts[user.id] ?? user.title ?? '';
                     return (
                       <TableRow key={user.id}>
                         <TableCell>{user.username}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{user.name}</TableCell>
                         <TableCell className="capitalize">{user.department}</TableCell>
-                        <TableCell>
-                          <Select
-                            value={user.division ?? ''}
-                            onValueChange={(val) => saveDivision(user.id, val)}
-                          >
-                            <SelectTrigger className="h-8 min-w-[160px]">
-                              <SelectValue placeholder="Select division" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {divisions.map((d) => (
-                                <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={titleValue}
-                            onChange={(e) => setTitleDrafts(prev => ({ ...prev, [user.id]: e.target.value }))}
-                            onBlur={() => saveTitle(user.id, user.title)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                            placeholder="Add title"
-                            className="h-8 min-w-[140px]"
-                          />
-                        </TableCell>
+                        <TableCell>{user.division || <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell>{user.title || <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell>
                           {isUserAdmin ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-primary-foreground">
