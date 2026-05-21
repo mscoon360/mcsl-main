@@ -28,8 +28,7 @@ const createUserSchema = z.object({
     .string()
     .min(8, { message: 'Password must be at least 8 characters for security' })
     .max(128, { message: 'Password must be less than 128 characters' })
-    .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
-    .regex(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
+    .regex(/[A-Za-z]/, { message: 'Password must contain at least one letter' })
     .regex(/[0-9]/, { message: 'Password must contain at least one number' }),
   username: z
     .string()
@@ -567,7 +566,7 @@ export default function Admin() {
                 placeholder="Leave blank to keep current password"
               />
               <p className="text-xs text-muted-foreground">
-                Must be at least 8 characters with uppercase, lowercase, and number
+                Must be at least 8 characters with at least one letter and one number
               </p>
             </div>
             {(userDepartment === 'it' || userDepartment === 'executive department') && 
