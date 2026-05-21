@@ -332,3 +332,24 @@
     @apply block md:hidden;
   }
 }
+/* Normalize date/time inputs on iOS Safari (they render too tall and overlap labels) */
+@layer base {
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="month"],
+  input[type="week"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-height: 2.5rem;
+    height: 2.5rem;
+    line-height: 1.25rem;
+    display: block;
+  }
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value,
+  input[type="datetime-local"]::-webkit-date-and-time-value {
+    text-align: left;
+    min-height: 1.25rem;
+  }
+}
