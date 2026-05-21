@@ -110,6 +110,8 @@ export default function Admin() {
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const [sortColumn, setSortColumn] = useState<keyof Profile>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [titleDrafts, setTitleDrafts] = useState<Record<string, string>>({});
+  const { divisions } = useDivisions();
 
   useEffect(() => {
     if (!loading && !isAdmin) {
