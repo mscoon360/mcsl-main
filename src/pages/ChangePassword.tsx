@@ -15,8 +15,7 @@ const passwordSchema = z.object({
     .string()
     .min(8, { message: 'Password must be at least 8 characters' })
     .max(128, { message: 'Password must be less than 128 characters' })
-    .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
-    .regex(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
+    .regex(/[A-Za-z]/, { message: 'Password must contain at least one letter' })
     .regex(/[0-9]/, { message: 'Password must contain at least one number' }),
   confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
