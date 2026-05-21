@@ -1371,27 +1371,33 @@ export type Database = {
         Row: {
           created_at: string
           department: string
+          division: string | null
           id: string
           name: string
           needs_password_change: boolean | null
+          title: string | null
           updated_at: string
           username: string
         }
         Insert: {
           created_at?: string
           department: string
+          division?: string | null
           id: string
           name: string
           needs_password_change?: boolean | null
+          title?: string | null
           updated_at?: string
           username: string
         }
         Update: {
           created_at?: string
           department?: string
+          division?: string | null
           id?: string
           name?: string
           needs_password_change?: boolean | null
+          title?: string | null
           updated_at?: string
           username?: string
         }
