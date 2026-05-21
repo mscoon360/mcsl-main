@@ -686,6 +686,8 @@ export default function Admin() {
                   setEditUsername('');
                   setEditPassword('');
                   setEditDepartment('');
+                  setEditTitle('');
+                  setEditDivision('');
                   setRevokeAdminRole(false);
                 }}
               >
