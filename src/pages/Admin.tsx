@@ -105,6 +105,9 @@ export default function Admin() {
   const [editPassword, setEditPassword] = useState('');
   const [editDepartment, setEditDepartment] = useState('');
   const [revokeAdminRole, setRevokeAdminRole] = useState(false);
+  const [filterDepartment, setFilterDepartment] = useState<string>('all');
+  const [sortColumn, setSortColumn] = useState<keyof Profile>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
     if (!loading && !isAdmin) {
