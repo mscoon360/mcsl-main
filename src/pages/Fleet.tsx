@@ -482,23 +482,52 @@ export default function Fleet() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="company">Company</Label>
                   <Input id="company" value={formData.company} onChange={(e) => handleInputChange("company", e.target.value)} placeholder="Company" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="division">Division</Label>
-                  <Input id="division" value={formData.division} onChange={(e) => handleInputChange("division", e.target.value)} placeholder="Division" />
+                  <Select
+                    value={formData.division}
+                    onValueChange={(v) => {
+                      handleInputChange("division", v);
+                      handleInputChange("subDivision", "");
+                    }}
+                  >
+                    <SelectTrigger id="division"><SelectValue placeholder="Select division" /></SelectTrigger>
+                    <SelectContent className="bg-background z-50">
+                      {divisions.map((d) => (
+                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="subDivision">Sub Division</Label>
-                  <Input id="subDivision" value={formData.subDivision} onChange={(e) => handleInputChange("subDivision", e.target.value)} placeholder="Sub-division" />
+                  <Select
+                    value={formData.subDivision}
+                    onValueChange={(v) => handleInputChange("subDivision", v)}
+                    disabled={!selectedDivision || !(selectedDivision.subdivisions?.length)}
+                  >
+                    <SelectTrigger id="subDivision">
+                      <SelectValue placeholder={selectedDivision ? "Select sub-division" : "Select division first"} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background z-50">
+                      {selectedDivision?.subdivisions?.map((s) => (
+                        <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="technician">Technician</Label>
                   <Input id="technician" value={formData.technician} onChange={(e) => handleInputChange("technician", e.target.value)} placeholder="Technician" />
                 </div>
               </div>
+
+
 
               <div className="pt-2 border-t">
                 <h3 className="text-sm font-semibold mb-3">Ownership & Financial</h3>
