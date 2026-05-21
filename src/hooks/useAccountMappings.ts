@@ -60,7 +60,7 @@ export const useAccountMappings = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('account_mappings')
         .delete()
         .eq('user_id', user.id)
