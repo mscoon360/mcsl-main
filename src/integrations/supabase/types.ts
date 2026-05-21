@@ -475,55 +475,115 @@ export type Database = {
       }
       fleet_vehicles: {
         Row: {
+          color: string | null
+          company: string | null
           created_at: string
+          division: string | null
           driver_name: string
           driver_phone: string
+          engine_number: string | null
+          financing_status: string | null
+          fuel_type: string | null
           id: string
           inspection_cycle: string
+          insurance_expiry: string | null
+          insurance_provider: string | null
           last_inspection_date: string | null
           license_plate: string
           make: string
           mileage: number
           model: string
+          monthly_payment: number | null
           mpg: number
           next_inspection_date: string | null
+          purchase_date: string | null
+          purchase_price: number | null
+          registration_expiry: string | null
+          seating_capacity: number | null
           status: string
+          sub_division: string | null
+          technician: string | null
+          transmission: string | null
           updated_at: string
           user_id: string
+          vehicle_type: string | null
+          vin: string | null
+          warranty_expiry: string | null
+          year: number | null
         }
         Insert: {
+          color?: string | null
+          company?: string | null
           created_at?: string
+          division?: string | null
           driver_name: string
           driver_phone: string
+          engine_number?: string | null
+          financing_status?: string | null
+          fuel_type?: string | null
           id?: string
           inspection_cycle: string
+          insurance_expiry?: string | null
+          insurance_provider?: string | null
           last_inspection_date?: string | null
           license_plate: string
           make: string
           mileage?: number
           model: string
+          monthly_payment?: number | null
           mpg: number
           next_inspection_date?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          registration_expiry?: string | null
+          seating_capacity?: number | null
           status?: string
+          sub_division?: string | null
+          technician?: string | null
+          transmission?: string | null
           updated_at?: string
           user_id: string
+          vehicle_type?: string | null
+          vin?: string | null
+          warranty_expiry?: string | null
+          year?: number | null
         }
         Update: {
+          color?: string | null
+          company?: string | null
           created_at?: string
+          division?: string | null
           driver_name?: string
           driver_phone?: string
+          engine_number?: string | null
+          financing_status?: string | null
+          fuel_type?: string | null
           id?: string
           inspection_cycle?: string
+          insurance_expiry?: string | null
+          insurance_provider?: string | null
           last_inspection_date?: string | null
           license_plate?: string
           make?: string
           mileage?: number
           model?: string
+          monthly_payment?: number | null
           mpg?: number
           next_inspection_date?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          registration_expiry?: string | null
+          seating_capacity?: number | null
           status?: string
+          sub_division?: string | null
+          technician?: string | null
+          transmission?: string | null
           updated_at?: string
           user_id?: string
+          vehicle_type?: string | null
+          vin?: string | null
+          warranty_expiry?: string | null
+          year?: number | null
         }
         Relationships: []
       }
