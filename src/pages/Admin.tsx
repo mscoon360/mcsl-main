@@ -100,6 +100,8 @@ export default function Admin() {
   const [submitting, setSubmitting] = useState(false);
   const [grantAdmin, setGrantAdmin] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedDivision, setSelectedDivision] = useState('');
+  const [newUserTitle, setNewUserTitle] = useState('');
   const [selectedNavSections, setSelectedNavSections] = useState<string[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
