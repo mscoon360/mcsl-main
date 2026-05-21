@@ -632,8 +632,9 @@ export default function Admin() {
                     <Input id="email" name="email" type="email" required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <PasswordInput id="password" name="password" required />
+                    <Label>Default Password</Label>
+                    <Input value="MCSL2026" disabled readOnly />
+                    <p className="text-xs text-muted-foreground">User will be prompted to change this on first login.</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="username">Username</Label>
