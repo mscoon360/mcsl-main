@@ -120,6 +120,7 @@ const App = () => (
               <Route path="companion" element={<Companion />} />
               <Route path="fuel" element={<Fuel />} />
               <Route path="parts" element={<Parts />} />
+              <Route path="driver-management" element={<DriverManagement />} />
               <Route path="purchase-orders" element={<PurchaseOrders />} />
               <Route path="finance-purchase-orders" element={<FinancePurchaseOrders />} />
               <Route path="asset-registrar" element={<AssetRegistrar />} />
