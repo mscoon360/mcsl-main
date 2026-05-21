@@ -481,8 +481,8 @@ export default function Fleet() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
                 <div className="space-y-2">
                   <Label htmlFor="company">Company</Label>
                   <Input id="company" value={formData.company} onChange={(e) => handleInputChange("company", e.target.value)} placeholder="Company" />
