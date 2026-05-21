@@ -2280,6 +2280,78 @@ export type Database = {
           },
         ]
       }
+      vehicle_status_reports: {
+        Row: {
+          accident_report_doc: string | null
+          assigned_route_zone: string | null
+          average_daily_mileage: number | null
+          created_at: string
+          current_location: string | null
+          dashcam_installed: boolean | null
+          fuel_card_assigned: string | null
+          gps_installed: boolean | null
+          id: string
+          inspection_doc: string | null
+          insurance_doc: string | null
+          last_inspection_passed: string | null
+          notes: string | null
+          registration_doc: string | null
+          service_records_doc: string | null
+          tracker_id: string | null
+          updated_at: string
+          user_id: string
+          vehicle_availability: string | null
+          vehicle_id: string | null
+          vehicle_photos: string[] | null
+        }
+        Insert: {
+          accident_report_doc?: string | null
+          assigned_route_zone?: string | null
+          average_daily_mileage?: number | null
+          created_at?: string
+          current_location?: string | null
+          dashcam_installed?: boolean | null
+          fuel_card_assigned?: string | null
+          gps_installed?: boolean | null
+          id?: string
+          inspection_doc?: string | null
+          insurance_doc?: string | null
+          last_inspection_passed?: string | null
+          notes?: string | null
+          registration_doc?: string | null
+          service_records_doc?: string | null
+          tracker_id?: string | null
+          updated_at?: string
+          user_id: string
+          vehicle_availability?: string | null
+          vehicle_id?: string | null
+          vehicle_photos?: string[] | null
+        }
+        Update: {
+          accident_report_doc?: string | null
+          assigned_route_zone?: string | null
+          average_daily_mileage?: number | null
+          created_at?: string
+          current_location?: string | null
+          dashcam_installed?: boolean | null
+          fuel_card_assigned?: string | null
+          gps_installed?: boolean | null
+          id?: string
+          inspection_doc?: string | null
+          insurance_doc?: string | null
+          last_inspection_passed?: string | null
+          notes?: string | null
+          registration_doc?: string | null
+          service_records_doc?: string | null
+          tracker_id?: string | null
+          updated_at?: string
+          user_id?: string
+          vehicle_availability?: string | null
+          vehicle_id?: string | null
+          vehicle_photos?: string[] | null
+        }
+        Relationships: []
+      }
       vendors: {
         Row: {
           address: string | null
