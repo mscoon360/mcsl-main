@@ -815,16 +815,6 @@ export default function Admin() {
                         <TableCell>{user.name}</TableCell>
                         <TableCell className="capitalize">{user.department}</TableCell>
                         <TableCell>
-                          <Input
-                            value={titleValue}
-                            onChange={(e) => setTitleDrafts(prev => ({ ...prev, [user.id]: e.target.value }))}
-                            onBlur={() => saveTitle(user.id, user.title)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                            placeholder="Add title"
-                            className="h-8 min-w-[140px]"
-                          />
-                        </TableCell>
-                        <TableCell>
                           <Select
                             value={user.division ?? ''}
                             onValueChange={(val) => saveDivision(user.id, val)}
@@ -838,6 +828,16 @@ export default function Admin() {
                               ))}
                             </SelectContent>
                           </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={titleValue}
+                            onChange={(e) => setTitleDrafts(prev => ({ ...prev, [user.id]: e.target.value }))}
+                            onBlur={() => saveTitle(user.id, user.title)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                            placeholder="Add title"
+                            className="h-8 min-w-[140px]"
+                          />
                         </TableCell>
                         <TableCell>
                           {isUserAdmin ? (
