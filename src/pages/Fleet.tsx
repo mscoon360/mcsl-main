@@ -311,7 +311,7 @@ export default function Fleet() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="make">Vehicle Make *</Label>
                   <Input
@@ -348,7 +348,7 @@ export default function Fleet() {
                 {errors.licensePlate && <p className="text-sm text-destructive">{errors.licensePlate}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="driverName">Driver Name *</Label>
                   <Select
@@ -392,7 +392,7 @@ export default function Fleet() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="mpg">Miles Per Gallon (MPG) *</Label>
                   <Input
@@ -424,7 +424,7 @@ export default function Fleet() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="year">Year</Label>
                   <Input id="year" type="number" value={formData.year} onChange={(e) => handleInputChange("year", e.target.value)} placeholder="e.g., 2022" />
@@ -439,7 +439,7 @@ export default function Fleet() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="vehicleType">Vehicle Type</Label>
                   <Input id="vehicleType" value={formData.vehicleType} onChange={(e) => handleInputChange("vehicleType", e.target.value)} placeholder="e.g., Sedan, Truck" />
@@ -470,7 +470,7 @@ export default function Fleet() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="color">Color</Label>
                   <Input id="color" value={formData.color} onChange={(e) => handleInputChange("color", e.target.value)} placeholder="e.g., White" />
@@ -531,7 +531,7 @@ export default function Fleet() {
 
               <div className="pt-2 border-t">
                 <h3 className="text-sm font-semibold mb-3">Ownership & Financial</h3>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="purchaseDate">Purchase Date</Label>
                     <Input id="purchaseDate" type="date" value={formData.purchaseDate} onChange={(e) => handleInputChange("purchaseDate", e.target.value)} />
@@ -552,7 +552,7 @@ export default function Fleet() {
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                   <div className="space-y-2">
                     <Label htmlFor="monthlyPayment">Monthly Payment</Label>
                     <Input id="monthlyPayment" type="number" step="0.01" value={formData.monthlyPayment} onChange={(e) => handleInputChange("monthlyPayment", e.target.value)} placeholder="0.00" />
@@ -566,7 +566,7 @@ export default function Fleet() {
                     <Input id="insuranceExpiry" type="date" value={formData.insuranceExpiry} onChange={(e) => handleInputChange("insuranceExpiry", e.target.value)} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                   <div className="space-y-2">
                     <Label htmlFor="registrationExpiry">Registration Expiry</Label>
                     <Input id="registrationExpiry" type="date" value={formData.registrationExpiry} onChange={(e) => handleInputChange("registrationExpiry", e.target.value)} />
@@ -580,7 +580,7 @@ export default function Fleet() {
 
               <div className="pt-2 border-t">
                 <h3 className="text-sm font-semibold mb-3">Service & Maintenance</h3>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="currentMileage">Current Mileage</Label>
                     <Input id="currentMileage" type="number" value={formData.currentMileage} onChange={(e) => handleInputChange("currentMileage", e.target.value)} placeholder="e.g., 45000" />
@@ -594,7 +594,7 @@ export default function Fleet() {
                     <Input id="nextServiceDate" type="date" value={formData.nextServiceDate} onChange={(e) => handleInputChange("nextServiceDate", e.target.value)} />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                   <div className="space-y-2">
                     <Label htmlFor="oilChangeInterval">Oil Change Interval</Label>
                     <Input id="oilChangeInterval" value={formData.oilChangeInterval} onChange={(e) => handleInputChange("oilChangeInterval", e.target.value)} placeholder="e.g., 5000 mi / 6 mo" />
@@ -608,7 +608,7 @@ export default function Fleet() {
                     <Input id="batteryChangeDate" type="date" value={formData.batteryChangeDate} onChange={(e) => handleInputChange("batteryChangeDate", e.target.value)} />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                   <div className="space-y-2">
                     <Label htmlFor="brakeServiceDate">Brake Service Date</Label>
                     <Input id="brakeServiceDate" type="date" value={formData.brakeServiceDate} onChange={(e) => handleInputChange("brakeServiceDate", e.target.value)} />
@@ -784,7 +784,7 @@ export default function Fleet() {
           </DialogHeader>
           {selectedVehicle && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">License Plate</Label>
                   <p className="font-medium">{selectedVehicle.license_plate}</p>
