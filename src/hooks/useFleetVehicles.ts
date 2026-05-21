@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +11,8 @@ export interface FleetVehicle {
   model: string;
   license_plate: string;
   driver_name: string;
-  driver_phone: string;
+  driver_phone: string | null;
+  driver_user_id: string | null;
   mpg: number;
   inspection_cycle: string;
   last_inspection_date?: string;
@@ -38,6 +40,19 @@ export function useFleetVehicles() {
     },
     enabled: !!user,
   });
+
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("fleet_vehicles_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "fleet_vehicles" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["fleet-vehicles"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
 
   const addVehicle = useMutation({
     mutationFn: async (vehicleData: Omit<FleetVehicle, "id" | "user_id" | "created_at" | "updated_at">) => {

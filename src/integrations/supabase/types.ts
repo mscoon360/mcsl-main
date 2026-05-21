@@ -513,7 +513,8 @@ export type Database = {
         Row: {
           created_at: string
           driver_name: string
-          driver_phone: string
+          driver_phone: string | null
+          driver_user_id: string | null
           id: string
           inspection_cycle: string
           last_inspection_date: string | null
@@ -530,7 +531,8 @@ export type Database = {
         Insert: {
           created_at?: string
           driver_name: string
-          driver_phone: string
+          driver_phone?: string | null
+          driver_user_id?: string | null
           id?: string
           inspection_cycle: string
           last_inspection_date?: string | null
@@ -547,7 +549,8 @@ export type Database = {
         Update: {
           created_at?: string
           driver_name?: string
-          driver_phone?: string
+          driver_phone?: string | null
+          driver_user_id?: string | null
           id?: string
           inspection_cycle?: string
           last_inspection_date?: string | null
