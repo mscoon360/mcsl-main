@@ -392,6 +392,62 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_assignments: {
+        Row: {
+          assignment_date: string | null
+          backup_driver: string | null
+          created_at: string
+          driver_contact: string | null
+          driver_license_number: string | null
+          driver_name: string
+          id: string
+          license_expiry_date: string | null
+          notes: string | null
+          responsibility_agreement_signed: boolean
+          updated_at: string
+          user_id: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          assignment_date?: string | null
+          backup_driver?: string | null
+          created_at?: string
+          driver_contact?: string | null
+          driver_license_number?: string | null
+          driver_name: string
+          id?: string
+          license_expiry_date?: string | null
+          notes?: string | null
+          responsibility_agreement_signed?: boolean
+          updated_at?: string
+          user_id: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          assignment_date?: string | null
+          backup_driver?: string | null
+          created_at?: string
+          driver_contact?: string | null
+          driver_license_number?: string | null
+          driver_name?: string
+          id?: string
+          license_expiry_date?: string | null
+          notes?: string | null
+          responsibility_agreement_signed?: boolean
+          updated_at?: string
+          user_id?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_assignments_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenditures: {
         Row: {
           amount: number
@@ -475,9 +531,12 @@ export type Database = {
       }
       fleet_vehicles: {
         Row: {
+          battery_change_date: string | null
+          brake_service_date: string | null
           color: string | null
           company: string | null
           created_at: string
+          current_mileage: number | null
           division: string | null
           driver_name: string
           driver_phone: string
@@ -489,13 +548,18 @@ export type Database = {
           insurance_expiry: string | null
           insurance_provider: string | null
           last_inspection_date: string | null
+          last_service_date: string | null
           license_plate: string
+          maintenance_status: string | null
           make: string
           mileage: number
           model: string
           monthly_payment: number | null
           mpg: number
           next_inspection_date: string | null
+          next_service_date: string | null
+          oil_change_interval: string | null
+          preferred_mechanic: string | null
           purchase_date: string | null
           purchase_price: number | null
           registration_expiry: string | null
@@ -503,6 +567,7 @@ export type Database = {
           status: string
           sub_division: string | null
           technician: string | null
+          tire_change_date: string | null
           transmission: string | null
           updated_at: string
           user_id: string
@@ -512,9 +577,12 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          battery_change_date?: string | null
+          brake_service_date?: string | null
           color?: string | null
           company?: string | null
           created_at?: string
+          current_mileage?: number | null
           division?: string | null
           driver_name: string
           driver_phone: string
@@ -526,13 +594,18 @@ export type Database = {
           insurance_expiry?: string | null
           insurance_provider?: string | null
           last_inspection_date?: string | null
+          last_service_date?: string | null
           license_plate: string
+          maintenance_status?: string | null
           make: string
           mileage?: number
           model: string
           monthly_payment?: number | null
           mpg: number
           next_inspection_date?: string | null
+          next_service_date?: string | null
+          oil_change_interval?: string | null
+          preferred_mechanic?: string | null
           purchase_date?: string | null
           purchase_price?: number | null
           registration_expiry?: string | null
@@ -540,6 +613,7 @@ export type Database = {
           status?: string
           sub_division?: string | null
           technician?: string | null
+          tire_change_date?: string | null
           transmission?: string | null
           updated_at?: string
           user_id: string
@@ -549,9 +623,12 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          battery_change_date?: string | null
+          brake_service_date?: string | null
           color?: string | null
           company?: string | null
           created_at?: string
+          current_mileage?: number | null
           division?: string | null
           driver_name?: string
           driver_phone?: string
@@ -563,13 +640,18 @@ export type Database = {
           insurance_expiry?: string | null
           insurance_provider?: string | null
           last_inspection_date?: string | null
+          last_service_date?: string | null
           license_plate?: string
+          maintenance_status?: string | null
           make?: string
           mileage?: number
           model?: string
           monthly_payment?: number | null
           mpg?: number
           next_inspection_date?: string | null
+          next_service_date?: string | null
+          oil_change_interval?: string | null
+          preferred_mechanic?: string | null
           purchase_date?: string | null
           purchase_price?: number | null
           registration_expiry?: string | null
@@ -577,6 +659,7 @@ export type Database = {
           status?: string
           sub_division?: string | null
           technician?: string | null
+          tire_change_date?: string | null
           transmission?: string | null
           updated_at?: string
           user_id?: string

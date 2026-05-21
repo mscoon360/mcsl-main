@@ -57,6 +57,15 @@ export default function Fleet() {
     insuranceExpiry: "",
     registrationExpiry: "",
     warrantyExpiry: "",
+    currentMileage: "",
+    lastServiceDate: "",
+    nextServiceDate: "",
+    oilChangeInterval: "",
+    tireChangeDate: "",
+    batteryChangeDate: "",
+    brakeServiceDate: "",
+    maintenanceStatus: "",
+    preferredMechanic: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
@@ -196,6 +205,15 @@ export default function Fleet() {
         insurance_expiry: formData.insuranceExpiry || null,
         registration_expiry: formData.registrationExpiry || null,
         warranty_expiry: formData.warrantyExpiry || null,
+        current_mileage: formData.currentMileage ? parseFloat(formData.currentMileage) : null,
+        last_service_date: formData.lastServiceDate || null,
+        next_service_date: formData.nextServiceDate || null,
+        oil_change_interval: formData.oilChangeInterval || null,
+        tire_change_date: formData.tireChangeDate || null,
+        battery_change_date: formData.batteryChangeDate || null,
+        brake_service_date: formData.brakeServiceDate || null,
+        maintenance_status: formData.maintenanceStatus || null,
+        preferred_mechanic: formData.preferredMechanic || null,
       } as any);
       
       // Reset form and close dialog
@@ -227,6 +245,15 @@ export default function Fleet() {
         insuranceExpiry: "",
         registrationExpiry: "",
         warrantyExpiry: "",
+        currentMileage: "",
+        lastServiceDate: "",
+        nextServiceDate: "",
+        oilChangeInterval: "",
+        tireChangeDate: "",
+        batteryChangeDate: "",
+        brakeServiceDate: "",
+        maintenanceStatus: "",
+        preferredMechanic: "",
       });
       setErrors({});
       setIsDialogOpen(false);
@@ -505,6 +532,62 @@ export default function Fleet() {
                   </div>
                 </div>
               </div>
+
+              <div className="pt-2 border-t">
+                <h3 className="text-sm font-semibold mb-3">Service & Maintenance</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentMileage">Current Mileage</Label>
+                    <Input id="currentMileage" type="number" value={formData.currentMileage} onChange={(e) => handleInputChange("currentMileage", e.target.value)} placeholder="e.g., 45000" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastServiceDate">Last Service</Label>
+                    <Input id="lastServiceDate" type="date" value={formData.lastServiceDate} onChange={(e) => handleInputChange("lastServiceDate", e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nextServiceDate">Next Service</Label>
+                    <Input id="nextServiceDate" type="date" value={formData.nextServiceDate} onChange={(e) => handleInputChange("nextServiceDate", e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="oilChangeInterval">Oil Change Interval</Label>
+                    <Input id="oilChangeInterval" value={formData.oilChangeInterval} onChange={(e) => handleInputChange("oilChangeInterval", e.target.value)} placeholder="e.g., 5000 mi / 6 mo" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tireChangeDate">Tire Change Date</Label>
+                    <Input id="tireChangeDate" type="date" value={formData.tireChangeDate} onChange={(e) => handleInputChange("tireChangeDate", e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="batteryChangeDate">Battery Change Date</Label>
+                    <Input id="batteryChangeDate" type="date" value={formData.batteryChangeDate} onChange={(e) => handleInputChange("batteryChangeDate", e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="brakeServiceDate">Brake Service Date</Label>
+                    <Input id="brakeServiceDate" type="date" value={formData.brakeServiceDate} onChange={(e) => handleInputChange("brakeServiceDate", e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="maintenanceStatus">Maintenance Status</Label>
+                    <Select value={formData.maintenanceStatus} onValueChange={(v) => handleInputChange("maintenanceStatus", v)}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent className="bg-background z-50">
+                        <SelectItem value="active">Active (green)</SelectItem>
+                        <SelectItem value="due_soon">Due Soon (yellow)</SelectItem>
+                        <SelectItem value="overdue">Overdue (red)</SelectItem>
+                        <SelectItem value="in_repair">In Repair (blue)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="preferredMechanic">Preferred Mechanic / Garage</Label>
+                    <Input id="preferredMechanic" value={formData.preferredMechanic} onChange={(e) => handleInputChange("preferredMechanic", e.target.value)} placeholder="Shop name" />
+                  </div>
+                </div>
+              </div>
+
+
 
 
               <DialogFooter>
