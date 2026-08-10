@@ -227,12 +227,25 @@ export default function AccountMappings() {
         return true;
       };
 
-      const filteredEntries = entries.filter(e => dateInRange(e.posted_at));
+      // Only posted entries count — reversed entries are historical noise and double-count
+      const filteredEntries = entries.filter(e => dateInRange(e.posted_at) && e.status === 'posted');
 
       // Flatten every ledger line that touches one of these accounts
       const ledgerRows: Record<string, any>[] = [];
       filteredEntries.forEach(entry => {
-        (entry.entries || []).forEach((line: any) => {
+        const allLines: any[] = entry.entries || [];
+        // Transaction value as the customer sees it (AR / cash side), NOT the journal total
+        // which also contains the COGS + inventory contra pair.
+        const settlementCodes = ['1100_accounts_receivable', '1000_cash_bank'];
+        const txnTotal = allLines
+          .filter(l => settlementCodes.includes(l.account_code))
+          .reduce((s, l) => s + Number(l.debit || 0) + Number(l.credit || 0), 0)
+          || Number(entry.total_debit || 0);
+        const vatTotal = allLines
+          .filter(l => ['2300_vat_payable', '1200_vat_receivable'].includes(l.account_code))
+          .reduce((s, l) => s + Number(l.debit || 0) + Number(l.credit || 0), 0);
+
+        allLines.forEach((line: any) => {
           if (!allCodes.includes(line.account_code)) return;
           ledgerRows.push({
             Date: isoDate(entry.posted_at),
@@ -246,12 +259,15 @@ export default function AccountMappings() {
             Currency: line.currency ?? 'USD',
             Debit: Number(line.debit || 0),
             Credit: Number(line.credit || 0),
-            'Entry Total Debit': Number(entry.total_debit || 0),
-            'Entry Total Credit': Number(entry.total_credit || 0),
+            'Transaction Total (incl VAT)': Number(txnTotal.toFixed(2)),
+            'Transaction VAT': Number(vatTotal.toFixed(2)),
+            'Transaction Net (excl VAT)': Number((txnTotal - vatTotal).toFixed(2)),
+            'Journal Total (DR=CR)': Number(entry.total_debit || 0),
             Details: line.meta ? JSON.stringify(line.meta) : '',
           });
         });
       });
+
       ledgerRows.sort((a, b) =>
         String(a['Account Code']).localeCompare(String(b['Account Code'])) ||
         new Date(a.Date).getTime() - new Date(b.Date).getTime()
@@ -285,7 +301,7 @@ export default function AccountMappings() {
       };
 
       add('Summary', summaryRows, [22, 30, 16, 18, 14, 14, 14, 14, 14, 14]);
-      add('Ledger Lines', ledgerRows, [12, 22, 28, 14, 14, 24, 10, 40, 10, 14, 14, 16, 16, 30]);
+      add('Ledger Lines', ledgerRows, [12, 22, 28, 14, 14, 24, 10, 40, 10, 14, 14, 20, 16, 20, 18, 30]);
       add('Mappings', roleRows, [18, 26, 8, 24, 24, 28, 14, 16]);
 
       const productName = (id: string) => products.find(p => p.id === id)?.name || '';
