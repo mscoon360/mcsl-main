@@ -308,7 +308,7 @@ export default function AccountMappings() {
         XLSX.utils.book_append_sheet(wb, ws, name);
       };
 
-      add('Summary', summaryRows, [22, 30, 16, 18, 14, 14, 14, 14, 14, 14]);
+      add('Summary', summaryRows, [22, 30, 16, 18, 14, 14, 14, 14, 14, 18, 16]);
       add('Ledger Lines', ledgerRows, [12, 22, 28, 14, 14, 24, 10, 40, 10, 14, 14, 20, 16, 20, 18, 30]);
       add('Mappings', roleRows, [18, 26, 8, 24, 24, 28, 14, 16]);
 
