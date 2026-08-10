@@ -1,4 +1,5 @@
 import { Bell, Search, User, AlertCircle, Package, Truck, DollarSign } from "lucide-react";
+import magicCareLogo from "@/assets/magic-care-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
