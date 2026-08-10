@@ -36,25 +36,40 @@ export const useProductAccountMappings = () => {
     }
   };
 
-  const setAccount = async (product_id: string, field: ProductAccountField, account_code: string | null) => {
+  const setAccount = async (
+    product_id: string,
+    field: ProductAccountField,
+    account_code: string | null,
+    payment_term: string | null = null,
+  ) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');
 
-      const existing = mappings.find(m => m.product_id === product_id);
-      const payload = {
-        user_id: user.id,
-        product_id,
-        revenue_account_code: existing?.revenue_account_code ?? null,
-        cogs_account_code: existing?.cogs_account_code ?? null,
-        inventory_account_code: existing?.inventory_account_code ?? null,
-        [field]: account_code,
-      };
+      const existing = mappings.find(
+        m => m.product_id === product_id && (m.payment_term ?? null) === payment_term
+      );
 
-      const { error } = await (supabase as any)
-        .from('product_account_mappings')
-        .upsert(payload, { onConflict: 'user_id,product_id' });
-      if (error) throw error;
+      if (existing?.id) {
+        const { error } = await (supabase as any)
+          .from('product_account_mappings')
+          .update({ [field]: account_code })
+          .eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any)
+          .from('product_account_mappings')
+          .insert({
+            user_id: user.id,
+            product_id,
+            payment_term,
+            revenue_account_code: null,
+            cogs_account_code: null,
+            inventory_account_code: null,
+            [field]: account_code,
+          });
+        if (error) throw error;
+      }
       await fetchMappings();
     } catch (error: any) {
       console.error('Error saving product mapping:', error);
@@ -71,7 +86,11 @@ export const useProductAccountMappings = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const getFor = (product_id: string) => mappings.find(m => m.product_id === product_id);
+  const getFor = (product_id: string, payment_term: string | null = null) =>
+    mappings.find(m => m.product_id === product_id && (m.payment_term ?? null) === payment_term);
 
-  return { mappings, loading, setAccount, getFor, refetch: fetchMappings };
+  const getTermsFor = (product_id: string) =>
+    mappings.filter(m => m.product_id === product_id && !!m.payment_term);
+
+  return { mappings, loading, setAccount, getFor, getTermsFor, refetch: fetchMappings };
 };
