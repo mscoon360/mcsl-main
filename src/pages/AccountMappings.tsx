@@ -181,10 +181,20 @@ export default function AccountMappings() {
       const allCodes = Array.from(new Set([...codes, ...activityCodes].filter(Boolean)));
 
       const isoDate = (v?: string) => (v ? new Date(v).toISOString().split('T')[0] : '');
+      const dateInRange = (v?: string) => {
+        if (!startDate && !endDate) return true;
+        if (!v) return false;
+        const d = new Date(v);
+        if (startDate && d < new Date(startDate.setHours(0, 0, 0, 0))) return false;
+        if (endDate && d > new Date(endDate.setHours(23, 59, 59, 999))) return false;
+        return true;
+      };
+
+      const filteredEntries = entries.filter(e => dateInRange(e.posted_at));
 
       // Flatten every ledger line that touches one of these accounts
       const ledgerRows: Record<string, any>[] = [];
-      entries.forEach(entry => {
+      filteredEntries.forEach(entry => {
         (entry.entries || []).forEach((line: any) => {
           if (!allCodes.includes(line.account_code)) return;
           ledgerRows.push({
