@@ -71,17 +71,19 @@ export function ProductAccountMappingsSection({ accounts, accountsLoading }: Pro
   const paginated = filtered.slice(current * PAGE_SIZE, current * PAGE_SIZE + PAGE_SIZE);
 
 
-  const mappedCount = mappings.filter(m => m.revenue_account_code || m.cogs_account_code).length;
+  const mappedCount = new Set(
+    mappings.filter(m => m.revenue_account_code || m.cogs_account_code).map(m => m.product_id)
+  ).size;
 
   const AccountSelect = ({
-    productId, field, value, options, placeholder,
-  }: { productId: string; field: ProductAccountField; value?: string | null; options: ChartOfAccount[]; placeholder: string }) => (
+    productId, field, value, options, placeholder, paymentTerm = null,
+  }: { productId: string; field: ProductAccountField; value?: string | null; options: ChartOfAccount[]; placeholder: string; paymentTerm?: string | null }) => (
     <AccountPicker
       value={value}
       options={options}
       placeholder={placeholder}
       disabled={accountsLoading || mappingsLoading}
-      onChange={(v) => setAccount(productId, field, v)}
+      onChange={(v) => setAccount(productId, field, v, paymentTerm)}
     />
   );
 
