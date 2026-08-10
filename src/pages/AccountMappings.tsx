@@ -101,10 +101,24 @@ export default function AccountMappings() {
   const configuredCount = mappings.length;
   const totalRoles = WORKFLOWS.reduce((s, w) => s + w.roles.length, 0);
 
+  const SYSTEM_ACCOUNTS: Record<string, { name: string; type: string }> = {
+    '1000_cash_bank': { name: 'Cash / Bank', type: 'asset' },
+    '1001_inventory': { name: 'Inventory', type: 'asset' },
+    '1100_accounts_receivable': { name: 'Accounts Receivable', type: 'asset' },
+    '1200_vat_receivable': { name: 'VAT Receivable (Input VAT)', type: 'asset' },
+    '2300_vat_payable': { name: 'VAT Payable (Output VAT)', type: 'liability' },
+    '4000_sales_revenue': { name: 'Sales Revenue', type: 'revenue' },
+    '5000_cost_of_goods_sold': { name: 'Cost of Goods Sold', type: 'expense' },
+    '5000_general_expenses': { name: 'General Expenses', type: 'expense' },
+    '5100_operating_expenses': { name: 'Operating Expenses', type: 'expense' },
+    '5200_capital_expenses': { name: 'Capital Expenses', type: 'expense' },
+  };
+
   const accountName = (code: string) =>
-    accounts.find(a => a.account_number === code)?.account_name ?? '';
+    accounts.find(a => a.account_number === code)?.account_name ?? SYSTEM_ACCOUNTS[code]?.name ?? '';
   const accountType = (code: string) =>
-    accounts.find(a => a.account_number === code)?.account_type ?? '';
+    accounts.find(a => a.account_number === code)?.account_type ?? SYSTEM_ACCOUNTS[code]?.type ?? '';
+
 
   const handleExport = () => {
     try {
