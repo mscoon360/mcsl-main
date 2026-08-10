@@ -690,13 +690,13 @@ export default function Customers() {
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                            <User className="h-5 w-5" />
+                            <Building className="h-5 w-5" />
                           </div>
                           <div>
                             <button onClick={() => handleCustomerClick(customer)} className="font-semibold hover:underline text-left cursor-pointer">
-                              {customer.name}
+                              {customer.company}
                             </button>
-                            <p className="text-sm text-muted-foreground">{customer.city}</p>
+                            <p className="text-sm text-muted-foreground">{customer.name}</p>
                           </div>
                         </div>
                       </TableCell>
