@@ -279,18 +279,26 @@ export default function AccountMappings() {
         const debit = lines.reduce((s, r) => s + r.Debit, 0);
         const credit = lines.reduce((s, r) => s + r.Credit, 0);
         const dates = lines.map(r => r.Date).filter(Boolean).sort();
+        const type = accountType(code);
+        // Natural balance: debit-positive for assets/expenses, credit-positive for
+        // revenue/liability/equity, so revenue reads as a positive figure.
+        const naturalBalance = ['revenue', 'liability', 'equity'].includes(String(type))
+          ? credit - debit
+          : debit - credit;
         return {
           'Account Code': code,
           'Account Name': accountName(code),
-          'Account Type': accountType(code),
+          'Account Type': type,
           'In Chart of Accounts': accounts.some(a => a.account_number === code) ? 'Yes' : 'No',
           Transactions: lines.length,
           'First Activity': dates[0] || '',
           'Last Activity': dates[dates.length - 1] || '',
           'Total Debit': debit,
           'Total Credit': credit,
-          Balance: debit - credit,
+          'Balance (DR - CR)': debit - credit,
+          'Natural Balance': Number(naturalBalance.toFixed(2)),
         };
+
       }).sort((a, b) => a['Account Code'].localeCompare(b['Account Code']));
 
       const wb = XLSX.utils.book_new();
