@@ -1932,6 +1932,7 @@ export type Database = {
           item_discount_value: number | null
           payment_period: string | null
           price: number
+          product_id: string | null
           product_name: string
           quantity: number
           sale_id: string
@@ -1948,6 +1949,7 @@ export type Database = {
           item_discount_value?: number | null
           payment_period?: string | null
           price: number
+          product_id?: string | null
           product_name: string
           quantity: number
           sale_id: string
@@ -1964,6 +1966,7 @@ export type Database = {
           item_discount_value?: number | null
           payment_period?: string | null
           price?: number
+          product_id?: string | null
           product_name?: string
           quantity?: number
           sale_id?: string
@@ -1971,6 +1974,13 @@ export type Database = {
           vat_amount?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sale_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sale_items_sale_id_fkey"
             columns: ["sale_id"]
