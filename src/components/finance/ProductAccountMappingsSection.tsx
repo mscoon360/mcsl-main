@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -161,7 +161,7 @@ export function ProductAccountMappingsSection({ accounts, accountsLoading }: Pro
                 const prev = idx > 0 ? paginated[idx - 1] : null;
                 const prevKey = prev ? `${divisionName(prev.division_id)} › ${subdivisionName(prev.subdivision_id)}` : null;
                 return (
-                  <>
+                  <Fragment key={p.id}>
                     {groupKey !== prevKey && (
                       <TableRow key={`${groupKey}-header`} className="bg-muted/50 hover:bg-muted/50">
                         <TableCell colSpan={4} className="py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -184,7 +184,7 @@ export function ProductAccountMappingsSection({ accounts, accountsLoading }: Pro
                         <AccountSelect productId={p.id} field="cogs_account_code" value={m?.cogs_account_code} options={cogsAccounts} placeholder="— Select COGS account —" />
                       </TableCell>
                     </TableRow>
-                  </>
+                  </Fragment>
                 );
               })}
             </TableBody>
