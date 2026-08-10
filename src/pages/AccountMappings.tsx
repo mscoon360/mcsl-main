@@ -1,11 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
+import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Settings2, X, Download } from 'lucide-react';
+import { AlertCircle, Settings2, X, Download, CalendarIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAccountMappings, Workflow } from '@/hooks/useAccountMappings';
 import { useChartOfAccounts } from '@/hooks/useChartOfAccounts';
 import { useLedgerEntries } from '@/hooks/useLedgerEntries';
@@ -13,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useProductAccountMappings } from '@/hooks/useProductAccountMappings';
 import { useProducts } from '@/hooks/useProducts';
 import { ProductAccountMappingsSection } from '@/components/finance/ProductAccountMappingsSection';
+import { cn } from '@/lib/utils';
 
 
 interface Role {
@@ -81,6 +85,40 @@ const WORKFLOWS: WorkflowGroup[] = [
   },
 ];
 
+interface DatePickerProps {
+  value?: Date;
+  onChange: (date?: Date) => void;
+  placeholder?: string;
+}
+
+function DatePicker({ value, onChange, placeholder = 'Pick a date' }: DatePickerProps) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            'w-[140px] justify-start text-left font-normal',
+            !value && 'text-muted-foreground'
+          )}
+        >
+          <CalendarIcon className="h-4 w-4 mr-2" />
+          {value ? format(value, 'PP') : <span>{placeholder}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={onChange}
+          initialFocus
+          className={cn('p-3 pointer-events-auto')}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export default function AccountMappings() {
   const { accounts, loading: accountsLoading } = useChartOfAccounts();
   const { mappings, loading: mappingsLoading, upsertMapping, clearMapping, get } = useAccountMappings();
@@ -88,6 +126,9 @@ export default function AccountMappings() {
   const { mappings: productMappings } = useProductAccountMappings();
   const { products } = useProducts();
   const { toast } = useToast();
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
+
 
 
   const accountsByType = useMemo(() => {
@@ -174,10 +215,23 @@ export default function AccountMappings() {
       const allCodes = Array.from(new Set([...codes, ...activityCodes].filter(Boolean)));
 
       const isoDate = (v?: string) => (v ? new Date(v).toISOString().split('T')[0] : '');
+      const dateInRange = (v?: string) => {
+        if (!startDate && !endDate) return true;
+        if (!v) return false;
+        const d = new Date(v);
+        if (startDate && d < new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())) return false;
+        if (endDate) {
+          const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999);
+          if (d > end) return false;
+        }
+        return true;
+      };
+
+      const filteredEntries = entries.filter(e => dateInRange(e.posted_at));
 
       // Flatten every ledger line that touches one of these accounts
       const ledgerRows: Record<string, any>[] = [];
-      entries.forEach(entry => {
+      filteredEntries.forEach(entry => {
         (entry.entries || []).forEach((line: any) => {
           if (!allCodes.includes(line.account_code)) return;
           ledgerRows.push({
@@ -269,7 +323,13 @@ export default function AccountMappings() {
             Choose which Chart of Accounts entry the system posts to for each accounting workflow.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-muted-foreground">From</span>
+            <DatePicker value={startDate} onChange={setStartDate} placeholder="Start date" />
+            <span className="text-sm text-muted-foreground">To</span>
+            <DatePicker value={endDate} onChange={setEndDate} placeholder="End date" />
+          </div>
           <Button onClick={handleExport} disabled={ledgerLoading || accountsLoading}>
             <Download className="h-4 w-4 mr-2" />
             Export to Excel
