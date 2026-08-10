@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useExpiringContracts } from "@/hooks/useExpiringContracts";
 import { useProducts } from "@/hooks/useProducts";
 import { format } from "date-fns";
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { DepartmentNotifications } from "./DepartmentNotifications";
 export function DashboardHeader() {
