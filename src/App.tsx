@@ -61,6 +61,7 @@ import BalanceSheet from "./pages/reports/BalanceSheet";
 import ARAging from "./pages/reports/ARAging";
 import APAging from "./pages/reports/APAging";
 import VATReport from "./pages/reports/VATReport";
+import SalesLedger from "./pages/reports/SalesLedger";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -109,6 +110,7 @@ const App = () => (
                 <Route path="ar-aging" element={<ARAging />} />
                 <Route path="ap-aging" element={<APAging />} />
                 <Route path="vat-report" element={<VATReport />} />
+                <Route path="sales-ledger" element={<SalesLedger />} />
               </Route>
               <Route path="accounts-payable" element={<AccountsPayable />} />
               <Route path="accounts-receivable" element={<AccountsReceivable />} />
