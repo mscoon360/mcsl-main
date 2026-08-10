@@ -2492,6 +2492,7 @@ export type Database = {
         Args: { "": string }
         Returns: Record<string, unknown>[]
       }
+      rebuild_sale_ledger: { Args: { p_sale_id: string }; Returns: undefined }
     }
     Enums: {
       account_subtype:
