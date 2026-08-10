@@ -319,6 +319,9 @@ export default function AccountMappings() {
           </CardContent>
         </Card>
       ))}
+
+      <ProductAccountMappingsSection accounts={accounts} accountsLoading={accountsLoading} />
     </div>
+
   );
 }
