@@ -81,6 +81,8 @@ const WORKFLOWS: WorkflowGroup[] = [
 export default function AccountMappings() {
   const { accounts, loading: accountsLoading } = useChartOfAccounts();
   const { mappings, loading: mappingsLoading, upsertMapping, clearMapping, get } = useAccountMappings();
+  const { entries, loading: ledgerLoading } = useLedgerEntries();
+  const { toast } = useToast();
 
   const accountsByType = useMemo(() => {
     const sorted = [...accounts]
@@ -95,6 +97,97 @@ export default function AccountMappings() {
   const configuredCount = mappings.length;
   const totalRoles = WORKFLOWS.reduce((s, w) => s + w.roles.length, 0);
 
+  const accountName = (code: string) =>
+    accounts.find(a => a.account_number === code)?.account_name ?? '';
+  const accountType = (code: string) =>
+    accounts.find(a => a.account_number === code)?.account_type ?? '';
+
+  const handleExport = () => {
+    try {
+      // Every account code involved in the mappings (mapped or fallback)
+      const roleRows = WORKFLOWS.flatMap(group =>
+        group.roles.map(role => {
+          const mapped = get(group.workflow, role.key);
+          const effective = mapped || role.fallback;
+          return {
+            Workflow: group.title,
+            Role: role.label,
+            Side: role.side,
+            'Mapped Account': mapped || '(fallback)',
+            'Effective Account Code': effective,
+            'Account Name': accountName(effective),
+            'Account Type': accountType(effective),
+            Status: group.status === 'active' ? 'Live' : 'Saved for later',
+          };
+        })
+      );
+
+      const codes = Array.from(new Set(roleRows.map(r => r['Effective Account Code'])));
+
+      // Flatten every ledger line that touches one of these accounts
+      const ledgerRows: Record<string, any>[] = [];
+      entries.forEach(entry => {
+        (entry.entries || []).forEach((line: any) => {
+          if (!codes.includes(line.account_code)) return;
+          ledgerRows.push({
+            Date: entry.posted_at ? new Date(entry.posted_at).toLocaleDateString() : '',
+            'Account Code': line.account_code,
+            'Account Name': accountName(line.account_code),
+            'Account Type': accountType(line.account_code),
+            'Source Type': entry.source_type,
+            'Transaction ID': entry.transaction_id,
+            Status: entry.status,
+            Memo: line.memo ?? '',
+            Currency: line.currency ?? 'USD',
+            Debit: Number(line.debit || 0),
+            Credit: Number(line.credit || 0),
+            'Entry Total Debit': Number(entry.total_debit || 0),
+            'Entry Total Credit': Number(entry.total_credit || 0),
+            Details: line.meta ? JSON.stringify(line.meta) : '',
+          });
+        });
+      });
+      ledgerRows.sort((a, b) =>
+        String(a['Account Code']).localeCompare(String(b['Account Code'])) ||
+        new Date(a.Date).getTime() - new Date(b.Date).getTime()
+      );
+
+      // Per-account summary with running balance
+      const summaryRows = codes.map(code => {
+        const lines = ledgerRows.filter(r => r['Account Code'] === code && r.Status === 'posted');
+        const debit = lines.reduce((s, r) => s + r.Debit, 0);
+        const credit = lines.reduce((s, r) => s + r.Credit, 0);
+        return {
+          'Account Code': code,
+          'Account Name': accountName(code),
+          'Account Type': accountType(code),
+          'In Chart of Accounts': accountName(code) ? 'Yes' : 'No',
+          Transactions: lines.length,
+          'Total Debit': debit,
+          'Total Credit': credit,
+          Balance: debit - credit,
+        };
+      }).sort((a, b) => a['Account Code'].localeCompare(b['Account Code']));
+
+      const wb = XLSX.utils.book_new();
+      const add = (name: string, rows: Record<string, any>[], widths: number[]) => {
+        const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ Note: 'No data' }]);
+        ws['!cols'] = widths.map(w => ({ width: w }));
+        XLSX.utils.book_append_sheet(wb, ws, name);
+      };
+
+      add('Summary', summaryRows, [22, 30, 16, 18, 14, 14, 14, 14]);
+      add('Ledger Lines', ledgerRows, [12, 22, 28, 14, 14, 24, 10, 40, 10, 14, 14, 16, 16, 30]);
+      add('Mappings', roleRows, [18, 26, 8, 24, 24, 28, 14, 16]);
+
+      XLSX.writeFile(wb, `account_mappings_ledger_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast({ title: 'Export complete', description: `${ledgerRows.length} ledger lines across ${codes.length} accounts.` });
+    } catch (error: any) {
+      console.error('Export failed:', error);
+      toast({ title: 'Export failed', description: error.message, variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -104,11 +197,18 @@ export default function AccountMappings() {
             Choose which Chart of Accounts entry the system posts to for each accounting workflow.
           </p>
         </div>
-        <Badge variant="outline" className="text-sm">
-          <Settings2 className="h-3.5 w-3.5 mr-1.5" />
-          {configuredCount} of {totalRoles} roles configured
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button onClick={handleExport} disabled={ledgerLoading || accountsLoading}>
+            <Download className="h-4 w-4 mr-2" />
+            Export to Excel
+          </Button>
+          <Badge variant="outline" className="text-sm">
+            <Settings2 className="h-3.5 w-3.5 mr-1.5" />
+            {configuredCount} of {totalRoles} roles configured
+          </Badge>
+        </div>
       </div>
+
 
       {accounts.length === 0 && !accountsLoading && (
         <Alert>
