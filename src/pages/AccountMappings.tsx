@@ -92,6 +92,9 @@ export default function AccountMappings() {
   const { mappings: productMappings } = useProductAccountMappings();
   const { products } = useProducts();
   const { toast } = useToast();
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
+
 
 
   const accountsByType = useMemo(() => {
