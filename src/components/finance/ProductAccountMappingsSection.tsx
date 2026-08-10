@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { X } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
+import { useDivisions } from '@/hooks/useDivisions';
 import { useProductAccountMappings, ProductAccountField } from '@/hooks/useProductAccountMappings';
 import { ChartOfAccount } from '@/hooks/useChartOfAccounts';
 
@@ -19,9 +20,23 @@ const PAGE_SIZE = 10;
 
 export function ProductAccountMappingsSection({ accounts, accountsLoading }: Props) {
   const { products, loading: productsLoading } = useProducts();
+  const { divisions } = useDivisions();
   const { mappings, loading: mappingsLoading, setAccount, getFor } = useProductAccountMappings();
   const [search, setSearch] = useState('');
+  const [divisionId, setDivisionId] = useState('all');
+  const [subdivisionId, setSubdivisionId] = useState('all');
   const [page, setPage] = useState(0);
+
+  const divisionName = (id?: string | null) => divisions.find(d => d.id === id)?.name || 'Unassigned';
+  const subdivisionName = (id?: string | null) =>
+    divisions.flatMap(d => d.subdivisions || []).find(s => s.id === id)?.name || 'Unassigned';
+
+  const subdivisionOptions = useMemo(() => {
+    const list = divisionId === 'all'
+      ? divisions.flatMap(d => d.subdivisions || [])
+      : (divisions.find(d => d.id === divisionId)?.subdivisions || []);
+    return list;
+  }, [divisions, divisionId]);
 
   const revenueAccounts = useMemo(
     () => accounts.filter(a => a.is_active && a.account_type === 'revenue')
@@ -36,15 +51,24 @@ export function ProductAccountMappingsSection({ accounts, accountsLoading }: Pro
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const list = q
+    let list = q
       ? products.filter(p => p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q))
       : products;
-    return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  }, [products, search]);
+    if (divisionId !== 'all') list = list.filter(p => p.division_id === divisionId);
+    if (subdivisionId !== 'all') list = list.filter(p => p.subdivision_id === subdivisionId);
+    return [...list].sort((a, b) => {
+      const d = divisionName(a.division_id).localeCompare(divisionName(b.division_id));
+      if (d !== 0) return d;
+      const s = subdivisionName(a.subdivision_id).localeCompare(subdivisionName(b.subdivision_id));
+      if (s !== 0) return s;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  }, [products, search, divisionId, subdivisionId, divisions]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(page, pageCount - 1);
   const paginated = filtered.slice(current * PAGE_SIZE, current * PAGE_SIZE + PAGE_SIZE);
+
 
   const mappedCount = mappings.filter(m => m.revenue_account_code || m.cogs_account_code).length;
 
