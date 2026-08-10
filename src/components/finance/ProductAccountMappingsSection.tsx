@@ -22,7 +22,7 @@ const PAGE_SIZE = 10;
 export function ProductAccountMappingsSection({ accounts, accountsLoading }: Props) {
   const { products, loading: productsLoading } = useProducts();
   const { divisions } = useDivisions();
-  const { mappings, loading: mappingsLoading, setAccount, getFor } = useProductAccountMappings();
+  const { mappings, loading: mappingsLoading, setAccount, getFor, getTermsFor } = useProductAccountMappings();
   const [search, setSearch] = useState('');
   const [divisionId, setDivisionId] = useState('all');
   const [subdivisionId, setSubdivisionId] = useState('all');
@@ -170,12 +170,28 @@ export function ProductAccountMappingsSection({ accounts, accountsLoading }: Pro
                         <AccountSelect productId={p.id} field="cogs_account_code" value={m?.cogs_account_code} options={cogsAccounts} placeholder="— Select COGS account —" />
                       </TableCell>
                     </TableRow>
+                    {getTermsFor(p.id).map(t => (
+                      <TableRow key={`${p.id}-${t.payment_term}`} className="bg-muted/20">
+                        <TableCell className="pl-8">
+                          <span className="text-sm text-muted-foreground">Rental term</span>{' '}
+                          <Badge variant="secondary" className="capitalize">{t.payment_term}</Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">per period</TableCell>
+                        <TableCell>
+                          <AccountSelect productId={p.id} paymentTerm={t.payment_term!} field="revenue_account_code" value={t.revenue_account_code} options={revenueAccounts} placeholder="— Select revenue account —" />
+                        </TableCell>
+                        <TableCell>
+                          <AccountSelect productId={p.id} paymentTerm={t.payment_term!} field="cogs_account_code" value={t.cogs_account_code} options={cogsAccounts} placeholder="— Select COGS account —" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </Fragment>
                 );
               })}
             </TableBody>
           </Table>
         </div>
+
 
 
 
