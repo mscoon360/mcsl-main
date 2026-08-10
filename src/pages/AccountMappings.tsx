@@ -286,7 +286,13 @@ export default function AccountMappings() {
             Choose which Chart of Accounts entry the system posts to for each accounting workflow.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-muted-foreground">From</span>
+            <DatePicker value={startDate} onChange={setStartDate} placeholder="Start date" />
+            <span className="text-sm text-muted-foreground">To</span>
+            <DatePicker value={endDate} onChange={setEndDate} placeholder="End date" />
+          </div>
           <Button onClick={handleExport} disabled={ledgerLoading || accountsLoading}>
             <Download className="h-4 w-4 mr-2" />
             Export to Excel
