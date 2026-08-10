@@ -10,6 +10,8 @@ import { useAccountMappings, Workflow } from '@/hooks/useAccountMappings';
 import { useChartOfAccounts } from '@/hooks/useChartOfAccounts';
 import { useLedgerEntries } from '@/hooks/useLedgerEntries';
 import { useToast } from '@/hooks/use-toast';
+import { useProductAccountMappings } from '@/hooks/useProductAccountMappings';
+import { ProductAccountMappingsSection } from '@/components/finance/ProductAccountMappingsSection';
 
 
 interface Role {
@@ -82,7 +84,9 @@ export default function AccountMappings() {
   const { accounts, loading: accountsLoading } = useChartOfAccounts();
   const { mappings, loading: mappingsLoading, upsertMapping, clearMapping, get } = useAccountMappings();
   const { entries, loading: ledgerLoading } = useLedgerEntries();
+  const { mappings: productMappings } = useProductAccountMappings();
   const { toast } = useToast();
+
 
   const accountsByType = useMemo(() => {
     const sorted = [...accounts]
@@ -135,11 +139,18 @@ export default function AccountMappings() {
           .filter((c: string) => /cogs|cost_of_goods/i.test(c))
       );
 
+      // Accounts assigned directly to products (invoiced revenue + COGS)
+      const productCodes = productMappings.flatMap(m =>
+        [m.revenue_account_code, m.cogs_account_code, m.inventory_account_code].filter(Boolean) as string[]
+      );
+
       const codes = Array.from(new Set([
         ...roleRows.map(r => r['Effective Account Code']),
         ...cogsCodes,
         ...ledgerCogsCodes,
+        ...productCodes,
       ]));
+
 
 
       // Flatten every ledger line that touches one of these accounts
@@ -197,6 +208,18 @@ export default function AccountMappings() {
       add('Summary', summaryRows, [22, 30, 16, 18, 14, 14, 14, 14]);
       add('Ledger Lines', ledgerRows, [12, 22, 28, 14, 14, 24, 10, 40, 10, 14, 14, 16, 16, 30]);
       add('Mappings', roleRows, [18, 26, 8, 24, 24, 28, 14, 16]);
+
+      const productRows = productMappings.map(m => ({
+        'Product ID': m.product_id,
+        'Revenue Account Code': m.revenue_account_code || '',
+        'Revenue Account Name': accountName(m.revenue_account_code || ''),
+        'COGS Account Code': m.cogs_account_code || '',
+        'COGS Account Name': accountName(m.cogs_account_code || ''),
+        'Inventory Account Code': m.inventory_account_code || '',
+        'Inventory Account Name': accountName(m.inventory_account_code || ''),
+      }));
+      add('Product Accounts', productRows, [38, 22, 30, 22, 30, 22, 30]);
+
 
       XLSX.writeFile(wb, `account_mappings_ledger_${new Date().toISOString().split('T')[0]}.xlsx`);
       toast({ title: 'Export complete', description: `${ledgerRows.length} ledger lines across ${codes.length} accounts.` });
@@ -319,6 +342,9 @@ export default function AccountMappings() {
           </CardContent>
         </Card>
       ))}
+
+      <ProductAccountMappingsSection accounts={accounts} accountsLoading={accountsLoading} />
     </div>
+
   );
 }
