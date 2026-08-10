@@ -11,6 +11,7 @@ import { useChartOfAccounts } from '@/hooks/useChartOfAccounts';
 import { useLedgerEntries } from '@/hooks/useLedgerEntries';
 import { useToast } from '@/hooks/use-toast';
 import { useProductAccountMappings } from '@/hooks/useProductAccountMappings';
+import { useProducts } from '@/hooks/useProducts';
 import { ProductAccountMappingsSection } from '@/components/finance/ProductAccountMappingsSection';
 
 
@@ -85,6 +86,7 @@ export default function AccountMappings() {
   const { mappings, loading: mappingsLoading, upsertMapping, clearMapping, get } = useAccountMappings();
   const { entries, loading: ledgerLoading } = useLedgerEntries();
   const { mappings: productMappings } = useProductAccountMappings();
+  const { products } = useProducts();
   const { toast } = useToast();
 
 
