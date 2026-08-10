@@ -301,7 +301,7 @@ export default function AccountMappings() {
       };
 
       add('Summary', summaryRows, [22, 30, 16, 18, 14, 14, 14, 14, 14, 14]);
-      add('Ledger Lines', ledgerRows, [12, 22, 28, 14, 14, 24, 10, 40, 10, 14, 14, 16, 16, 30]);
+      add('Ledger Lines', ledgerRows, [12, 22, 28, 14, 14, 24, 10, 40, 10, 14, 14, 20, 16, 20, 18, 30]);
       add('Mappings', roleRows, [18, 26, 8, 24, 24, 28, 14, 16]);
 
       const productName = (id: string) => products.find(p => p.id === id)?.name || '';
