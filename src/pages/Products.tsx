@@ -1434,6 +1434,7 @@ export default function Products() {
                           <TableHead>SKU</TableHead>
                           <TableHead>Supplier</TableHead>
                           <TableHead>Cost Price (per unit)</TableHead>
+                          <TableHead>Sale Price</TableHead>
                           <TableHead>Stock</TableHead>
                           <TableHead>Units After Repackaging</TableHead>
                           <TableHead>Status</TableHead>
