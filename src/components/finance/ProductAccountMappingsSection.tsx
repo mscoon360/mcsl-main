@@ -117,12 +117,28 @@ export function ProductAccountMappingsSection({ accounts, accountsLoading }: Pro
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Input
-          placeholder="Search products by name or SKU…"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-          className="max-w-sm"
-        />
+        <div className="flex flex-wrap gap-3">
+          <Input
+            placeholder="Search products by name or SKU…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            className="max-w-sm"
+          />
+          <Select value={divisionId} onValueChange={(v) => { setDivisionId(v); setSubdivisionId('all'); setPage(0); }}>
+            <SelectTrigger className="w-[260px]"><SelectValue placeholder="All divisions" /></SelectTrigger>
+            <SelectContent className="max-h-72">
+              <SelectItem value="all">All divisions</SelectItem>
+              {divisions.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={subdivisionId} onValueChange={(v) => { setSubdivisionId(v); setPage(0); }}>
+            <SelectTrigger className="w-[260px]"><SelectValue placeholder="All subdivisions" /></SelectTrigger>
+            <SelectContent className="max-h-72">
+              <SelectItem value="all">All subdivisions</SelectItem>
+              {subdivisionOptions.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="overflow-x-auto">
           <Table>
@@ -139,26 +155,42 @@ export function ProductAccountMappingsSection({ accounts, accountsLoading }: Pro
                 <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Loading products…</TableCell></TableRow>
               ) : paginated.length === 0 ? (
                 <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No products found</TableCell></TableRow>
-              ) : paginated.map(p => {
+              ) : paginated.map((p, idx) => {
                 const m = getFor(p.id);
+                const groupKey = `${divisionName(p.division_id)} › ${subdivisionName(p.subdivision_id)}`;
+                const prev = idx > 0 ? paginated[idx - 1] : null;
+                const prevKey = prev ? `${divisionName(prev.division_id)} › ${subdivisionName(prev.subdivision_id)}` : null;
                 return (
-                  <TableRow key={p.id}>
-                    <TableCell>
-                      <div className="font-medium">{p.name}</div>
-                      <div className="text-xs text-muted-foreground font-mono">{p.sku}</div>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      ${Number(p.price || 0).toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <AccountSelect productId={p.id} field="revenue_account_code" value={m?.revenue_account_code} options={revenueAccounts} placeholder="— Select revenue account —" />
-                    </TableCell>
-                    <TableCell>
-                      <AccountSelect productId={p.id} field="cogs_account_code" value={m?.cogs_account_code} options={cogsAccounts} placeholder="— Select COGS account —" />
-                    </TableCell>
-                  </TableRow>
+                  <>
+                    {groupKey !== prevKey && (
+                      <TableRow key={`${groupKey}-header`} className="bg-muted/50 hover:bg-muted/50">
+                        <TableCell colSpan={4} className="py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          {groupKey}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    <TableRow key={p.id}>
+                      <TableCell>
+                        <div className="font-medium">{p.name}</div>
+                        <div className="text-xs text-muted-foreground font-mono">{p.sku}</div>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        ${Number(p.price || 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <AccountSelect productId={p.id} field="revenue_account_code" value={m?.revenue_account_code} options={revenueAccounts} placeholder="— Select revenue account —" />
+                      </TableCell>
+                      <TableCell>
+                        <AccountSelect productId={p.id} field="cogs_account_code" value={m?.cogs_account_code} options={cogsAccounts} placeholder="— Select COGS account —" />
+                      </TableCell>
+                    </TableRow>
+                  </>
                 );
               })}
+            </TableBody>
+          </Table>
+        </div>
+
             </TableBody>
           </Table>
         </div>
