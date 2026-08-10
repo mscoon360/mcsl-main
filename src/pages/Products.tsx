@@ -1434,6 +1434,7 @@ export default function Products() {
                           <TableHead>SKU</TableHead>
                           <TableHead>Supplier</TableHead>
                           <TableHead>Cost Price (per unit)</TableHead>
+                          <TableHead>Sale Price</TableHead>
                           <TableHead>Stock</TableHead>
                           <TableHead>Units After Repackaging</TableHead>
                           <TableHead>Status</TableHead>
@@ -1449,7 +1450,7 @@ export default function Products() {
                               className="bg-muted/50 border-t-2 border-primary/20 cursor-pointer hover:bg-muted/70"
                               onClick={() => toggleCategory(group.category)}
                             >
-                              <TableCell colSpan={9} className="font-semibold text-primary py-3 text-xl">
+                              <TableCell colSpan={10} className="font-semibold text-primary py-3 text-xl">
                                 <div className="flex items-center gap-2">
                                   {collapsedCategories.has(group.category) ? (
                                     <ChevronRight className="h-5 w-5" />
@@ -1490,6 +1491,7 @@ export default function Products() {
                                   <TableCell>{product.sku}</TableCell>
                                   <TableCell>{product.supplier_name || '-'}</TableCell>
                                   <TableCell>${product.cost_price?.toFixed(2) || '0.00'}</TableCell>
+                                  <TableCell className="font-semibold text-green-700 dark:text-green-300">${product.price?.toFixed(2) || '0.00'}</TableCell>
                                   <TableCell>
                                     {product.stock === 0 ? (
                                       <span className="text-destructive font-semibold">No Stock</span>
