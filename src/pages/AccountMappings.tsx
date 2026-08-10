@@ -84,7 +84,9 @@ export default function AccountMappings() {
   const { accounts, loading: accountsLoading } = useChartOfAccounts();
   const { mappings, loading: mappingsLoading, upsertMapping, clearMapping, get } = useAccountMappings();
   const { entries, loading: ledgerLoading } = useLedgerEntries();
+  const { mappings: productMappings } = useProductAccountMappings();
   const { toast } = useToast();
+
 
   const accountsByType = useMemo(() => {
     const sorted = [...accounts]
