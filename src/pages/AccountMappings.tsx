@@ -85,6 +85,40 @@ const WORKFLOWS: WorkflowGroup[] = [
   },
 ];
 
+interface DatePickerProps {
+  value?: Date;
+  onChange: (date?: Date) => void;
+  placeholder?: string;
+}
+
+function DatePicker({ value, onChange, placeholder = 'Pick a date' }: DatePickerProps) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            'w-[140px] justify-start text-left font-normal',
+            !value && 'text-muted-foreground'
+          )}
+        >
+          <CalendarIcon className="h-4 w-4 mr-2" />
+          {value ? format(value, 'PP') : <span>{placeholder}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={onChange}
+          initialFocus
+          className={cn('p-3 pointer-events-auto')}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export default function AccountMappings() {
   const { accounts, loading: accountsLoading } = useChartOfAccounts();
   const { mappings, loading: mappingsLoading, upsertMapping, clearMapping, get } = useAccountMappings();
