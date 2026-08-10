@@ -17,9 +17,9 @@ export function CompanyCalendarPanel() {
 
   if (collapsed) {
     return (
-      <aside className="hidden xl:flex flex-col items-center gap-2 border-l border-border bg-sidebar px-2 py-4">
+      <aside className="hidden xl:flex flex-col items-center gap-2 border-r border-border bg-sidebar px-2 py-4">
         <Button variant="ghost" size="icon" onClick={() => setCollapsed(false)} aria-label="Open company calendar">
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4" />
         </Button>
         <CalendarIcon className="h-5 w-5 text-primary" />
       </aside>
@@ -27,14 +27,14 @@ export function CompanyCalendarPanel() {
   }
 
   return (
-    <aside className="hidden xl:flex w-[320px] shrink-0 flex-col border-l border-border bg-sidebar">
+    <aside className="hidden xl:flex w-[320px] shrink-0 flex-col border-r border-border bg-sidebar">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="flex items-center gap-2 text-sm font-semibold">
           <CalendarIcon className="h-4 w-4 text-primary" />
           Company Calendar
         </h2>
         <Button variant="ghost" size="icon" onClick={() => setCollapsed(true)} aria-label="Collapse company calendar">
-          <ChevronRight className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4" />
         </Button>
       </div>
 
