@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { DepartmentNotifications } from "./DepartmentNotifications";
+import { CompanyCalendar } from "./CompanyCalendar";
 export function DashboardHeader() {
   const {
     user,
@@ -53,6 +54,7 @@ export function DashboardHeader() {
 
         <div className="flex items-center gap-2 md:gap-4">
           <ThemeSwitcher />
+          <CompanyCalendar />
           <DepartmentNotifications
             department="Procurement"
             icon={<Truck className="h-4 w-4 md:h-5 md:w-5" />}
