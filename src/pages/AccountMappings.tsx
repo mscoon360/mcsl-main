@@ -209,6 +209,18 @@ export default function AccountMappings() {
       add('Ledger Lines', ledgerRows, [12, 22, 28, 14, 14, 24, 10, 40, 10, 14, 14, 16, 16, 30]);
       add('Mappings', roleRows, [18, 26, 8, 24, 24, 28, 14, 16]);
 
+      const productRows = productMappings.map(m => ({
+        'Product ID': m.product_id,
+        'Revenue Account Code': m.revenue_account_code || '',
+        'Revenue Account Name': accountName(m.revenue_account_code || ''),
+        'COGS Account Code': m.cogs_account_code || '',
+        'COGS Account Name': accountName(m.cogs_account_code || ''),
+        'Inventory Account Code': m.inventory_account_code || '',
+        'Inventory Account Name': accountName(m.inventory_account_code || ''),
+      }));
+      add('Product Accounts', productRows, [38, 22, 30, 22, 30, 22, 30]);
+
+
       XLSX.writeFile(wb, `account_mappings_ledger_${new Date().toISOString().split('T')[0]}.xlsx`);
       toast({ title: 'Export complete', description: `${ledgerRows.length} ledger lines across ${codes.length} accounts.` });
     } catch (error: any) {
