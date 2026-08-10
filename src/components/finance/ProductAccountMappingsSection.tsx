@@ -10,6 +10,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useDivisions } from '@/hooks/useDivisions';
 import { useProductAccountMappings, ProductAccountField } from '@/hooks/useProductAccountMappings';
 import { ChartOfAccount } from '@/hooks/useChartOfAccounts';
+import { AccountPicker } from '@/components/finance/AccountPicker';
 
 interface Props {
   accounts: ChartOfAccount[];
