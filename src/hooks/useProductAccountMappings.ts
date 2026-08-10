@@ -8,6 +8,7 @@ export interface ProductAccountMapping {
   id?: string;
   user_id?: string;
   product_id: string;
+  payment_term?: string | null;
   revenue_account_code?: string | null;
   cogs_account_code?: string | null;
   inventory_account_code?: string | null;
