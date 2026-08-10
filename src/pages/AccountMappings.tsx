@@ -122,7 +122,25 @@ export default function AccountMappings() {
         })
       );
 
-      const codes = Array.from(new Set(roleRows.map(r => r['Effective Account Code'])));
+      // COGS accounts (per-product or subtype-based) are posted by the sale trigger
+      // but have no mapping role — include them so the ledger is complete.
+      const cogsCodes = accounts
+        .filter(a => a.account_subtype === 'cost-of-goods-sold' || !!a.cogs_kind)
+        .map(a => a.account_number);
+
+      // Any ledger line that looks like a COGS posting even if the account isn't in the CoA
+      const ledgerCogsCodes = entries.flatMap(e =>
+        (e.entries || [])
+          .map((l: any) => String(l.account_code || ''))
+          .filter((c: string) => /cogs|cost_of_goods/i.test(c))
+      );
+
+      const codes = Array.from(new Set([
+        ...roleRows.map(r => r['Effective Account Code']),
+        ...cogsCodes,
+        ...ledgerCogsCodes,
+      ]));
+
 
       // Flatten every ledger line that touches one of these accounts
       const ledgerRows: Record<string, any>[] = [];
