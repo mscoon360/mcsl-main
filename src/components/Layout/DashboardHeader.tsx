@@ -1,4 +1,5 @@
 import { Bell, Search, User, AlertCircle, Package, Truck, DollarSign } from "lucide-react";
+import magicCareLogo from "@/assets/magic-care-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -9,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useExpiringContracts } from "@/hooks/useExpiringContracts";
 import { useProducts } from "@/hooks/useProducts";
 import { format } from "date-fns";
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { DepartmentNotifications } from "./DepartmentNotifications";
 export function DashboardHeader() {
@@ -42,6 +43,15 @@ export function DashboardHeader() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 md:gap-4">
           <SidebarTrigger />
+          <NavLink to="/home" className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity">
+            <div className="flex h-6 w-6 md:h-8 md:w-8 items-center justify-center rounded-lg overflow-hidden">
+              <img src={magicCareLogo} alt="Magic Care Solutions Logo" className="h-full w-full object-contain" />
+            </div>
+            <div className="hidden sm:block">
+              <h2 className="text-sm md:text-lg font-semibold text-foreground">Magic-Care</h2>
+              <p className="text-xs text-muted-foreground -mt-0.5">Solutions Limited</p>
+            </div>
+          </NavLink>
           <div className="relative max-w-md hidden sm:block">
             
             
