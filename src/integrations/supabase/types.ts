@@ -1937,6 +1937,7 @@ export type Database = {
           quantity: number
           sale_id: string
           start_date: string | null
+          unit_cost: number | null
           vat_amount: number | null
         }
         Insert: {
@@ -1954,6 +1955,7 @@ export type Database = {
           quantity: number
           sale_id: string
           start_date?: string | null
+          unit_cost?: number | null
           vat_amount?: number | null
         }
         Update: {
@@ -1971,6 +1973,7 @@ export type Database = {
           quantity?: number
           sale_id?: string
           start_date?: string | null
+          unit_cost?: number | null
           vat_amount?: number | null
         }
         Relationships: [
