@@ -211,6 +211,7 @@ export default function AccountMappings() {
 
       const productRows = productMappings.map(m => ({
         'Product ID': m.product_id,
+        'Payment Term': m.payment_term || 'Default',
         'Revenue Account Code': m.revenue_account_code || '',
         'Revenue Account Name': accountName(m.revenue_account_code || ''),
         'COGS Account Code': m.cogs_account_code || '',
@@ -218,7 +219,7 @@ export default function AccountMappings() {
         'Inventory Account Code': m.inventory_account_code || '',
         'Inventory Account Name': accountName(m.inventory_account_code || ''),
       }));
-      add('Product Accounts', productRows, [38, 22, 30, 22, 30, 22, 30]);
+      add('Product Accounts', productRows, [38, 16, 22, 30, 22, 30, 22, 30]);
 
 
       XLSX.writeFile(wb, `account_mappings_ledger_${new Date().toISOString().split('T')[0]}.xlsx`);

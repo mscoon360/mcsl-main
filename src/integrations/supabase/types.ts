@@ -1191,6 +1191,7 @@ export type Database = {
           created_at: string
           id: string
           inventory_account_code: string | null
+          payment_term: string | null
           product_id: string
           revenue_account_code: string | null
           updated_at: string
@@ -1201,6 +1202,7 @@ export type Database = {
           created_at?: string
           id?: string
           inventory_account_code?: string | null
+          payment_term?: string | null
           product_id: string
           revenue_account_code?: string | null
           updated_at?: string
@@ -1211,6 +1213,7 @@ export type Database = {
           created_at?: string
           id?: string
           inventory_account_code?: string | null
+          payment_term?: string | null
           product_id?: string
           revenue_account_code?: string | null
           updated_at?: string
