@@ -110,6 +110,7 @@ const App = () => (
                 <Route path="ar-aging" element={<ARAging />} />
                 <Route path="ap-aging" element={<APAging />} />
                 <Route path="vat-report" element={<VATReport />} />
+                <Route path="sales-ledger" element={<SalesLedger />} />
               </Route>
               <Route path="accounts-payable" element={<AccountsPayable />} />
               <Route path="accounts-receivable" element={<AccountsReceivable />} />

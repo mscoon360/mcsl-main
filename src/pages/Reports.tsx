@@ -9,6 +9,7 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   Receipt,
+  ShoppingCart,
 } from 'lucide-react';
 
 const reportNav = [
@@ -20,6 +21,7 @@ const reportNav = [
   { name: 'AR Aging',           to: 'ar-aging',        icon: ArrowDownToLine },
   { name: 'AP Aging',           to: 'ap-aging',        icon: ArrowUpFromLine },
   { name: 'VAT Report',         to: 'vat-report',      icon: Receipt },
+  { name: 'Sales Ledger',       to: 'sales-ledger',    icon: ShoppingCart },
 ];
 
 export default function Reports() {
