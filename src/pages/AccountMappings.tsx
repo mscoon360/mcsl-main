@@ -167,13 +167,19 @@ export default function AccountMappings() {
 
 
 
+      // Include every account that actually has ledger activity, so nothing is dropped
+      const activityCodes = entries.flatMap(e => (e.entries || []).map((l: any) => String(l.account_code || '')));
+      const allCodes = Array.from(new Set([...codes, ...activityCodes].filter(Boolean)));
+
+      const isoDate = (v?: string) => (v ? new Date(v).toISOString().split('T')[0] : '');
+
       // Flatten every ledger line that touches one of these accounts
       const ledgerRows: Record<string, any>[] = [];
       entries.forEach(entry => {
         (entry.entries || []).forEach((line: any) => {
-          if (!codes.includes(line.account_code)) return;
+          if (!allCodes.includes(line.account_code)) return;
           ledgerRows.push({
-            Date: entry.posted_at ? new Date(entry.posted_at).toLocaleDateString() : '',
+            Date: isoDate(entry.posted_at),
             'Account Code': line.account_code,
             'Account Name': accountName(line.account_code),
             'Account Type': accountType(line.account_code),
@@ -196,16 +202,19 @@ export default function AccountMappings() {
       );
 
       // Per-account summary with running balance
-      const summaryRows = codes.map(code => {
+      const summaryRows = allCodes.map(code => {
         const lines = ledgerRows.filter(r => r['Account Code'] === code && r.Status === 'posted');
         const debit = lines.reduce((s, r) => s + r.Debit, 0);
         const credit = lines.reduce((s, r) => s + r.Credit, 0);
+        const dates = lines.map(r => r.Date).filter(Boolean).sort();
         return {
           'Account Code': code,
           'Account Name': accountName(code),
           'Account Type': accountType(code),
-          'In Chart of Accounts': accountName(code) ? 'Yes' : 'No',
+          'In Chart of Accounts': accounts.some(a => a.account_number === code) ? 'Yes' : 'No',
           Transactions: lines.length,
+          'First Activity': dates[0] || '',
+          'Last Activity': dates[dates.length - 1] || '',
           'Total Debit': debit,
           'Total Credit': credit,
           Balance: debit - credit,
@@ -219,12 +228,15 @@ export default function AccountMappings() {
         XLSX.utils.book_append_sheet(wb, ws, name);
       };
 
-      add('Summary', summaryRows, [22, 30, 16, 18, 14, 14, 14, 14]);
+      add('Summary', summaryRows, [22, 30, 16, 18, 14, 14, 14, 14, 14, 14]);
       add('Ledger Lines', ledgerRows, [12, 22, 28, 14, 14, 24, 10, 40, 10, 14, 14, 16, 16, 30]);
       add('Mappings', roleRows, [18, 26, 8, 24, 24, 28, 14, 16]);
 
+      const productName = (id: string) => products.find(p => p.id === id)?.name || '';
+      const productSku = (id: string) => products.find(p => p.id === id)?.sku || '';
       const productRows = productMappings.map(m => ({
-        'Product ID': m.product_id,
+        Product: productName(m.product_id),
+        SKU: productSku(m.product_id),
         'Payment Term': m.payment_term || 'Default',
         'Revenue Account Code': m.revenue_account_code || '',
         'Revenue Account Name': accountName(m.revenue_account_code || ''),
@@ -232,8 +244,10 @@ export default function AccountMappings() {
         'COGS Account Name': accountName(m.cogs_account_code || ''),
         'Inventory Account Code': m.inventory_account_code || '',
         'Inventory Account Name': accountName(m.inventory_account_code || ''),
-      }));
-      add('Product Accounts', productRows, [38, 16, 22, 30, 22, 30, 22, 30]);
+        'Product ID': m.product_id,
+      })).sort((a, b) => a.Product.localeCompare(b.Product));
+      add('Product Accounts', productRows, [30, 16, 16, 22, 30, 22, 30, 22, 30, 38]);
+
 
 
       XLSX.writeFile(wb, `account_mappings_ledger_${new Date().toISOString().split('T')[0]}.xlsx`);
