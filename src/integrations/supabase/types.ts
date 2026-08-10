@@ -1185,6 +1185,47 @@ export type Database = {
         }
         Relationships: []
       }
+      product_account_mappings: {
+        Row: {
+          cogs_account_code: string | null
+          created_at: string
+          id: string
+          inventory_account_code: string | null
+          product_id: string
+          revenue_account_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cogs_account_code?: string | null
+          created_at?: string
+          id?: string
+          inventory_account_code?: string | null
+          product_id: string
+          revenue_account_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cogs_account_code?: string | null
+          created_at?: string
+          id?: string
+          inventory_account_code?: string | null
+          product_id?: string
+          revenue_account_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_account_mappings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_items: {
         Row: {
           barcode: string
