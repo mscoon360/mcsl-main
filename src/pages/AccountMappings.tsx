@@ -219,8 +219,11 @@ export default function AccountMappings() {
         if (!startDate && !endDate) return true;
         if (!v) return false;
         const d = new Date(v);
-        if (startDate && d < new Date(startDate.setHours(0, 0, 0, 0))) return false;
-        if (endDate && d > new Date(endDate.setHours(23, 59, 59, 999))) return false;
+        if (startDate && d < new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())) return false;
+        if (endDate) {
+          const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999);
+          if (d > end) return false;
+        }
         return true;
       };
 
