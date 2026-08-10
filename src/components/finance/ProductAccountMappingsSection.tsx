@@ -10,6 +10,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useDivisions } from '@/hooks/useDivisions';
 import { useProductAccountMappings, ProductAccountField } from '@/hooks/useProductAccountMappings';
 import { ChartOfAccount } from '@/hooks/useChartOfAccounts';
+import { AccountPicker } from '@/components/finance/AccountPicker';
 
 interface Props {
   accounts: ChartOfAccount[];
@@ -75,32 +76,15 @@ export function ProductAccountMappingsSection({ accounts, accountsLoading }: Pro
   const AccountSelect = ({
     productId, field, value, options, placeholder,
   }: { productId: string; field: ProductAccountField; value?: string | null; options: ChartOfAccount[]; placeholder: string }) => (
-    <div className="flex items-center gap-1">
-      <Select
-        value={value || ''}
-        onValueChange={(v) => setAccount(productId, field, v)}
-        disabled={accountsLoading || mappingsLoading}
-      >
-        <SelectTrigger className="h-9">
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent className="max-h-72">
-          {options.length === 0 ? (
-            <div className="px-2 py-1.5 text-sm text-muted-foreground">No accounts available</div>
-          ) : options.map(a => (
-            <SelectItem key={a.id} value={a.account_number}>
-              <span className="font-mono text-xs">{a.account_number}</span>{' — '}{a.account_name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {value && (
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Clear" onClick={() => setAccount(productId, field, null)}>
-          <X className="h-4 w-4" />
-        </Button>
-      )}
-    </div>
+    <AccountPicker
+      value={value}
+      options={options}
+      placeholder={placeholder}
+      disabled={accountsLoading || mappingsLoading}
+      onChange={(v) => setAccount(productId, field, v)}
+    />
   );
+
 
   return (
     <Card>
