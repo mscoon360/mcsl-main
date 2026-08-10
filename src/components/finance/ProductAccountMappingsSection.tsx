@@ -191,9 +191,7 @@ export function ProductAccountMappingsSection({ accounts, accountsLoading }: Pro
           </Table>
         </div>
 
-            </TableBody>
-          </Table>
-        </div>
+
 
         {filtered.length > PAGE_SIZE && (
           <div className="flex items-center justify-between">
