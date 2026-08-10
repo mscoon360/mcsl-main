@@ -139,11 +139,18 @@ export default function AccountMappings() {
           .filter((c: string) => /cogs|cost_of_goods/i.test(c))
       );
 
+      // Accounts assigned directly to products (invoiced revenue + COGS)
+      const productCodes = productMappings.flatMap(m =>
+        [m.revenue_account_code, m.cogs_account_code, m.inventory_account_code].filter(Boolean) as string[]
+      );
+
       const codes = Array.from(new Set([
         ...roleRows.map(r => r['Effective Account Code']),
         ...cogsCodes,
         ...ledgerCogsCodes,
+        ...productCodes,
       ]));
+
 
 
       // Flatten every ledger line that touches one of these accounts
