@@ -10,6 +10,8 @@ import { useAccountMappings, Workflow } from '@/hooks/useAccountMappings';
 import { useChartOfAccounts } from '@/hooks/useChartOfAccounts';
 import { useLedgerEntries } from '@/hooks/useLedgerEntries';
 import { useToast } from '@/hooks/use-toast';
+import { useProductAccountMappings } from '@/hooks/useProductAccountMappings';
+import { ProductAccountMappingsSection } from '@/components/finance/ProductAccountMappingsSection';
 
 
 interface Role {
