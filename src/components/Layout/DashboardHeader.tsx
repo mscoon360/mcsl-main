@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { DepartmentNotifications } from "./DepartmentNotifications";
+import { CompanyCalendar } from "./CompanyCalendar";
 export function DashboardHeader() {
   const {
     user,
