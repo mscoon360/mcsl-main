@@ -2105,6 +2105,18 @@ export default function Products() {
                   <Label htmlFor="edit-units">Units</Label>
                   <Input id="edit-units" name="units" defaultValue={editingProduct.units} placeholder="e.g., cases, ml, litres" />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-price">Sale Price</Label>
+                  <Input
+                    id="edit-price"
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    defaultValue={editingProduct.price ?? 0}
+                    placeholder="0.00"
+                  />
+                </div>
               </div>
 
               <Button type="submit" className="w-full">
