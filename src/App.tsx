@@ -8,6 +8,7 @@ import { DashboardLayout } from "@/components/Layout/DashboardLayout";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
+import Landing from "./pages/Landing";
 import Home from "./pages/Home";
 import Sales from "./pages/Sales";
 import Customers from "./pages/Customers";
@@ -76,7 +77,8 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-              <Route index element={<Dashboard />} />
+              <Route index element={<Landing />} />
+              <Route path="dashboard" element={<Dashboard />} />
               <Route path="home" element={<Home />} />
               <Route path="sales" element={<Sales />} />
               <Route path="pos" element={<PointOfSale />} />

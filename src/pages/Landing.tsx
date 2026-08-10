@@ -11,8 +11,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useAuth } from "@/contexts/AuthContext";
 import magicCareLogo from "@/assets/magic-care-logo.png";
 
-type Link = { name: string; href: string };
-type Section = { title: string; icon: any; links: Link[] };
+type NavLinkItem = { name: string; href: string };
+type Section = { title: string; icon: any; links: NavLinkItem[] };
 
 const sections: Section[] = [
   {
