@@ -61,6 +61,7 @@ import BalanceSheet from "./pages/reports/BalanceSheet";
 import ARAging from "./pages/reports/ARAging";
 import APAging from "./pages/reports/APAging";
 import VATReport from "./pages/reports/VATReport";
+import SalesLedger from "./pages/reports/SalesLedger";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
