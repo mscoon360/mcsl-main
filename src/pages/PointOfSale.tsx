@@ -294,7 +294,16 @@ export default function PointOfSale() {
           price: item.unitPrice,
           unit_cost: product?.cost_price ?? null,
           is_rental: item.isRental,
-          contract_length: item.isRental ? '12 months' : null,
+          contract_length: item.isRental ? (item.contractLength || '12 months') : null,
+          start_date: item.isRental ? new Date(item.startDate || saleDate).toISOString() : null,
+          end_date: item.isRental
+            ? (() => {
+                const start = new Date(item.startDate || saleDate);
+                const end = new Date(start);
+                end.setMonth(end.getMonth() + monthsFromContractLength(item.contractLength));
+                return end.toISOString();
+              })()
+            : null,
           payment_period: item.paymentTerm || null,
           item_discount_type: item.discountType !== 'none' ? item.discountType : null,
           item_discount_value: item.discountValue || 0,
