@@ -533,7 +533,7 @@ export default function Invoices() {
           .from('invoices')
           .update({
             customer_id: newInvoice.customerId,
-            customer_name: customer.name,
+            customer_name: customerLabel,
             issue_date: newInvoice.issueDate,
             due_date: newInvoice.dueDate,
             status: newInvoice.status,
@@ -584,7 +584,7 @@ export default function Invoices() {
           .insert({
             user_id: user.id,
             customer_id: newInvoice.customerId,
-            customer_name: customer.name,
+            customer_name: customerLabel,
             invoice_number: invoiceNumber,
             issue_date: newInvoice.issueDate,
             due_date: newInvoice.dueDate,
@@ -624,7 +624,7 @@ export default function Invoices() {
           id: invoiceData.id,
           invoiceNumber: invoiceNumber,
           customerId: newInvoice.customerId!,
-          customerName: customer.name,
+          customerName: customerLabel,
           issueDate: newInvoice.issueDate!,
           dueDate: newInvoice.dueDate!,
           status: newInvoice.status as Invoice['status'],
