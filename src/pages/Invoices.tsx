@@ -1052,7 +1052,7 @@ export default function Invoices() {
                     </SelectTrigger>
                     <SelectContent>
                       {customers.map(customer => <SelectItem key={customer.id} value={customer.id}>
-                          <span className="text-sm">{customer.name} - {customer.company}</span>
+                          <span className="text-sm">{[customer.company, customer.name].filter(Boolean).join(" - ") || customer.email || "Unnamed Customer"}</span>
                         </SelectItem>)}
                     </SelectContent>
                   </Select>
