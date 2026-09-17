@@ -452,7 +452,7 @@ export default function PointOfSale() {
                             ${(product.is_rental ? (product.rental_price || product.price) : product.price).toFixed(2)}
                           </span>
                           <Badge variant={product.stock > 0 ? "secondary" : "destructive"} className="text-xs">
-                            {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
+                            {product.stock > 0 ? "Available" : "Out of stock"}
                           </Badge>
                         </div>
                         {(product.is_rental || product.is_rental_only) && (
