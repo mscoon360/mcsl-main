@@ -634,13 +634,24 @@ export default function PointOfSale() {
             ) : (
               <div className="space-y-3">
                 {cart.map((item, index) => (
-                  <div key={index} className="flex flex-col gap-2 p-3 rounded-lg border bg-card">
+                  <div
+                    key={index}
+                    className={cn(
+                      "flex flex-col gap-2 p-3 rounded-lg border bg-card",
+                      item.isRental && "border-amber-500/60 bg-amber-500/5"
+                    )}
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate flex items-center gap-1">
                           {item.isService && <Wrench className="h-3 w-3 text-muted-foreground shrink-0" />}
                           {item.productName}
                         </p>
+                        {item.isRental && (
+                          <Badge variant="outline" className="mt-1 text-[10px] border-amber-500 text-amber-600">
+                            Contract Item
+                          </Badge>
+                        )}
                         <div className="flex items-center gap-1 mt-1">
                           <span className="text-xs text-muted-foreground">$</span>
                           <Input
