@@ -775,7 +775,7 @@ export default function PointOfSale() {
                   disabled={isSubmitting || cart.length === 0 || !selectedCustomer}
                 >
                   <Receipt className="h-4 w-4 mr-1" />
-                  {isSubmitting ? "Processing..." : "Checkout"}
+                  {isSubmitting ? "Processing..." : hasRentals ? (saleItemsInCart.length > 0 ? "Checkout & Create Contract" : "Create Contract") : "Checkout"}
                 </Button>
               </div>
             </div>
