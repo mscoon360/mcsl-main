@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { Fragment, useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, FileText, Calendar, DollarSign, User, Plus, CalendarIcon, Trash2, Check, ChevronsUpDown, AlertTriangle, Clock } from "lucide-react";
+import { Search, FileText, Calendar, DollarSign, User, Plus, CalendarIcon, Trash2, Check, ChevronsUpDown, AlertTriangle, Clock, ChevronDown, ChevronRight } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { format, differenceInMonths, differenceInDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -68,6 +68,7 @@ export default function RentalAgreements() {
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [customerSearchValue, setCustomerSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { dependencies } = useItemDependencies();
 
