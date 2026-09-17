@@ -755,43 +755,51 @@ export default function Invoices() {
     }
   };
   const handleCreateInvoiceFromSale = (sale: typeof salesLog[0]) => {
-    // Find customer by name
-    const customer = customers.find(c => c.name === sale.customer_name);
-    if (customer) {
-      // Convert sale items to invoice items
-      const invoiceItems = sale.items.map(item => ({
-        description: item.product_name,
-        quantity: item.quantity,
-        unitPrice: item.price,
-        total: item.quantity * item.price,
-        productId: 'custom'
-      }));
-      const {
-        subtotal,
-        taxAmount,
-        total
-      } = calculateInvoiceTotals(invoiceItems, 10);
+    const target = (sale.customer_name || '').trim().toLowerCase();
+    // Match on contact name, company name, or email (any of these can be blank)
+    const customer = customers.find(c =>
+      [c.name, c.company, c.email]
+        .filter(Boolean)
+        .some(v => String(v).trim().toLowerCase() === target)
+    );
 
-      // Auto-fill the form
-      setNewInvoice({
-        customerId: customer.id,
-        issueDate: format(new Date(sale.date), 'yyyy-MM-dd'),
-        dueDate: format(addDays(new Date(sale.date), 30), 'yyyy-MM-dd'),
-        status: 'draft',
-        items: invoiceItems,
-        taxRate: 10,
-        subtotal,
-        taxAmount,
-        total,
-        notes: `Invoice created from Sale ID: ${sale.id}`,
-        paymentTerms: 'Cash'
-      });
-      setShowForm(true);
-      toast({
-        title: "Invoice Auto-filled",
-        description: `Invoice form has been populated with data from the sale to ${sale.customer_name}.`
-      });
-    }
+    // Convert sale items to invoice items
+    const invoiceItems = sale.items.map(item => ({
+      description: item.product_name,
+      quantity: item.quantity,
+      unitPrice: item.price,
+      total: item.quantity * item.price,
+      productId: 'custom'
+    }));
+    const {
+      subtotal,
+      taxAmount,
+      total
+    } = calculateInvoiceTotals(invoiceItems, 10);
+
+    // Auto-fill the form
+    setEditingInvoice(null);
+    setNewInvoice({
+      customerId: customer?.id || '',
+      issueDate: format(new Date(sale.date), 'yyyy-MM-dd'),
+      dueDate: format(addDays(new Date(sale.date), 30), 'yyyy-MM-dd'),
+      status: 'draft',
+      items: invoiceItems,
+      taxRate: 10,
+      subtotal,
+      taxAmount,
+      total,
+      notes: `Invoice created from Sale ID: ${sale.id}`,
+      paymentTerms: 'Cash'
+    });
+    setShowForm(true);
+    toast({
+      title: customer ? "Invoice Auto-filled" : "Items Added",
+      description: customer
+        ? `Invoice form has been populated with data from the sale to ${sale.customer_name}.`
+        : `Items were added, but "${sale.customer_name}" isn't in the customer list — please select a customer.`,
+      variant: customer ? undefined : "destructive"
+    });
   };
   const exportInvoices = () => {
     const exportData = filteredInvoices.map(invoice => ({
