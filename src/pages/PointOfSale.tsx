@@ -449,10 +449,7 @@ export default function PointOfSale() {
                           {product.name}
                         </h4>
                         <p className="text-xs text-muted-foreground">{product.sku}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-sm font-bold text-primary">
-                            ${(product.is_rental ? (product.rental_price || product.price) : product.price).toFixed(2)}
-                          </span>
+                        <div className="flex items-center justify-end mt-1">
                           <Badge variant={product.stock > 0 ? "secondary" : "destructive"} className="text-xs">
                             {product.stock > 0 ? "Available" : "Out of stock"}
                           </Badge>
@@ -485,10 +482,7 @@ export default function PointOfSale() {
                           {service.name}
                         </h4>
                         <p className="text-xs text-muted-foreground">{service.sku}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-sm font-bold text-primary">
-                            ${(service.is_rental ? (service.rental_price || service.price) : service.price).toFixed(2)}
-                          </span>
+                        <div className="flex items-center justify-end mt-1">
                           <Badge variant="secondary" className="text-xs">
                             <Wrench className="h-3 w-3 mr-1" />
                             Service
