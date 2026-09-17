@@ -7,6 +7,7 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   userDepartment: string | null;
+  isSalesOnly: boolean;
   needsPasswordChange: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -134,8 +135,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const isSalesOnly = !isAdmin && (userDepartment || '').toLowerCase().includes('sales');
+
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, userDepartment, needsPasswordChange, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, userDepartment, isSalesOnly, needsPasswordChange, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

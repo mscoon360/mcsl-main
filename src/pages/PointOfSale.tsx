@@ -68,6 +68,8 @@ export default function PointOfSale() {
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [customerSearchValue, setCustomerSearchValue] = useState("");
   const [selectedPromotion, setSelectedPromotion] = useState("");
+  const [orderDiscountType, setOrderDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [orderDiscountValue, setOrderDiscountValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [posTab, setPosTab] = useState<'products' | 'services'>('products');
@@ -182,6 +184,8 @@ export default function PointOfSale() {
     setCart([]);
     setSelectedCustomer("");
     setSelectedPromotion("");
+    setOrderDiscountValue("");
+    setOrderDiscountType('percentage');
   };
 
   const getItemTotal = (item: CartItem) => {
@@ -205,7 +209,16 @@ export default function PointOfSale() {
     return 0;
   };
 
-  const grandTotal = Math.max(0, cartSubtotal - getPromotionDiscount());
+  const afterPromotion = Math.max(0, cartSubtotal - getPromotionDiscount());
+
+  const getOrderDiscount = () => {
+    const value = parseFloat(orderDiscountValue);
+    if (isNaN(value) || value <= 0) return 0;
+    if (orderDiscountType === 'percentage') return Math.min(afterPromotion, (afterPromotion * value) / 100);
+    return Math.min(afterPromotion, value);
+  };
+
+  const grandTotal = Math.max(0, afterPromotion - getOrderDiscount());
 
   const handlePaymentTermChange = (index: number, term: PaymentTerm) => {
     setCart(prev => prev.map((item, i) => {
@@ -449,10 +462,7 @@ export default function PointOfSale() {
                           {product.name}
                         </h4>
                         <p className="text-xs text-muted-foreground">{product.sku}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-sm font-bold text-primary">
-                            ${(product.is_rental ? (product.rental_price || product.price) : product.price).toFixed(2)}
-                          </span>
+                        <div className="flex items-center justify-end mt-1">
                           <Badge variant={product.stock > 0 ? "secondary" : "destructive"} className="text-xs">
                             {product.stock > 0 ? "Available" : "Out of stock"}
                           </Badge>
@@ -485,10 +495,7 @@ export default function PointOfSale() {
                           {service.name}
                         </h4>
                         <p className="text-xs text-muted-foreground">{service.sku}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-sm font-bold text-primary">
-                            ${(service.is_rental ? (service.rental_price || service.price) : service.price).toFixed(2)}
-                          </span>
+                        <div className="flex items-center justify-end mt-1">
                           <Badge variant="secondary" className="text-xs">
                             <Wrench className="h-3 w-3 mr-1" />
                             Service
@@ -752,6 +759,36 @@ export default function PointOfSale() {
                 <div className="flex justify-between text-sm text-green-600">
                   <span>Promotion Discount</span>
                   <span>-${getPromotionDiscount().toFixed(2)}</span>
+                </div>
+              )}
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Discount</p>
+                <div className="flex gap-2">
+                  <Select value={orderDiscountType} onValueChange={(v) => setOrderDiscountType(v as 'percentage' | 'fixed')}>
+                    <SelectTrigger className="h-8 w-[130px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percentage">Percentage (%)</SelectItem>
+                      <SelectItem value="fixed">Amount ($)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder={orderDiscountType === 'percentage' ? "0 %" : "0.00"}
+                    value={orderDiscountValue}
+                    onChange={(e) => setOrderDiscountValue(e.target.value)}
+                    className="h-8 flex-1 text-xs"
+                    aria-label="Discount value"
+                  />
+                </div>
+              </div>
+              {getOrderDiscount() > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Discount Applied</span>
+                  <span>-${getOrderDiscount().toFixed(2)}</span>
                 </div>
               )}
               {selectedCustomerData?.vatable !== false && (

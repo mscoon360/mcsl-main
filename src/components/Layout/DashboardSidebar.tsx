@@ -201,7 +201,7 @@ export function DashboardSidebar() {
     "Divisional Sales & Contracts Department": true,
     "Group Supporting Departments": true
   });
-  const { isAdmin, user, signOut } = useAuth();
+  const { isAdmin, user, signOut, isSalesOnly } = useAuth();
   const [allowedSections, setAllowedSections] = useState<string[]>([]);
 
   // Load user's navigation permissions
@@ -239,19 +239,26 @@ export function DashboardSidebar() {
   };
 
   // Filter navigation based on permissions
-  const filteredNavigation = navigation
-    .map(section => {
-      // Filter items within each section
-      const filteredItems = section.items.filter(item => 
-        hasAccess(section.title, item.name)
-      );
-      
-      return {
-        ...section,
-        items: filteredItems
-      };
-    })
-    .filter(section => section.items.length > 0); // Only show sections with visible items
+  const filteredNavigation = isSalesOnly
+    ? [
+        {
+          title: "Divisional Sales & Contracts Department",
+          items: [{ name: "Point of Sale", href: "/pos", icon: ShoppingCart }],
+        } as NavigationSection,
+      ]
+    : navigation
+        .map(section => {
+          // Filter items within each section
+          const filteredItems = section.items.filter(item =>
+            hasAccess(section.title, item.name)
+          );
+
+          return {
+            ...section,
+            items: filteredItems
+          };
+        })
+        .filter(section => section.items.length > 0); // Only show sections with visible items
 
   const handleSignOut = async () => {
     await signOut();
