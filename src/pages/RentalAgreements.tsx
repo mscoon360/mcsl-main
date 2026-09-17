@@ -1112,6 +1112,7 @@ export default function RentalAgreements() {
               <Table>
                 <TableHeader>
                     <TableRow>
+                      <TableHead className="w-8" aria-label="Expand" />
                       <TableHead>Customer</TableHead>
                       <TableHead>Product</TableHead>
                       <TableHead>Contract Length</TableHead>
@@ -1125,64 +1126,148 @@ export default function RentalAgreements() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {filteredAgreements.map((agreement) => (
-                      <TableRow key={agreement.id} className={getUrgencyRowClass(agreement)}>
-                        <TableCell className="font-medium">
-                          <EditableTextCell
-                            value={agreement.customer}
-                            onSave={(v) => handleUpdateCustomer(agreement.saleId, v)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <EditableTextCell
-                            value={agreement.product}
-                            onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'product_name', v)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <EditableTextCell
-                            value={agreement.contractLength}
-                            onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'contract_length', v)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <EditableSelectCell
-                            value={agreement.paymentPeriod}
-                            options={paymentPeriodOptions}
-                            onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'payment_period', v)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <EditableDateCell
-                            value={agreement.startDate}
-                            onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'start_date', v.toISOString())}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <EditableDateCell
-                            value={agreement.endDate}
-                            onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'end_date', v.toISOString())}
-                          />
-                        </TableCell>
-                        <TableCell>${agreement.monthlyAmount.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <EditableValueCell
-                            value={agreement.totalValue}
-                            formatValue={(v) => `$${v.toFixed(2)}`}
-                            onSave={(newValue) => handleUpdateYearlyValue(agreement, newValue)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          ${(
-                            agreement.totalValue / periodsPerYear(agreement.paymentPeriod)
-                          ).toFixed(2)}
-                          /{periodShortLabel(agreement.paymentPeriod)}
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(agreement)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredAgreements.map((agreement) => {
+                      const isExpanded = expandedId === agreement.id;
+                      const sale = sales.find(s => s.id === agreement.saleId);
+                      const rentalItems = (sale?.items || []).filter(i => i.is_rental);
+                      return (
+                        <Fragment key={agreement.id}>
+                          <TableRow
+                            className={cn(getUrgencyRowClass(agreement), "cursor-pointer")}
+                            onClick={() => setExpandedId(isExpanded ? null : agreement.id)}
+                          >
+                            <TableCell
+                              className="w-8"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                aria-label={isExpanded ? "Collapse details" : "Expand details"}
+                                onClick={() => setExpandedId(isExpanded ? null : agreement.id)}
+                              >
+                                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                              </Button>
+                            </TableCell>
+                            <TableCell className="font-medium" onClick={(e) => e.stopPropagation()}>
+                              <EditableTextCell
+                                value={agreement.customer}
+                                onSave={(v) => handleUpdateCustomer(agreement.saleId, v)}
+                              />
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <EditableTextCell
+                                value={agreement.product}
+                                onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'product_name', v)}
+                              />
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <EditableTextCell
+                                value={agreement.contractLength}
+                                onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'contract_length', v)}
+                              />
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <EditableSelectCell
+                                value={agreement.paymentPeriod}
+                                options={paymentPeriodOptions}
+                                onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'payment_period', v)}
+                              />
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <EditableDateCell
+                                value={agreement.startDate}
+                                onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'start_date', v.toISOString())}
+                              />
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <EditableDateCell
+                                value={agreement.endDate}
+                                onSave={(v) => handleUpdateSaleItem(agreement.itemId, 'end_date', v.toISOString())}
+                              />
+                            </TableCell>
+                            <TableCell>${agreement.monthlyAmount.toFixed(2)}</TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <EditableValueCell
+                                value={agreement.totalValue}
+                                formatValue={(v) => `$${v.toFixed(2)}`}
+                                onSave={(newValue) => handleUpdateYearlyValue(agreement, newValue)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              ${(
+                                agreement.totalValue / periodsPerYear(agreement.paymentPeriod)
+                              ).toFixed(2)}
+                              /{periodShortLabel(agreement.paymentPeriod)}
+                            </TableCell>
+                            <TableCell>
+                              {getStatusBadge(agreement)}
+                            </TableCell>
+                          </TableRow>
+                          {isExpanded && (
+                            <TableRow className="hover:bg-inherit">
+                              <TableCell colSpan={11} className="bg-muted/40 p-0">
+                                <div className="p-4">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <h4 className="text-sm font-semibold text-foreground">
+                                      Rented Items — {agreement.customer}
+                                    </h4>
+                                    <span className="text-xs text-muted-foreground">
+                                      From sale on {format(new Date(agreement.saleDate), 'dd/MM/yyyy')}
+                                    </span>
+                                  </div>
+                                  {rentalItems.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">No rental items found on this sale.</p>
+                                  ) : (
+                                    <div className="overflow-x-auto rounded-md border bg-background">
+                                      <Table>
+                                        <TableHeader>
+                                          <TableRow>
+                                            <TableHead>Product</TableHead>
+                                            <TableHead>Quantity</TableHead>
+                                            <TableHead>Price</TableHead>
+                                            <TableHead>Line Total</TableHead>
+                                            <TableHead>Contract Length</TableHead>
+                                            <TableHead>Payment Period</TableHead>
+                                          </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                          {rentalItems.map((item) => (
+                                            <TableRow key={item.id}>
+                                              <TableCell className="font-medium">{item.product_name}</TableCell>
+                                              <TableCell>{item.quantity}</TableCell>
+                                              <TableCell>
+                                                ${item.price.toFixed(2)}/{periodShortLabel(item.payment_period || agreement.paymentPeriod)}
+                                              </TableCell>
+                                              <TableCell className="font-medium">
+                                                ${(item.price * item.quantity).toFixed(2)}
+                                                /{periodShortLabel(item.payment_period || agreement.paymentPeriod)}
+                                              </TableCell>
+                                              <TableCell>{item.contract_length || '-'}</TableCell>
+                                              <TableCell className="capitalize">{item.payment_period || agreement.paymentPeriod}</TableCell>
+                                            </TableRow>
+                                          ))}
+                                          <TableRow>
+                                            <TableCell colSpan={3} className="text-right font-semibold">
+                                              Total per {periodShortLabel(agreement.paymentPeriod)}
+                                            </TableCell>
+                                            <TableCell colSpan={3} className="font-semibold">
+                                              ${rentalItems.reduce((sum, i) => sum + i.price * i.quantity, 0).toFixed(2)}
+                                              /{periodShortLabel(agreement.paymentPeriod)}
+                                            </TableCell>
+                                          </TableRow>
+                                        </TableBody>
+                                      </Table>
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </Fragment>
+                      );
+                    })}
                 </TableBody>
               </Table>
             </div>
