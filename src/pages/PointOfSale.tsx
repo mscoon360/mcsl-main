@@ -54,7 +54,7 @@ export default function PointOfSale() {
   const { user } = useAuth();
   const { products, updateProduct } = useProducts();
   const { services } = useServices();
-  const { customers } = useCustomers();
+  const { customers, addCustomer } = useCustomers();
   const { promotions } = usePromotions();
   const { getPaymentTermsForProduct } = useRentalPaymentTerms();
   const { divisions } = useDivisions();
