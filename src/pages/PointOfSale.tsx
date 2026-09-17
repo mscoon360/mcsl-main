@@ -703,6 +703,36 @@ export default function PointOfSale() {
                         </SelectContent>
                       </Select>
                     )}
+                    {/* Contract details for rental items */}
+                    {item.isRental && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground mb-1">Contract Length</p>
+                          <Select
+                            value={item.contractLength || '12 months'}
+                            onValueChange={(v) => updateCartField(index, 'contractLength', v)}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CONTRACT_LENGTH_OPTIONS.map(opt => (
+                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground mb-1">Start Date</p>
+                          <Input
+                            type="date"
+                            value={item.startDate || ''}
+                            onChange={(e) => updateCartField(index, 'startDate', e.target.value)}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
