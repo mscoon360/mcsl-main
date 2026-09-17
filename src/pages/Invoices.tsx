@@ -521,6 +521,7 @@ export default function Invoices() {
     
     const customer = customers.find(c => c.id === newInvoice.customerId);
     if (!customer) return;
+    const customerLabel = (customer.company || customer.name || customer.email || 'Unnamed Customer').toString().trim() || 'Unnamed Customer';
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
