@@ -109,6 +109,11 @@ export default function PointOfSale() {
     setCart(prev => [...prev, newItem]);
   };
 
+  const updateCartPrice = (index: number, newPrice: number) => {
+    if (isNaN(newPrice) || newPrice < 0) return;
+    setCart(prev => prev.map((item, i) => i === index ? { ...item, unitPrice: newPrice } : item));
+  };
+
   const updateCartQuantity = (index: number, newQty: number) => {
     if (newQty < 1) return;
     setCart(prev => prev.map((item, i) => i === index ? { ...item, quantity: newQty } : item));
@@ -535,7 +540,19 @@ export default function PointOfSale() {
                           {item.isService && <Wrench className="h-3 w-3 text-muted-foreground shrink-0" />}
                           {item.productName}
                         </p>
-                        <p className="text-xs text-muted-foreground">${item.unitPrice.toFixed(2)} each</p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-xs text-muted-foreground">$</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min={0}
+                            value={item.unitPrice}
+                            onChange={(e) => updateCartPrice(index, parseFloat(e.target.value))}
+                            className="h-6 w-20 text-xs px-1"
+                            aria-label="Unit price"
+                          />
+                          <span className="text-xs text-muted-foreground">each</span>
+                        </div>
                       </div>
                       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => removeFromCart(index)}>
                         <X className="h-4 w-4" />
