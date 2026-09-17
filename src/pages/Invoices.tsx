@@ -521,6 +521,7 @@ export default function Invoices() {
     
     const customer = customers.find(c => c.id === newInvoice.customerId);
     if (!customer) return;
+    const customerLabel = (customer.company || customer.name || customer.email || 'Unnamed Customer').toString().trim() || 'Unnamed Customer';
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -532,7 +533,7 @@ export default function Invoices() {
           .from('invoices')
           .update({
             customer_id: newInvoice.customerId,
-            customer_name: customer.name,
+            customer_name: customerLabel,
             issue_date: newInvoice.issueDate,
             due_date: newInvoice.dueDate,
             status: newInvoice.status,
@@ -583,7 +584,7 @@ export default function Invoices() {
           .insert({
             user_id: user.id,
             customer_id: newInvoice.customerId,
-            customer_name: customer.name,
+            customer_name: customerLabel,
             invoice_number: invoiceNumber,
             issue_date: newInvoice.issueDate,
             due_date: newInvoice.dueDate,
@@ -623,7 +624,7 @@ export default function Invoices() {
           id: invoiceData.id,
           invoiceNumber: invoiceNumber,
           customerId: newInvoice.customerId!,
-          customerName: customer.name,
+          customerName: customerLabel,
           issueDate: newInvoice.issueDate!,
           dueDate: newInvoice.dueDate!,
           status: newInvoice.status as Invoice['status'],
@@ -1051,7 +1052,7 @@ export default function Invoices() {
                     </SelectTrigger>
                     <SelectContent>
                       {customers.map(customer => <SelectItem key={customer.id} value={customer.id}>
-                          <span className="text-sm">{customer.name} - {customer.company}</span>
+                          <span className="text-sm">{[customer.company, customer.name].filter(Boolean).join(" - ") || customer.email || "Unnamed Customer"}</span>
                         </SelectItem>)}
                     </SelectContent>
                   </Select>
