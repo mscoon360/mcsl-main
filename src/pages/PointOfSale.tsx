@@ -27,6 +27,13 @@ const PAYMENT_TERM_LABELS: Record<PaymentTerm, string> = {
   'monthly': 'Monthly'
 };
 
+const CONTRACT_LENGTH_OPTIONS = ['3 months', '6 months', '12 months', '24 months', '36 months'];
+
+const monthsFromContractLength = (length?: string) => {
+  const n = parseInt((length || '12').replace(/\D/g, ''), 10);
+  return isNaN(n) || n <= 0 ? 12 : n;
+};
+
 interface CartItem {
   productId: string;
   productName: string;
@@ -38,6 +45,8 @@ interface CartItem {
   discountValue: number;
   paymentTerm?: PaymentTerm;
   paymentTerms?: RentalPaymentTerm[];
+  contractLength?: string;
+  startDate?: string;
 }
 
 export default function PointOfSale() {
