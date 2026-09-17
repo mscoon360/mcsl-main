@@ -342,26 +342,34 @@ export default function PointOfSale() {
 
       // Notify Procurement & Logistics
       const productList = cart.map(i => `${i.quantity}x ${i.productName}`).join(', ');
+      const contractList = rentalItems.map(i => `${i.quantity}x ${i.productName} (${i.contractLength || '12 months'})`).join(', ');
       await supabase.from('notifications').insert([
         {
           type: 'fulfillment_needed',
-          title: 'New Order to Fulfill',
+          title: hasRentals ? 'New Order & Contract to Fulfill' : 'New Order to Fulfill',
           message: `Sale to ${customerName}: ${productList}. Total: $${(grandTotal + vatAmount).toFixed(2)}`,
           department: 'Procurement',
           sale_id: saleData.id,
           user_id: user.id,
         },
         {
-          type: 'new_sale',
-          title: 'New Sale Recorded',
-          message: `Sale to ${customerName} for $${(grandTotal + vatAmount).toFixed(2)} has been completed.`,
+          type: hasRentals ? 'new_contract' : 'new_sale',
+          title: hasRentals ? 'New Rental Contract' : 'New Sale Recorded',
+          message: hasRentals
+            ? `Contract for ${customerName}: ${contractList}. Value: $${(grandTotal + vatAmount).toFixed(2)}`
+            : `Sale to ${customerName} for $${(grandTotal + vatAmount).toFixed(2)} has been completed.`,
           department: 'Finance',
           sale_id: saleData.id,
           user_id: user.id,
         },
       ]);
 
-      toast({ title: "Sale Completed!", description: `Sale of $${(grandTotal + vatAmount).toFixed(2)} recorded successfully.` });
+      toast({
+        title: hasRentals ? "Contract Created!" : "Sale Completed!",
+        description: hasRentals
+          ? `Rental contract for ${customerName} recorded successfully.`
+          : `Sale of $${(grandTotal + vatAmount).toFixed(2)} recorded successfully.`,
+      });
       clearCart();
     } catch (error: any) {
       console.error('Checkout error:', error);
