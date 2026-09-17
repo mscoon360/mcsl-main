@@ -546,7 +546,22 @@ export default function PointOfSale() {
               <Command>
                 <CommandInput placeholder="Search customers..." value={customerSearchValue} onValueChange={setCustomerSearchValue} />
                 <CommandList>
-                  <CommandEmpty>No customers found.</CommandEmpty>
+                  <CommandEmpty>
+                    <div className="p-3 text-center space-y-2">
+                      <p className="text-sm text-muted-foreground">No customers found.</p>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setNewCustomer(prev => ({ ...prev, company: customerSearchValue }));
+                          setCustomerSearchOpen(false);
+                          setShowNewCustomer(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add new customer
+                      </Button>
+                    </div>
+                  </CommandEmpty>
                   <CommandGroup>
                     {customers
                       .filter(c =>
