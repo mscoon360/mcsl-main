@@ -8,6 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Search, Plus, Minus, Trash2, ShoppingCart, ChevronsUpDown, Check, User, Receipt, X, Package, Wrench } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +29,13 @@ const PAYMENT_TERM_LABELS: Record<PaymentTerm, string> = {
   'monthly': 'Monthly'
 };
 
+const CONTRACT_LENGTH_OPTIONS = ['3 months', '6 months', '12 months', '24 months', '36 months'];
+
+const monthsFromContractLength = (length?: string) => {
+  const n = parseInt((length || '12').replace(/\D/g, ''), 10);
+  return isNaN(n) || n <= 0 ? 12 : n;
+};
+
 interface CartItem {
   productId: string;
   productName: string;
@@ -38,6 +47,8 @@ interface CartItem {
   discountValue: number;
   paymentTerm?: PaymentTerm;
   paymentTerms?: RentalPaymentTerm[];
+  contractLength?: string;
+  startDate?: string;
 }
 
 export default function PointOfSale() {
@@ -45,7 +56,7 @@ export default function PointOfSale() {
   const { user } = useAuth();
   const { products, updateProduct } = useProducts();
   const { services } = useServices();
-  const { customers } = useCustomers();
+  const { customers, addCustomer } = useCustomers();
   const { promotions } = usePromotions();
   const { getPaymentTermsForProduct } = useRentalPaymentTerms();
   const { divisions } = useDivisions();
@@ -60,6 +71,44 @@ export default function PointOfSale() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [posTab, setPosTab] = useState<'products' | 'services'>('products');
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [savingCustomer, setSavingCustomer] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    company: "",
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    vatable: true,
+  });
+
+  const handleCreateCustomer = async () => {
+    if (!newCustomer.company.trim()) {
+      toast({ title: "Company name required", description: "Enter the company name to add this customer.", variant: "destructive" });
+      return;
+    }
+    setSavingCustomer(true);
+    try {
+      const created = await addCustomer({
+        company: newCustomer.company.trim(),
+        name: newCustomer.name.trim() || newCustomer.company.trim(),
+        email: newCustomer.email.trim() || undefined,
+        phone: newCustomer.phone.trim() || undefined,
+        address: newCustomer.address.trim() || undefined,
+        city: newCustomer.city.trim() || undefined,
+        status: 'active',
+        vatable: newCustomer.vatable,
+      } as any);
+      if (created?.id) setSelectedCustomer(created.id);
+      setShowNewCustomer(false);
+      setNewCustomer({ company: "", name: "", email: "", phone: "", address: "", city: "", vatable: true });
+    } catch {
+      /* toast handled in hook */
+    } finally {
+      setSavingCustomer(false);
+    }
+  };
 
   // Filter products for POS (only main products, exclude rental-only)
   const availableProducts = useMemo(() => {
@@ -104,6 +153,8 @@ export default function PointOfSale() {
       discountValue: 0,
       paymentTerm: paymentTerms.length > 0 ? paymentTerms[0].payment_term as PaymentTerm : undefined,
       paymentTerms,
+      contractLength: (product.is_rental || product.is_rental_only) ? '12 months' : undefined,
+      startDate: (product.is_rental || product.is_rental_only) ? new Date().toISOString().split('T')[0] : undefined,
     };
 
     setCart(prev => [...prev, newItem]);
@@ -117,6 +168,10 @@ export default function PointOfSale() {
   const updateCartQuantity = (index: number, newQty: number) => {
     if (newQty < 1) return;
     setCart(prev => prev.map((item, i) => i === index ? { ...item, quantity: newQty } : item));
+  };
+
+  const updateCartField = (index: number, field: 'contractLength' | 'startDate', value: string) => {
+    setCart(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
   };
 
   const removeFromCart = (index: number) => {
@@ -137,6 +192,9 @@ export default function PointOfSale() {
   };
 
   const cartSubtotal = cart.reduce((sum, item) => sum + getItemTotal(item), 0);
+  const rentalItems = cart.filter(i => i.isRental);
+  const saleItemsInCart = cart.filter(i => !i.isRental);
+  const hasRentals = rentalItems.length > 0;
 
   const getPromotionDiscount = () => {
     if (!selectedPromotion) return 0;
@@ -202,7 +260,7 @@ export default function PointOfSale() {
         if (item.isService) continue; // Services have no stock
         const product = products.find(p => p.id === item.productId);
         if (product && !item.isRental && product.stock < item.quantity) {
-          toast({ title: "Insufficient Stock", description: `${item.productName} only has ${product.stock} units available.`, variant: "destructive" });
+          toast({ title: "Insufficient Stock", description: `${item.productName} does not have enough stock available.`, variant: "destructive" });
           setIsSubmitting(false);
           return;
         }
@@ -241,7 +299,16 @@ export default function PointOfSale() {
           price: item.unitPrice,
           unit_cost: product?.cost_price ?? null,
           is_rental: item.isRental,
-          contract_length: item.isRental ? '12 months' : null,
+          contract_length: item.isRental ? (item.contractLength || '12 months') : null,
+          start_date: item.isRental ? new Date(item.startDate || saleDate).toISOString() : null,
+          end_date: item.isRental
+            ? (() => {
+                const start = new Date(item.startDate || saleDate);
+                const end = new Date(start);
+                end.setMonth(end.getMonth() + monthsFromContractLength(item.contractLength));
+                return end.toISOString();
+              })()
+            : null,
           payment_period: item.paymentTerm || null,
           item_discount_type: item.discountType !== 'none' ? item.discountType : null,
           item_discount_value: item.discountValue || 0,
@@ -280,26 +347,34 @@ export default function PointOfSale() {
 
       // Notify Procurement & Logistics
       const productList = cart.map(i => `${i.quantity}x ${i.productName}`).join(', ');
+      const contractList = rentalItems.map(i => `${i.quantity}x ${i.productName} (${i.contractLength || '12 months'})`).join(', ');
       await supabase.from('notifications').insert([
         {
           type: 'fulfillment_needed',
-          title: 'New Order to Fulfill',
+          title: hasRentals ? 'New Order & Contract to Fulfill' : 'New Order to Fulfill',
           message: `Sale to ${customerName}: ${productList}. Total: $${(grandTotal + vatAmount).toFixed(2)}`,
           department: 'Procurement',
           sale_id: saleData.id,
           user_id: user.id,
         },
         {
-          type: 'new_sale',
-          title: 'New Sale Recorded',
-          message: `Sale to ${customerName} for $${(grandTotal + vatAmount).toFixed(2)} has been completed.`,
+          type: hasRentals ? 'new_contract' : 'new_sale',
+          title: hasRentals ? 'New Rental Contract' : 'New Sale Recorded',
+          message: hasRentals
+            ? `Contract for ${customerName}: ${contractList}. Value: $${(grandTotal + vatAmount).toFixed(2)}`
+            : `Sale to ${customerName} for $${(grandTotal + vatAmount).toFixed(2)} has been completed.`,
           department: 'Finance',
           sale_id: saleData.id,
           user_id: user.id,
         },
       ]);
 
-      toast({ title: "Sale Completed!", description: `Sale of $${(grandTotal + vatAmount).toFixed(2)} recorded successfully.` });
+      toast({
+        title: hasRentals ? "Contract Created!" : "Sale Completed!",
+        description: hasRentals
+          ? `Rental contract for ${customerName} recorded successfully.`
+          : `Sale of $${(grandTotal + vatAmount).toFixed(2)} recorded successfully.`,
+      });
       clearCart();
     } catch (error: any) {
       console.error('Checkout error:', error);
@@ -379,7 +454,7 @@ export default function PointOfSale() {
                             ${(product.is_rental ? (product.rental_price || product.price) : product.price).toFixed(2)}
                           </span>
                           <Badge variant={product.stock > 0 ? "secondary" : "destructive"} className="text-xs">
-                            {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
+                            {product.stock > 0 ? "Available" : "Out of stock"}
                           </Badge>
                         </div>
                         {(product.is_rental || product.is_rental_only) && (
@@ -473,7 +548,22 @@ export default function PointOfSale() {
               <Command>
                 <CommandInput placeholder="Search customers..." value={customerSearchValue} onValueChange={setCustomerSearchValue} />
                 <CommandList>
-                  <CommandEmpty>No customers found.</CommandEmpty>
+                  <CommandEmpty>
+                    <div className="p-3 text-center space-y-2">
+                      <p className="text-sm text-muted-foreground">No customers found.</p>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setNewCustomer(prev => ({ ...prev, company: customerSearchValue }));
+                          setCustomerSearchOpen(false);
+                          setShowNewCustomer(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add new customer
+                      </Button>
+                    </div>
+                  </CommandEmpty>
                   <CommandGroup>
                     {customers
                       .filter(c =>
@@ -500,6 +590,19 @@ export default function PointOfSale() {
                           </div>
                         </CommandItem>
                       ))}
+                  </CommandGroup>
+                  <CommandGroup>
+                    <CommandItem
+                      value="__add_new_customer__"
+                      onSelect={() => {
+                        setNewCustomer(prev => ({ ...prev, company: customerSearchValue }));
+                        setCustomerSearchOpen(false);
+                        setShowNewCustomer(true);
+                      }}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      <span className="text-sm">Add new customer</span>
+                    </CommandItem>
                   </CommandGroup>
                 </CommandList>
               </Command>
@@ -533,13 +636,24 @@ export default function PointOfSale() {
             ) : (
               <div className="space-y-3">
                 {cart.map((item, index) => (
-                  <div key={index} className="flex flex-col gap-2 p-3 rounded-lg border bg-card">
+                  <div
+                    key={index}
+                    className={cn(
+                      "flex flex-col gap-2 p-3 rounded-lg border bg-card",
+                      item.isRental && "border-amber-500/60 bg-amber-500/5"
+                    )}
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate flex items-center gap-1">
                           {item.isService && <Wrench className="h-3 w-3 text-muted-foreground shrink-0" />}
                           {item.productName}
                         </p>
+                        {item.isRental && (
+                          <Badge variant="outline" className="mt-1 text-[10px] border-amber-500 text-amber-600">
+                            Contract Item
+                          </Badge>
+                        )}
                         <div className="flex items-center gap-1 mt-1">
                           <span className="text-xs text-muted-foreground">$</span>
                           <Input
@@ -591,6 +705,36 @@ export default function PointOfSale() {
                         </SelectContent>
                       </Select>
                     )}
+                    {/* Contract details for rental items */}
+                    {item.isRental && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground mb-1">Contract Length</p>
+                          <Select
+                            value={item.contractLength || '12 months'}
+                            onValueChange={(v) => updateCartField(index, 'contractLength', v)}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CONTRACT_LENGTH_OPTIONS.map(opt => (
+                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground mb-1">Start Date</p>
+                          <Input
+                            type="date"
+                            value={item.startDate || ''}
+                            onChange={(e) => updateCartField(index, 'startDate', e.target.value)}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -633,7 +777,7 @@ export default function PointOfSale() {
                   disabled={isSubmitting || cart.length === 0 || !selectedCustomer}
                 >
                   <Receipt className="h-4 w-4 mr-1" />
-                  {isSubmitting ? "Processing..." : "Checkout"}
+                  {isSubmitting ? "Processing..." : hasRentals ? (saleItemsInCart.length > 0 ? "Checkout & Create Contract" : "Create Contract") : "Checkout"}
                 </Button>
               </div>
             </div>
@@ -645,18 +789,74 @@ export default function PointOfSale() {
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Sale</AlertDialogTitle>
+            <AlertDialogTitle>{hasRentals ? "Confirm Contract" : "Confirm Sale"}</AlertDialogTitle>
             <AlertDialogDescription>
-              Complete sale of <strong>${(grandTotal + (selectedCustomerData?.vatable !== false ? grandTotal * 0.125 : 0)).toFixed(2)}</strong> to{" "}
-              <strong>{selectedCustomerData?.name || selectedCustomerData?.company}</strong> with {cart.length} item(s)?
+              Complete {hasRentals ? "transaction" : "sale"} of <strong>${(grandTotal + (selectedCustomerData?.vatable !== false ? grandTotal * 0.125 : 0)).toFixed(2)}</strong> to{" "}
+              <strong>{selectedCustomerData?.name || selectedCustomerData?.company}</strong> with {cart.length} item(s)
+              {hasRentals ? `, including ${rentalItems.length} contract item(s)` : ""}?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCheckout}>Confirm Sale</AlertDialogAction>
+            <AlertDialogAction onClick={handleCheckout}>{hasRentals ? "Confirm" : "Confirm Sale"}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* New Customer Dialog */}
+      <Dialog open={showNewCustomer} onOpenChange={setShowNewCustomer}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Customer</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Company Name *</Label>
+              <Input value={newCustomer.company} onChange={(e) => setNewCustomer({ ...newCustomer, company: e.target.value })} />
+            </div>
+            <div>
+              <Label>Contact Name</Label>
+              <Input value={newCustomer.name} onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Email</Label>
+                <Input type="email" value={newCustomer.email} onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })} />
+              </div>
+              <div>
+                <Label>Phone</Label>
+                <Input value={newCustomer.phone} onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })} />
+              </div>
+            </div>
+            <div>
+              <Label>Address</Label>
+              <Input value={newCustomer.address} onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>City</Label>
+                <Input value={newCustomer.city} onChange={(e) => setNewCustomer({ ...newCustomer, city: e.target.value })} />
+              </div>
+              <div>
+                <Label>VAT Applicable</Label>
+                <Select value={newCustomer.vatable ? "yes" : "no"} onValueChange={(v) => setNewCustomer({ ...newCustomer, vatable: v === "yes" })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewCustomer(false)}>Cancel</Button>
+            <Button onClick={handleCreateCustomer} disabled={savingCustomer}>
+              {savingCustomer ? "Saving..." : "Add Customer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
