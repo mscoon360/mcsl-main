@@ -482,7 +482,7 @@ export default function RentalAgreements() {
       const { data: saleData, error: saleError } = await supabase
         .from('sales')
         .insert([{
-          customer_name: customer.name,
+          customer_name: customer.name || customer.company || 'Unknown Customer',
           total: totalAmount,
           date: startDate.toISOString(),
           status: 'completed',
