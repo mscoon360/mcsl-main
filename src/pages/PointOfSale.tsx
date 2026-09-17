@@ -184,6 +184,8 @@ export default function PointOfSale() {
     setCart([]);
     setSelectedCustomer("");
     setSelectedPromotion("");
+    setOrderDiscountValue("");
+    setOrderDiscountType('percentage');
   };
 
   const getItemTotal = (item: CartItem) => {
@@ -757,6 +759,36 @@ export default function PointOfSale() {
                 <div className="flex justify-between text-sm text-green-600">
                   <span>Promotion Discount</span>
                   <span>-${getPromotionDiscount().toFixed(2)}</span>
+                </div>
+              )}
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Discount</p>
+                <div className="flex gap-2">
+                  <Select value={orderDiscountType} onValueChange={(v) => setOrderDiscountType(v as 'percentage' | 'fixed')}>
+                    <SelectTrigger className="h-8 w-[130px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percentage">Percentage (%)</SelectItem>
+                      <SelectItem value="fixed">Amount ($)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder={orderDiscountType === 'percentage' ? "0 %" : "0.00"}
+                    value={orderDiscountValue}
+                    onChange={(e) => setOrderDiscountValue(e.target.value)}
+                    className="h-8 flex-1 text-xs"
+                    aria-label="Discount value"
+                  />
+                </div>
+              </div>
+              {getOrderDiscount() > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Discount Applied</span>
+                  <span>-${getOrderDiscount().toFixed(2)}</span>
                 </div>
               )}
               {selectedCustomerData?.vatable !== false && (
