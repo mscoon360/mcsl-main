@@ -589,6 +589,19 @@ export default function PointOfSale() {
                         </CommandItem>
                       ))}
                   </CommandGroup>
+                  <CommandGroup>
+                    <CommandItem
+                      value="__add_new_customer__"
+                      onSelect={() => {
+                        setNewCustomer(prev => ({ ...prev, company: customerSearchValue }));
+                        setCustomerSearchOpen(false);
+                        setShowNewCustomer(true);
+                      }}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      <span className="text-sm">Add new customer</span>
+                    </CommandItem>
+                  </CommandGroup>
                 </CommandList>
               </Command>
             </PopoverContent>
