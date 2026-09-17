@@ -787,18 +787,74 @@ export default function PointOfSale() {
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Sale</AlertDialogTitle>
+            <AlertDialogTitle>{hasRentals ? "Confirm Contract" : "Confirm Sale"}</AlertDialogTitle>
             <AlertDialogDescription>
-              Complete sale of <strong>${(grandTotal + (selectedCustomerData?.vatable !== false ? grandTotal * 0.125 : 0)).toFixed(2)}</strong> to{" "}
-              <strong>{selectedCustomerData?.name || selectedCustomerData?.company}</strong> with {cart.length} item(s)?
+              Complete {hasRentals ? "transaction" : "sale"} of <strong>${(grandTotal + (selectedCustomerData?.vatable !== false ? grandTotal * 0.125 : 0)).toFixed(2)}</strong> to{" "}
+              <strong>{selectedCustomerData?.name || selectedCustomerData?.company}</strong> with {cart.length} item(s)
+              {hasRentals ? `, including ${rentalItems.length} contract item(s)` : ""}?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCheckout}>Confirm Sale</AlertDialogAction>
+            <AlertDialogAction onClick={handleCheckout}>{hasRentals ? "Confirm" : "Confirm Sale"}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* New Customer Dialog */}
+      <Dialog open={showNewCustomer} onOpenChange={setShowNewCustomer}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Customer</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Company Name *</Label>
+              <Input value={newCustomer.company} onChange={(e) => setNewCustomer({ ...newCustomer, company: e.target.value })} />
+            </div>
+            <div>
+              <Label>Contact Name</Label>
+              <Input value={newCustomer.name} onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Email</Label>
+                <Input type="email" value={newCustomer.email} onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })} />
+              </div>
+              <div>
+                <Label>Phone</Label>
+                <Input value={newCustomer.phone} onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })} />
+              </div>
+            </div>
+            <div>
+              <Label>Address</Label>
+              <Input value={newCustomer.address} onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>City</Label>
+                <Input value={newCustomer.city} onChange={(e) => setNewCustomer({ ...newCustomer, city: e.target.value })} />
+              </div>
+              <div>
+                <Label>VAT Applicable</Label>
+                <Select value={newCustomer.vatable ? "yes" : "no"} onValueChange={(v) => setNewCustomer({ ...newCustomer, vatable: v === "yes" })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewCustomer(false)}>Cancel</Button>
+            <Button onClick={handleCreateCustomer} disabled={savingCustomer}>
+              {savingCustomer ? "Saving..." : "Add Customer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
