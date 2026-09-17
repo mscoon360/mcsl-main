@@ -151,6 +151,8 @@ export default function PointOfSale() {
       discountValue: 0,
       paymentTerm: paymentTerms.length > 0 ? paymentTerms[0].payment_term as PaymentTerm : undefined,
       paymentTerms,
+      contractLength: (product.is_rental || product.is_rental_only) ? '12 months' : undefined,
+      startDate: (product.is_rental || product.is_rental_only) ? new Date().toISOString().split('T')[0] : undefined,
     };
 
     setCart(prev => [...prev, newItem]);
