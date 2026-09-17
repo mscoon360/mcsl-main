@@ -69,6 +69,44 @@ export default function PointOfSale() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [posTab, setPosTab] = useState<'products' | 'services'>('products');
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [savingCustomer, setSavingCustomer] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    company: "",
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    vatable: true,
+  });
+
+  const handleCreateCustomer = async () => {
+    if (!newCustomer.company.trim()) {
+      toast({ title: "Company name required", description: "Enter the company name to add this customer.", variant: "destructive" });
+      return;
+    }
+    setSavingCustomer(true);
+    try {
+      const created = await addCustomer({
+        company: newCustomer.company.trim(),
+        name: newCustomer.name.trim() || newCustomer.company.trim(),
+        email: newCustomer.email.trim() || undefined,
+        phone: newCustomer.phone.trim() || undefined,
+        address: newCustomer.address.trim() || undefined,
+        city: newCustomer.city.trim() || undefined,
+        status: 'active',
+        vatable: newCustomer.vatable,
+      } as any);
+      if (created?.id) setSelectedCustomer(created.id);
+      setShowNewCustomer(false);
+      setNewCustomer({ company: "", name: "", email: "", phone: "", address: "", city: "", vatable: true });
+    } catch {
+      /* toast handled in hook */
+    } finally {
+      setSavingCustomer(false);
+    }
+  };
 
   // Filter products for POS (only main products, exclude rental-only)
   const availableProducts = useMemo(() => {
