@@ -168,6 +168,10 @@ export default function PointOfSale() {
     setCart(prev => prev.map((item, i) => i === index ? { ...item, quantity: newQty } : item));
   };
 
+  const updateCartField = (index: number, field: 'contractLength' | 'startDate', value: string) => {
+    setCart(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
+  };
+
   const removeFromCart = (index: number) => {
     setCart(prev => prev.filter((_, i) => i !== index));
   };
