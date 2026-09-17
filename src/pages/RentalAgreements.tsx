@@ -466,7 +466,7 @@ export default function RentalAgreements() {
           product_id: product.id,
           product_name: product.name,
           quantity: item.quantity,
-          price: product.price,
+          price: item.price || product.rental_price || product.price || 0,
           unit_cost: product.cost_price ?? null,
           is_rental: true,
           contract_length: contractLength,
