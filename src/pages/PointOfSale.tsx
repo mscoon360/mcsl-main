@@ -190,6 +190,9 @@ export default function PointOfSale() {
   };
 
   const cartSubtotal = cart.reduce((sum, item) => sum + getItemTotal(item), 0);
+  const rentalItems = cart.filter(i => i.isRental);
+  const saleItemsInCart = cart.filter(i => !i.isRental);
+  const hasRentals = rentalItems.length > 0;
 
   const getPromotionDiscount = () => {
     if (!selectedPromotion) return 0;
