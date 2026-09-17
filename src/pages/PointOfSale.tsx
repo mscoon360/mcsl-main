@@ -68,6 +68,8 @@ export default function PointOfSale() {
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [customerSearchValue, setCustomerSearchValue] = useState("");
   const [selectedPromotion, setSelectedPromotion] = useState("");
+  const [orderDiscountType, setOrderDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [orderDiscountValue, setOrderDiscountValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [posTab, setPosTab] = useState<'products' | 'services'>('products');
@@ -205,7 +207,16 @@ export default function PointOfSale() {
     return 0;
   };
 
-  const grandTotal = Math.max(0, cartSubtotal - getPromotionDiscount());
+  const afterPromotion = Math.max(0, cartSubtotal - getPromotionDiscount());
+
+  const getOrderDiscount = () => {
+    const value = parseFloat(orderDiscountValue);
+    if (isNaN(value) || value <= 0) return 0;
+    if (orderDiscountType === 'percentage') return Math.min(afterPromotion, (afterPromotion * value) / 100);
+    return Math.min(afterPromotion, value);
+  };
+
+  const grandTotal = Math.max(0, afterPromotion - getOrderDiscount());
 
   const handlePaymentTermChange = (index: number, term: PaymentTerm) => {
     setCart(prev => prev.map((item, i) => {
